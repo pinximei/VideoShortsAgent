@@ -205,39 +205,83 @@ class VideoShortsAgent:
 
         # 3. ReAct 循环
         result = {"task_id": task_id, "status": "running", "steps": []}
+        llm_call_count = 0  # 记录 LLM 调用次数
 
         for iteration in range(1, MAX_ITERATIONS + 1):
             print(f"\n--- ReAct 迭代 {iteration}/{MAX_ITERATIONS} ---")
+
+            # ========== 调试日志：LLM 输入 ==========
+            llm_call_count += 1
+            print(f"\n{'='*60}")
+            print(f"  📤 LLM 调用 #{llm_call_count}: Agent ReAct (迭代 {iteration})")
+            print(f"  模型: {self.llm_model}")
+            print(f"{'='*60}")
+            print(f"  [messages 列表] ({len(messages)} 条消息):")
+            for i, msg in enumerate(messages):
+                role = msg.get("role", msg.get("role", "?"))
+                if role == "system":
+                    print(f"    [{i}] system: (系统提示词, {len(str(msg.get('content','')))} 字符)")
+                elif role == "user":
+                    content = str(msg.get("content", ""))
+                    print(f"    [{i}] user: {content[:100]}{'...' if len(content)>100 else ''}")
+                elif role == "assistant":
+                    tc = msg.get("tool_calls", [])
+                    if tc:
+                        print(f"    [{i}] assistant: (调工具 {[t.get('function',{}).get('name','?') if isinstance(t,dict) else t.function.name for t in tc]})")
+                    else:
+                        content = str(msg.get("content", ""))
+                        print(f"    [{i}] assistant: {content[:100]}{'...' if len(content)>100 else ''}")
+                elif role == "tool":
+                    content = str(msg.get("content", ""))
+                    print(f"    [{i}] tool: {content[:100]}{'...' if len(content)>100 else ''}")
+            print(f"  [可用工具]: {[s['function']['name'] for s in self.tools.get_schemas()]}")
+            print(f"{'='*60}")
 
             # 3a. 调用 LLM（思考 + 决策）
             response = self.llm.chat.completions.create(
                 model=self.llm_model,
                 messages=messages,
-                tools=self.tools.get_schemas(),  # 告诉 LLM 有哪些工具可用
-                tool_choice="auto"               # 让 LLM 自己决定是否调用工具
+                tools=self.tools.get_schemas(),
+                tool_choice="auto"
             )
 
             assistant_message = response.choices[0].message
+            usage = response.usage
+
+            # ========== 调试日志：LLM 输出 ==========
+            print(f"\n{'='*60}")
+            print(f"  📥 LLM 响应 #{llm_call_count}:")
+            print(f"{'='*60}")
+            print(f"  [Token 用量]:")
+            print(f"    输入 tokens: {usage.prompt_tokens if usage else '?'}")
+            print(f"    输出 tokens: {usage.completion_tokens if usage else '?'}")
+            print(f"    总计 tokens: {usage.total_tokens if usage else '?'}")
+            if assistant_message.tool_calls:
+                print(f"  [LLM 决策]: 调用工具 ↓")
+                for tc in assistant_message.tool_calls:
+                    print(f"    🔧 {tc.function.name}({tc.function.arguments})")
+            else:
+                print(f"  [LLM 决策]: 直接回复 ↓")
+                print(f"    {assistant_message.content[:300] if assistant_message.content else '(空)'}")
+            print(f"{'='*60}")
 
             # 3b. 检查 LLM 是否选择调用工具
             if assistant_message.tool_calls:
                 # LLM 决定调用工具 → 执行 Action
-                # 先将 assistant 的消息加入历史
                 messages.append(assistant_message.model_dump())
 
                 for tool_call in assistant_message.tool_calls:
                     func_name = tool_call.function.name
                     func_args = json.loads(tool_call.function.arguments)
 
-                    print(f"  🔧 调用工具: {func_name}")
+                    print(f"\n  🔧 执行工具: {func_name}")
                     print(f"     参数: {func_args}")
 
                     # 执行工具
                     tool_result = self.tools.call(func_name, func_args)
 
-                    print(f"     结果: {tool_result[:200]}...")  # 截断显示
+                    print(f"     结果: {tool_result[:200]}...")
 
-                    # 记录步骤
                     result["steps"].append({
                         "iteration": iteration,
                         "tool": func_name,
@@ -245,16 +289,14 @@ class VideoShortsAgent:
                         "result": tool_result
                     })
 
-                    # 将工具结果反馈给 LLM（这就是"观察"环节）
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
                         "content": tool_result
                     })
             else:
-                # LLM 没有调用工具 → 认为任务完成，给出最终回复
                 final_reply = assistant_message.content
-                print(f"\n  💬 Agent 回复: {final_reply}")
+                print(f"\n  💬 Agent 最终回复: {final_reply}")
 
                 result["status"] = "success"
                 result["reply"] = final_reply

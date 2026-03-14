@@ -83,16 +83,47 @@ class AnalysisSkill:
         # 2. 构建提示词
         prompt = ANALYSIS_PROMPT.format(transcript=transcript_text)
 
-        # 3. 调用 Qwen-Max
-        print(f"[AnalysisSkill] 正在调用 {self.model} 分析金句...")
+        # ========== 调试日志：LLM 输入 ==========
+        print(f"\n{'='*60}")
+        print(f"  📤 LLM 调用 #1: AnalysisSkill")
+        print(f"  模型: {self.model}")
+        print(f"  API: {self.client.base_url}")
+        print(f"{'='*60}")
+        print(f"  [发送的 messages]:")
+        print(f"    role: user")
+        print(f"    content ({len(prompt)} 字符):")
+        print(f"    ---prompt 开始---")
+        print(prompt[:500])  # 打印前500字符避免太长
+        if len(prompt) > 500:
+            print(f"    ... (省略 {len(prompt)-500} 字符) ...")
+        print(f"    ---prompt 结束---")
+        print(f"  [额外参数]:")
+        print(f"    response_format: json_object")
+        print(f"{'='*60}")
+
+        # 3. 调用 LLM
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}  # 强制 JSON 输出
+            response_format={"type": "json_object"}
         )
 
-        # 4. 解析返回结果
+        # ========== 调试日志：LLM 输出 ==========
         result_text = response.choices[0].message.content
+        usage = response.usage
+
+        print(f"\n{'='*60}")
+        print(f"  📥 LLM 响应:")
+        print(f"{'='*60}")
+        print(f"  [Token 用量]:")
+        print(f"    输入 tokens: {usage.prompt_tokens if usage else '?'}")
+        print(f"    输出 tokens: {usage.completion_tokens if usage else '?'}")
+        print(f"    总计 tokens: {usage.total_tokens if usage else '?'}")
+        print(f"  [原始返回内容]:")
+        print(f"    {result_text}")
+        print(f"{'='*60}\n")
+
+        # 4. 解析返回结果
         result = json.loads(result_text)
 
         print(f"[AnalysisSkill] 分析完成 ✓")
