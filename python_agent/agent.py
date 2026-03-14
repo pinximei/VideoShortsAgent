@@ -26,13 +26,17 @@ SYSTEM_PROMPT = (
     "标准流程：\n"
     "1. 使用 transcribe 将视频语音转为文字\n"
     "2. 使用 analyze 从转录文本中找出多个精彩片段（返回 clips 数组）\n"
-    "3. 使用 render 将 analyze 的结果直接传入，自动完成多段裁剪+字幕+拼接\n\n"
+    "3. 使用 render 渲染最终视频，传入 analyze 的结果 + 特效配置\n\n"
+    "可用特效（通过 render 的 effects_json 参数指定）：\n"
+    "- caption_style: 字幕动画风格，可选 'spring'（弹出）/ 'fade'（淡入）/ 'typewriter'（打字机）\n"
+    "- gradient: true/false，是否叠加渐变背景氛围层\n"
+    "- gradient_colors: [颜色1, 颜色2]，渐变色，如 ['#FF6B6B', '#4ECDC4']\n"
+    "示例: {\"caption_style\": \"spring\", \"gradient\": true}\n\n"
     "注意事项：\n"
-    "- render 工具的 analysis_json 参数直接填入 analyze 返回的完整 JSON 字符串\n"
-    "- 每一步完成后，检查结果是否合理再进行下一步\n"
-    "- 如果某一步失败，尝试分析原因并决定是否重试\n"
-    "- 所有中间文件都保存在任务目录中\n"
-    "- 任务完成后，给用户一个清晰的总结\n"
+    "- render 的 analysis_json 直接填入 analyze 返回的完整 JSON 字符串\n"
+    "- 根据视频内容风格主动选择合适的特效组合\n"
+    "- 每一步完成后检查结果是否合理再进行下一步\n"
+    "- 任务完成后给用户一个清晰的总结\n"
 )
 
 # ReAct 循环的最大轮次
@@ -93,10 +97,11 @@ class VideoShortsAgent:
 
         self.tools.add(
             name="render",
-            description="根据分析结果渲染短视频。支持多片段裁剪+字幕+拼接。传入 analyze 返回的完整 JSON。",
+            description="根据分析结果渲染短视频。支持多片段裁剪+字幕+拼接。可通过 effects_json 启用 Remotion 特效。",
             parameters={
                 "video_path": "原始视频文件路径",
-                "analysis_json": "analyze 返回的完整 JSON 字符串，包含 clips 数组"
+                "analysis_json": "analyze 返回的完整 JSON 字符串，包含 clips 数组",
+                "effects_json": "特效配置 JSON，如 {\"caption_style\":\"spring\",\"gradient\":true}。不传则使用默认 ASS 字幕。"
             },
             func=self._tool_render
         )
@@ -111,12 +116,18 @@ class VideoShortsAgent:
         result = self.analysis_skill.execute(transcript_path)
         return json.dumps(result, ensure_ascii=False, indent=2)
 
-    def _tool_render(self, video_path: str, analysis_json: str) -> str:
+    def _tool_render(self, video_path: str, analysis_json: str, effects_json: str = "") -> str:
         try:
             analysis = json.loads(analysis_json)
         except json.JSONDecodeError:
             return f"错误：analysis_json 不是合法的 JSON: {analysis_json[:200]}"
-        output_path = self.render_skill.execute(video_path, analysis, self._task_dir)
+        effects = None
+        if effects_json:
+            try:
+                effects = json.loads(effects_json)
+            except json.JSONDecodeError:
+                pass
+        output_path = self.render_skill.execute(video_path, analysis, self._task_dir, effects=effects)
         return f"渲染完成，输出文件: {output_path}"
 
     # ========== ReAct 主循环 ==========
