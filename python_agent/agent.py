@@ -1,56 +1,39 @@
 """
-VideoShortsAgent - 真正的 ReAct Agent
+VideoShortsAgent - ReAct Agent 实现
 
-这是一个 LLM 驱动的 Agent，使用 Qwen-Max 作为"大脑"，
-自主决定何时调用哪个工具，而不是按固定顺序执行。
-
-核心概念：
-- ReAct 模式：Reasoning + Acting（思考 + 行动）
-  1. LLM 思考当前状态，决定下一步做什么
-  2. LLM 选择调用某个工具（Tool Call）
-  3. 工具返回结果，LLM 观察结果
-  4. LLM 继续思考，直到任务完成
-
-- Function Calling：LLM 的 API 支持返回结构化的"工具调用"指令，
-  而不仅仅是文字回复。这让 Agent 能可靠地与外部工具交互。
+这是一个基于 ReAct（Reasoning + Acting）模式的 AI Agent。
+支持两种能力调用方式：
+- Tool Calling：通过 API tools 参数结构化调用（如 transcribe、render）
+- Skills：通过 system prompt 注入索引 + [USE_SKILL] 文本调用（如 analyze）
 
 使用示例：
     agent = VideoShortsAgent(api_key="sk-xxx")
-    result = agent.run("帮我把这个视频做成短视频", video_path="input.mp4")
+    result = agent.run("帮我把这个视频做成短视频", video_path="./video.mp4")
 """
 import os
-import uuid
 import json
+import uuid
 from datetime import datetime
 from openai import OpenAI
 
 from python_agent.tools import ToolRegistry
+from python_agent.skill_registry import SkillRegistry
 from python_agent.skills.transcribe_skill import TranscribeSkill
 from python_agent.skills.analysis_skill import AnalysisSkill
 from python_agent.skills.render_skill import RenderSkill
 
 
 # Agent 的系统提示词 —— 定义 Agent 的角色和行为规则
-SYSTEM_PROMPT = """你是一个专业的短视频剪辑 Agent。
-
-你的任务是将用户提供的长视频，自动加工成有吸引力的短视频切片。
-
-你有以下工具可以使用：
-1. transcribe - 将视频中的语音转为文字（带时间戳）
-2. analyze - 从文字中找出最有"爆款潜力"的金句片段
-3. render - 将选中的片段裁剪并添加字幕，生成短视频
-
-工作流程建议（但你可以根据实际情况灵活调整）：
-1. 先用 transcribe 获取视频的文字内容
-2. 再用 analyze 找出金句
-3. 最后用 render 生成短视频
-
-注意事项：
-- 每一步完成后，检查结果是否合理再进行下一步
-- 如果某一步失败，尝试分析原因并决定是否重试
-- 所有中间文件都保存在任务目录中
-- 任务完成后，给用户一个清晰的总结
-"""
+# system prompt 基础部分（Skills 索引由 SkillRegistry 动态生成）
+SYSTEM_PROMPT_BASE = (
+    "你是一个专业的短视频剪辑 Agent。\n\n"
+    "你的任务是将用户提供的长视频，自动加工成有吸引力的短视频切片。\n\n"
+    "注意事项：\n"
+    "- 每一步完成后，检查结果是否合理再进行下一步\n"
+    "- 如果某一步失败，尝试分析原因并决定是否重试\n"
+    "- 所有中间文件都保存在任务目录中\n"
+    "- 任务完成后，给用户一个清晰的总结\n"
+)
 
 # ReAct 循环的最大轮次（防止无限循环）
 MAX_ITERATIONS = 10
@@ -74,26 +57,32 @@ class VideoShortsAgent:
 
         Args:
             api_key: DashScope API Key
-            llm_model: Qwen 模型名称（如 qwen-max / qwen-plus / qwen-turbo）
+            llm_model: Qwen 模型名称
             whisper_model: Whisper 模型大小
         """
         print("=" * 60)
         print("  VideoShortsAgent (ReAct) 初始化中...")
         print("=" * 60)
 
-        # 1. 初始化 LLM 客户端（Agent 的"大脑"）
+        # 保存上下文（传递给 Skill executor）
+        self._api_key = api_key
+        self._skill_context = {"api_key": api_key, "model": llm_model}
+
+        # 1. 初始化 LLM 客户端
         self.llm = OpenAI(
             api_key=api_key,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
         self.llm_model = llm_model
 
-        # 2. 初始化 Skills
+        # 2. 初始化 Tool 对应的 Skills
         self.transcribe_skill = TranscribeSkill(model_path=whisper_model)
-        self.analysis_skill = AnalysisSkill(api_key=api_key, model=llm_model)
         self.render_skill = RenderSkill()
 
-        # 3. 注册工具（把 Skill 包装成 LLM 可调用的 Tool）
+        # 3. 发现并注册 Skills（通用框架）
+        self.skill_registry = SkillRegistry(os.path.join(os.path.dirname(os.path.dirname(__file__)), "skills"))
+
+        # 4. 注册 Tools（结构化调用）
         self.tools = ToolRegistry()
         self._register_tools()
 
@@ -119,15 +108,6 @@ class VideoShortsAgent:
                 "video_path": "要转录的视频文件路径"
             },
             func=self._tool_transcribe
-        )
-
-        self.tools.add(
-            name="analyze",
-            description="分析转录文本，找出最有爆款潜力的15-30秒金句片段。输入 transcript.json 路径，输出包含 start、end、hook_text 的分析结果。",
-            parameters={
-                "transcript_path": "transcript.json 文件路径"
-            },
-            func=self._tool_analyze
         )
 
         self.tools.add(
@@ -198,8 +178,11 @@ class VideoShortsAgent:
         else:
             full_message = user_message
 
+        # 动态生成 system prompt = 基础 + Skills 索引
+        system_prompt = SYSTEM_PROMPT_BASE + "\n" + self.skill_registry.get_index()
+
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": full_message}
         ]
 
@@ -210,32 +193,23 @@ class VideoShortsAgent:
         for iteration in range(1, MAX_ITERATIONS + 1):
             print(f"\n--- ReAct 迭代 {iteration}/{MAX_ITERATIONS} ---")
 
-            # ========== 调试日志：LLM 输入 ==========
+            # ========== 保存 LLM 完整输入为 JSON 文件 ==========
             llm_call_count += 1
-            print(f"\n{'='*60}")
-            print(f"  📤 LLM 调用 #{llm_call_count}: Agent ReAct (迭代 {iteration})")
-            print(f"  模型: {self.llm_model}")
-            print(f"{'='*60}")
-            print(f"  [messages 列表] ({len(messages)} 条消息):")
-            for i, msg in enumerate(messages):
-                role = msg.get("role", msg.get("role", "?"))
-                if role == "system":
-                    print(f"    [{i}] system: (系统提示词, {len(str(msg.get('content','')))} 字符)")
-                elif role == "user":
-                    content = str(msg.get("content", ""))
-                    print(f"    [{i}] user: {content[:100]}{'...' if len(content)>100 else ''}")
-                elif role == "assistant":
-                    tc = msg.get("tool_calls", [])
-                    if tc:
-                        print(f"    [{i}] assistant: (调工具 {[t.get('function',{}).get('name','?') if isinstance(t,dict) else t.function.name for t in tc]})")
-                    else:
-                        content = str(msg.get("content", ""))
-                        print(f"    [{i}] assistant: {content[:100]}{'...' if len(content)>100 else ''}")
-                elif role == "tool":
-                    content = str(msg.get("content", ""))
-                    print(f"    [{i}] tool: {content[:100]}{'...' if len(content)>100 else ''}")
-            print(f"  [可用工具]: {[s['function']['name'] for s in self.tools.get_schemas()]}")
-            print(f"{'='*60}")
+            debug_dir = os.path.join(self._task_dir, "llm_debug")
+            os.makedirs(debug_dir, exist_ok=True)
+
+            # 保存输入
+            llm_input = {
+                "_说明": f"这是第 {llm_call_count} 次 LLM API 调用的完整输入参数",
+                "model": self.llm_model,
+                "tool_choice": "auto",
+                "messages": messages,
+                "tools": self.tools.get_schemas()
+            }
+            input_file = os.path.join(debug_dir, f"call_{llm_call_count}_input.json")
+            with open(input_file, "w", encoding="utf-8") as f:
+                json.dump(llm_input, f, ensure_ascii=False, indent=2)
+            print(f"  📤 输入已保存: {input_file}")
 
             # 3a. 调用 LLM（思考 + 决策）
             response = self.llm.chat.completions.create(
@@ -248,22 +222,27 @@ class VideoShortsAgent:
             assistant_message = response.choices[0].message
             usage = response.usage
 
-            # ========== 调试日志：LLM 输出 ==========
-            print(f"\n{'='*60}")
-            print(f"  📥 LLM 响应 #{llm_call_count}:")
-            print(f"{'='*60}")
-            print(f"  [Token 用量]:")
-            print(f"    输入 tokens: {usage.prompt_tokens if usage else '?'}")
-            print(f"    输出 tokens: {usage.completion_tokens if usage else '?'}")
-            print(f"    总计 tokens: {usage.total_tokens if usage else '?'}")
+            # ========== 保存 LLM 完整输出为 JSON 文件 ==========
+            llm_output = {
+                "_说明": f"这是第 {llm_call_count} 次 LLM API 调用的完整响应",
+                "usage": {
+                    "prompt_tokens": usage.prompt_tokens if usage else None,
+                    "completion_tokens": usage.completion_tokens if usage else None,
+                    "total_tokens": usage.total_tokens if usage else None
+                },
+                "message": assistant_message.model_dump()
+            }
+            output_file = os.path.join(debug_dir, f"call_{llm_call_count}_output.json")
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(llm_output, f, ensure_ascii=False, indent=2)
+
+            # 终端简要提示
+            tokens = f"{usage.total_tokens}t" if usage else "?"
             if assistant_message.tool_calls:
-                print(f"  [LLM 决策]: 调用工具 ↓")
-                for tc in assistant_message.tool_calls:
-                    print(f"    🔧 {tc.function.name}({tc.function.arguments})")
+                tools_called = [tc.function.name for tc in assistant_message.tool_calls]
+                print(f"  📥 输出已保存: {output_file}  ({tokens}, 调用工具: {tools_called})")
             else:
-                print(f"  [LLM 决策]: 直接回复 ↓")
-                print(f"    {assistant_message.content[:300] if assistant_message.content else '(空)'}")
-            print(f"{'='*60}")
+                print(f"  📥 输出已保存: {output_file}  ({tokens}, 直接回复)")
 
             # 3b. 检查 LLM 是否选择调用工具
             if assistant_message.tool_calls:
@@ -277,8 +256,20 @@ class VideoShortsAgent:
                     print(f"\n  🔧 执行工具: {func_name}")
                     print(f"     参数: {func_args}")
 
-                    # 执行工具
-                    tool_result = self.tools.call(func_name, func_args)
+                    # 检查是否是 Skill（LLM 可能通过 tool_calls 调用已注册的 Skill）
+                    if func_name in self.skill_registry.names:
+                        print(f"\n  📘 LLM 通过 tool_calls 调用了 Skill: {func_name}（自动转交 SkillRegistry）")
+
+                        # 按需注入完整文档
+                        if self.skill_registry.should_inject_doc(func_name):
+                            full_doc = self.skill_registry.get_full_doc(func_name)
+                            print(f"     已注入 {func_name} 完整文档")
+
+                        # 通过 SkillRegistry 执行
+                        tool_result = self.skill_registry.execute(func_name, func_args, self._skill_context)
+                    else:
+                        # 正常工具执行
+                        tool_result = self.tools.call(func_name, func_args)
 
                     print(f"     结果: {tool_result[:200]}...")
 
@@ -286,7 +277,8 @@ class VideoShortsAgent:
                         "iteration": iteration,
                         "tool": func_name,
                         "args": func_args,
-                        "result": tool_result
+                        "result": tool_result,
+                        "mode": "skill" if func_name in self.skill_registry.names else "tool"
                     })
 
                     messages.append({
@@ -295,11 +287,47 @@ class VideoShortsAgent:
                         "content": tool_result
                     })
             else:
-                final_reply = assistant_message.content
-                print(f"\n  💬 Agent 最终回复: {final_reply}")
+                reply_text = assistant_message.content or ""
+                messages.append({"role": "assistant", "content": reply_text})
 
+                # ========== 通用 Skills 检测 ==========
+                skill_call = self.skill_registry.parse_skill_call(reply_text)
+                if skill_call:
+                    skill_name = skill_call["name"]
+                    skill_args = skill_call["args"]
+
+                    if "error" in skill_call:
+                        messages.append({"role": "user", "content": skill_call["error"]})
+                        print(f"\n  📘 Skill 调用失败: {skill_call['error']}")
+                        continue
+
+                    print(f"\n  📘 检测到 Skill 调用: {skill_name}")
+                    print(f"     参数: {skill_args}")
+
+                    # 按需注入完整文档（首次使用时）
+                    if self.skill_registry.should_inject_doc(skill_name):
+                        full_doc = self.skill_registry.get_full_doc(skill_name)
+                        messages.append({"role": "user", "content": f"收到。以下是 {skill_name} 技能的完整文档：\n{full_doc}"})
+                        print(f"     已注入 {skill_name} 完整文档")
+
+                    # 通用执行
+                    print(f"     正在执行 {skill_name}...")
+                    skill_result = self.skill_registry.execute(skill_name, skill_args, self._skill_context)
+                    messages.append({"role": "user", "content": f"{skill_name} 技能执行完成，结果：\n{skill_result}"})
+                    print(f"     结果: {skill_result[:200]}")
+
+                    result["steps"].append({
+                        "iteration": iteration,
+                        "skill": skill_name,
+                        "args": skill_args,
+                        "mode": "skills"
+                    })
+                    continue
+
+                # 没有 Skill 也没有 Tool → 任务完成
+                print(f"\n  💬 Agent 最终回复: {reply_text}")
                 result["status"] = "success"
-                result["reply"] = final_reply
+                result["reply"] = reply_text
                 break
         else:
             # 超过最大迭代次数
