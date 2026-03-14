@@ -188,25 +188,86 @@ Dialogue: 0,0:00:00.00,{end_h}:{end_m:02d}:{end_s:05.2f},Hook,,0,0,0,,{{\\fad(50
         self._run_cmd(cmd, "烧录字幕")
 
     def _concat_videos(self, video_paths: list, output_path: str, output_dir: str):
-        """FFmpeg concat 拼接多个视频"""
-        # 创建 concat 列表文件
-        concat_list = os.path.join(output_dir, "concat_list.txt")
-        with open(concat_list, "w", encoding="utf-8") as f:
-            for path in video_paths:
-                abs_path = os.path.abspath(path).replace("\\", "/")
-                f.write(f"file '{abs_path}'\n")
+        """FFmpeg xfade 拼接多个视频（交叉淡入淡出转场）"""
+        if len(video_paths) == 1:
+            # 单个视频直接复制
+            import shutil
+            shutil.copy2(video_paths[0], output_path)
+            return
 
-        cmd = [
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-            "-i", concat_list,
-            "-c:v", "libx264", "-c:a", "aac",
-            "-preset", "fast", output_path
+        transition_duration = 0.5  # 转场时长（秒）
+
+        # 获取每个片段的时长
+        durations = []
+        for path in video_paths:
+            dur = self._get_duration(path)
+            durations.append(dur)
+            print(f"  片段时长: {path} = {dur:.2f}s")
+
+        # 构建 xfade 滤镜链
+        # 2个片段: [0:v][1:v]xfade=transition=fade:duration=0.5:offset=T
+        # 3个片段: 先合前2个，再合第3个
+        inputs = []
+        for path in video_paths:
+            inputs.extend(["-i", path])
+
+        # 计算每个转场的 offset（前面所有片段时长之和 - 转场时长累积）
+        filter_parts = []
+        offsets = []
+        cumulative = 0
+        for i in range(len(durations) - 1):
+            cumulative += durations[i]
+            offset = cumulative - transition_duration * (i + 1)
+            offsets.append(max(0, offset))
+
+        # 视频滤镜链
+        if len(video_paths) == 2:
+            filter_parts.append(
+                f"[0:v][1:v]xfade=transition=fade:duration={transition_duration}:offset={offsets[0]:.3f}[vout]"
+            )
+            filter_parts.append(
+                f"[0:a][1:a]acrossfade=d={transition_duration}[aout]"
+            )
+            map_args = ["-map", "[vout]", "-map", "[aout]"]
+        else:
+            # 多个片段：链式 xfade
+            v_prev = "[0:v]"
+            a_prev = "[0:a]"
+            for i in range(len(video_paths) - 1):
+                v_out = "[vout]" if i == len(video_paths) - 2 else f"[v{i}]"
+                a_out = "[aout]" if i == len(video_paths) - 2 else f"[a{i}]"
+                filter_parts.append(
+                    f"{v_prev}[{i+1}:v]xfade=transition=fade:duration={transition_duration}:offset={offsets[i]:.3f}{v_out}"
+                )
+                filter_parts.append(
+                    f"{a_prev}[{i+1}:a]acrossfade=d={transition_duration}{a_out}"
+                )
+                v_prev = v_out
+                a_prev = a_out
+            map_args = ["-map", "[vout]", "-map", "[aout]"]
+
+        filter_complex = ";".join(filter_parts)
+        print(f"  转场滤镜: {filter_complex[:200]}...")
+
+        cmd = ["ffmpeg", "-y"] + inputs + [
+            "-filter_complex", filter_complex
+        ] + map_args + [
+            "-c:v", "libx264", "-c:a", "aac", "-preset", "fast",
+            output_path
         ]
-        self._run_cmd(cmd, "拼接")
+        self._run_cmd(cmd, "转场拼接")
 
-        # 清理
-        if os.path.exists(concat_list):
-            os.remove(concat_list)
+    def _get_duration(self, video_path: str) -> float:
+        """获取视频时长"""
+        cmd = [
+            "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", video_path
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            return float(result.stdout.strip())
+        except Exception:
+            return 5.0  # 默认 5 秒
 
     # ========== 工具方法 ==========
 
