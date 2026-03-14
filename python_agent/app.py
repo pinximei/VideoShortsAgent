@@ -39,7 +39,16 @@ def process_transcribe(video_path):
     if not video_path:
         return "请先上传视频", None
 
-    skills = _get_skills()
+    # Gradio Video 组件可能返回字典或字符串路径
+    if isinstance(video_path, dict):
+        video_path = video_path.get("video", video_path.get("name", ""))
+
+    print(f"[转录] 视频路径: {video_path}")
+
+    try:
+        skills = _get_skills()
+    except Exception as e:
+        return f"❌ 初始化失败: {e}", None
     output_dir = os.path.join("output", "gradio_task")
     os.makedirs(output_dir, exist_ok=True)
 
@@ -75,17 +84,27 @@ def process_analyze(transcript_path):
         return f"❌ 分析失败: {e}"
 
 
-def process_full_pipeline(video_path, progress=gr.Progress()):
+def process_full_pipeline(video_path):
     """一键处理：转录 → 分析 → 渲染"""
     if not video_path:
         return "请先上传视频", "", "", None
 
-    skills = _get_skills()
+    # Gradio Video 组件可能返回字典或字符串路径
+    if isinstance(video_path, dict):
+        video_path = video_path.get("video", video_path.get("name", ""))
+
+    print(f"[一键处理] 视频路径: {video_path}")
+
+    try:
+        skills = _get_skills()
+    except Exception as e:
+        return f"❌ 初始化失败: {e}", "", "", None
+
     output_dir = os.path.join("output", "gradio_task")
     os.makedirs(output_dir, exist_ok=True)
 
     # Step 1: 转录
-    progress(0.1, desc="正在转录视频...")
+    print("[一键处理] Step 1/3: 转录...")
     try:
         transcript_path = skills["transcribe"].execute(video_path, output_dir)
         with open(transcript_path, "r", encoding="utf-8") as f:
@@ -98,7 +117,7 @@ def process_full_pipeline(video_path, progress=gr.Progress()):
         return f"❌ 转录失败: {e}", "", "", None
 
     # Step 2: 分析
-    progress(0.5, desc="正在分析金句...")
+    print("[一键处理] Step 2/3: 分析金句...")
     try:
         analysis = skills["analysis"].execute(transcript_path)
         analysis_text = json.dumps(analysis, ensure_ascii=False, indent=2)
@@ -106,7 +125,7 @@ def process_full_pipeline(video_path, progress=gr.Progress()):
         return transcript_text, f"❌ 分析失败: {e}", "", None
 
     # Step 3: 渲染
-    progress(0.8, desc="正在生成短视频...")
+    print("[一键处理] Step 3/3: 渲染...")
     try:
         output_video = skills["render"].execute(video_path, analysis, output_dir)
         render_text = f"✅ 输出: {output_video}"
@@ -114,12 +133,11 @@ def process_full_pipeline(video_path, progress=gr.Progress()):
         render_text = f"❌ 渲染失败: {e}"
         output_video = None
 
-    progress(1.0, desc="完成！")
-
     # 如果渲染是桩实现，输出文件不存在则不返回视频
     if output_video and not os.path.exists(output_video):
         output_video = None
 
+    print("[一键处理] 完成！")
     return transcript_text, analysis_text, render_text, output_video
 
 
