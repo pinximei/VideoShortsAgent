@@ -25,9 +25,10 @@ SYSTEM_PROMPT = (
     "你的任务是将用户提供的长视频，自动加工成有吸引力的短视频切片。\n\n"
     "标准流程：\n"
     "1. 使用 transcribe 将视频语音转为文字\n"
-    "2. 使用 analyze 从转录文本中找出最有爆款潜力的片段\n"
-    "3. 使用 render 将片段裁剪出来并添加字幕\n\n"
+    "2. 使用 analyze 从转录文本中找出多个精彩片段（返回 clips 数组）\n"
+    "3. 使用 render 将 analyze 的结果直接传入，自动完成多段裁剪+字幕+拼接\n\n"
     "注意事项：\n"
+    "- render 工具的 analysis_json 参数直接填入 analyze 返回的完整 JSON 字符串\n"
     "- 每一步完成后，检查结果是否合理再进行下一步\n"
     "- 如果某一步失败，尝试分析原因并决定是否重试\n"
     "- 所有中间文件都保存在任务目录中\n"
@@ -85,20 +86,17 @@ class VideoShortsAgent:
 
         self.tools.add(
             name="analyze",
-            description="从转录文本（transcript.json）中分析并提取最有爆款潜力的 15-30 秒片段，返回 start、end、hook_text。",
+            description="从转录文本中分析并提取多个精彩片段（3-5个），返回 clips 数组，每个包含 start、end、hook_text。",
             parameters={"transcript_path": "transcript.json 文件路径"},
             func=self._tool_analyze
         )
 
         self.tools.add(
             name="render",
-            description="将视频中的指定片段裁剪出来并添加字幕/特效，生成短视频。可选传入 effects_json 来启用 Remotion 特效。",
+            description="根据分析结果渲染短视频。支持多片段裁剪+字幕+拼接。传入 analyze 返回的完整 JSON。",
             parameters={
                 "video_path": "原始视频文件路径",
-                "start": "片段开始时间（秒）",
-                "end": "片段结束时间（秒）",
-                "hook_text": "要叠加的字幕文案",
-                "effects_json": "可选，特效配置 JSON 字符串，如 {\"caption_style\":\"spring\",\"gradient\":true}。不传则使用默认 ASS 字幕。"
+                "analysis_json": "analyze 返回的完整 JSON 字符串，包含 clips 数组"
             },
             func=self._tool_render
         )
@@ -113,20 +111,12 @@ class VideoShortsAgent:
         result = self.analysis_skill.execute(transcript_path)
         return json.dumps(result, ensure_ascii=False, indent=2)
 
-    def _tool_render(self, video_path: str, start: str, end: str, hook_text: str,
-                     effects_json: str = "") -> str:
-        analysis = {
-            "start": float(start),
-            "end": float(end),
-            "hook_text": hook_text
-        }
-        effects = None
-        if effects_json:
-            try:
-                effects = json.loads(effects_json)
-            except json.JSONDecodeError:
-                pass
-        output_path = self.render_skill.execute(video_path, analysis, self._task_dir, effects=effects)
+    def _tool_render(self, video_path: str, analysis_json: str) -> str:
+        try:
+            analysis = json.loads(analysis_json)
+        except json.JSONDecodeError:
+            return f"错误：analysis_json 不是合法的 JSON: {analysis_json[:200]}"
+        output_path = self.render_skill.execute(video_path, analysis, self._task_dir)
         return f"渲染完成，输出文件: {output_path}"
 
     # ========== ReAct 主循环 ==========

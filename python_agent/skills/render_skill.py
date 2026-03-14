@@ -1,21 +1,21 @@
 """
 RenderSkill - 视频渲染技能
 
-支持两种渲染模式：
-- 基础模式：FFmpeg 裁剪 + ASS 字幕烧录
-- 特效模式：FFmpeg 裁剪 + Remotion 特效覆盖层 + FFmpeg 合成
+支持：
+- 单片段模式：裁剪 + 字幕
+- 多片段模式：多段裁剪 + 逐段字幕 + FFmpeg concat 拼接
+- Remotion 特效（可选）
 
-流程：
-1. FFmpeg 裁剪视频片段
-2. (可选) Remotion 渲染特效覆盖层（透明 WebM）
-3. FFmpeg 合成最终视频（叠加特效 + 或 ASS 字幕）
+流程（多片段）：
+1. 逐段 FFmpeg 裁剪
+2. 逐段 ASS 字幕生成 + 烧录
+3. FFmpeg concat 拼接所有片段为最终视频
 """
 import os
 import json
 import subprocess
 
 
-# Remotion 项目路径
 REMOTION_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "remotion_effects")
 
 
@@ -23,7 +23,6 @@ class RenderSkill:
     """视频渲染技能"""
 
     def __init__(self):
-        # 检查 FFmpeg
         try:
             result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, timeout=5)
             version_line = result.stdout.split("\n")[0] if result.stdout else "unknown"
@@ -31,7 +30,6 @@ class RenderSkill:
         except Exception as e:
             print(f"[RenderSkill] ⚠️ FFmpeg 不可用: {e}")
 
-        # 检查 Remotion
         self._remotion_available = os.path.exists(os.path.join(REMOTION_DIR, "node_modules"))
         if self._remotion_available:
             print(f"[RenderSkill] Remotion: {REMOTION_DIR} ✓")
@@ -44,59 +42,107 @@ class RenderSkill:
 
         Args:
             video_path: 原始视频文件路径
-            analysis: {start, end, hook_text}
+            analysis: 分析结果，支持两种格式：
+                - 多片段: {"clips": [{"start": 1.0, "end": 5.0, "hook_text": "..."}, ...]}
+                - 单片段: {"start": 1.0, "end": 5.0, "hook_text": "..."}
             output_dir: 输出目录
-            effects: 可选特效配置 {"caption_style": "spring", "gradient": True, ...}
+            effects: 可选特效配置
 
         Returns:
             渲染后的视频文件路径
         """
         os.makedirs(output_dir, exist_ok=True)
 
-        start = float(analysis.get("start", 0))
-        end = float(analysis.get("end", 0))
-        hook_text = analysis.get("hook_text", "")
-        duration = end - start
+        # 统一为 clips 列表
+        clips = analysis.get("clips", [])
+        if not clips:
+            # 兼容旧的单片段格式
+            clips = [{
+                "start": float(analysis.get("start", 0)),
+                "end": float(analysis.get("end", 0)),
+                "hook_text": analysis.get("hook_text", "")
+            }]
 
-        print(f"[RenderSkill] 裁剪片段: {start}s - {end}s ({duration:.1f}s)")
-        print(f"[RenderSkill] 字幕文案: {hook_text}")
-
-        # 文件路径
-        clip_path = os.path.join(output_dir, "clip_raw.mp4")
         output_path = os.path.join(output_dir, "output_short.mp4")
 
-        # Step 1: 裁剪视频片段
-        print(f"[RenderSkill] Step 1: 裁剪视频...")
-        self._clip_video(video_path, start, end, clip_path)
-
-        # Step 2: 选择渲染模式
-        use_remotion = effects and self._remotion_available
-        if use_remotion:
-            print(f"[RenderSkill] Step 2: Remotion 特效渲染...")
-            overlay_path = os.path.join(output_dir, "effect_overlay.webm")
-            self._render_remotion_overlay(hook_text, duration, effects, overlay_path)
-
-            print(f"[RenderSkill] Step 3: FFmpeg 合成...")
-            self._composite_overlay(clip_path, overlay_path, output_path)
+        if len(clips) == 1:
+            # 单片段：直接裁剪+字幕
+            self._render_single(video_path, clips[0], output_path, output_dir, effects)
         else:
-            print(f"[RenderSkill] Step 2: ASS 字幕模式...")
-            ass_path = os.path.join(output_dir, "subtitle.ass")
-            self._generate_ass(hook_text, duration, ass_path)
-
-            print(f"[RenderSkill] Step 3: 烧录字幕...")
-            self._burn_subtitle(clip_path, ass_path, output_path)
-
-        # 清理中间文件
-        if os.path.exists(clip_path):
-            os.remove(clip_path)
+            # 多片段：逐段处理 + concat 拼接
+            self._render_multi(video_path, clips, output_path, output_dir, effects)
 
         if os.path.exists(output_path):
             file_size = os.path.getsize(output_path)
-            print(f"[RenderSkill] ✅ 渲染完成: {output_path} ({file_size / 1024:.1f} KB)")
+            print(f"[RenderSkill] ✅ 最终输出: {output_path} ({file_size / 1024:.1f} KB)")
         else:
             print(f"[RenderSkill] ❌ 渲染失败：输出文件不存在")
 
         return output_path
+
+    def _render_single(self, video_path: str, clip: dict, output_path: str,
+                       output_dir: str, effects: dict = None):
+        """渲染单个片段"""
+        start = float(clip["start"])
+        end = float(clip["end"])
+        hook_text = clip.get("hook_text", "")
+        duration = end - start
+
+        print(f"[RenderSkill] 片段: {start}s - {end}s ({duration:.1f}s)")
+        print(f"[RenderSkill] 字幕: {hook_text}")
+
+        clip_path = os.path.join(output_dir, "clip_raw.mp4")
+        self._clip_video(video_path, start, end, clip_path)
+
+        ass_path = os.path.join(output_dir, "subtitle.ass")
+        self._generate_ass(hook_text, duration, ass_path)
+        self._burn_subtitle(clip_path, ass_path, output_path)
+
+        # 清理
+        if os.path.exists(clip_path):
+            os.remove(clip_path)
+
+    def _render_multi(self, video_path: str, clips: list, output_path: str,
+                      output_dir: str, effects: dict = None):
+        """渲染多个片段并拼接"""
+        print(f"[RenderSkill] 多片段模式: {len(clips)} 个片段")
+
+        segment_paths = []
+        for i, clip in enumerate(clips):
+            start = float(clip["start"])
+            end = float(clip["end"])
+            hook_text = clip.get("hook_text", "")
+            duration = end - start
+
+            print(f"\n[RenderSkill] --- 片段 {i+1}/{len(clips)} ---")
+            print(f"  时间: {start}s - {end}s ({duration:.1f}s)")
+            print(f"  字幕: {hook_text}")
+
+            clip_path = os.path.join(output_dir, f"clip_{i}_raw.mp4")
+            ass_path = os.path.join(output_dir, f"subtitle_{i}.ass")
+            segment_path = os.path.join(output_dir, f"segment_{i}.mp4")
+
+            # 裁剪
+            self._clip_video(video_path, start, end, clip_path)
+
+            # 字幕
+            self._generate_ass(hook_text, duration, ass_path)
+            self._burn_subtitle(clip_path, ass_path, segment_path)
+
+            segment_paths.append(segment_path)
+
+            # 清理中间文件
+            if os.path.exists(clip_path):
+                os.remove(clip_path)
+
+        # FFmpeg concat 拼接
+        print(f"\n[RenderSkill] 拼接 {len(segment_paths)} 个片段...")
+        self._concat_videos(segment_paths, output_path, output_dir)
+
+        # 清理片段文件
+        for path in segment_paths:
+            if os.path.exists(path):
+                os.remove(path)
 
     # ========== FFmpeg 操作 ==========
 
@@ -141,45 +187,26 @@ Dialogue: 0,0:00:00.00,{end_h}:{end_m:02d}:{end_s:05.2f},Hook,,0,0,0,,{{\\fad(50
         ]
         self._run_cmd(cmd, "烧录字幕")
 
-    def _composite_overlay(self, video_path: str, overlay_path: str, output_path: str):
-        """将特效覆盖层叠加到视频上"""
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", video_path,
-            "-i", overlay_path,
-            "-filter_complex", "[0:v][1:v]overlay=0:0:shortest=1[out]",
-            "-map", "[out]", "-map", "0:a?",
-            "-c:v", "libx264", "-c:a", "copy", "-preset", "fast",
-            output_path
-        ]
-        self._run_cmd(cmd, "合成特效")
-
-    # ========== Remotion 渲染 ==========
-
-    def _render_remotion_overlay(self, text: str, duration: float, effects: dict, output_path: str):
-        """调用 Remotion CLI 渲染特效覆盖层"""
-        fps = 30
-        frames = int(duration * fps)
-
-        caption_style = effects.get("caption_style", "spring")
-
-        props = json.dumps({
-            "text": text,
-            "style": caption_style,
-        }, ensure_ascii=False)
+    def _concat_videos(self, video_paths: list, output_path: str, output_dir: str):
+        """FFmpeg concat 拼接多个视频"""
+        # 创建 concat 列表文件
+        concat_list = os.path.join(output_dir, "concat_list.txt")
+        with open(concat_list, "w", encoding="utf-8") as f:
+            for path in video_paths:
+                abs_path = os.path.abspath(path).replace("\\", "/")
+                f.write(f"file '{abs_path}'\n")
 
         cmd = [
-            "npx", "remotion", "render",
-            "src/index.tsx", "CaptionOverlay",
-            "--output", os.path.abspath(output_path),
-            f"--props={props}",
-            f"--frames=0-{frames - 1}",
-            "--codec=vp9",
-            "--image-format=png",
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+            "-i", concat_list,
+            "-c:v", "libx264", "-c:a", "aac",
+            "-preset", "fast", output_path
         ]
+        self._run_cmd(cmd, "拼接")
 
-        print(f"[RenderSkill] Remotion: {frames} 帧, style={caption_style}")
-        self._run_cmd(cmd, "Remotion 渲染", cwd=REMOTION_DIR, timeout=300)
+        # 清理
+        if os.path.exists(concat_list):
+            os.remove(concat_list)
 
     # ========== 工具方法 ==========
 

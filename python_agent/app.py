@@ -173,7 +173,7 @@ def create_app():
                         agent_video = gr.Video(label="📤 上传视频")
                         agent_prompt = gr.Textbox(
                             label="💬 指令（可选）",
-                            value="帮我从这个视频中提取最精彩的片段做成短视频",
+                            value="提取视频中多个精彩片段，加上亮点字幕，拼接成一个短视频",
                             lines=2
                         )
                         agent_btn = gr.Button("🚀 开始处理", variant="primary", size="lg")

@@ -22,22 +22,22 @@ from openai import OpenAI
 # 发送给 Qwen 的提示词模板
 ANALYSIS_PROMPT = """你是一个爆款短视频内容专家。
 
-请从以下视频转录文本中，选出一段最有"爆款潜力"的片段。
+请从以下视频转录文本中，选出多段最有"爆款潜力"的片段，用于拼接成一个精彩短视频。
 
 要求：
-1. 片段长度在 15-30 秒之间
-2. 内容要有吸引力，能在前 3 秒抓住注意力
-3. 返回 JSON 格式，包含以下字段：
-   - start: 开始时间（秒）
-   - end: 结束时间（秒）
-   - hook_text: 精简后的金句文案（用于字幕显示）
+1. 选出 3-5 个精彩片段（根据视频长度灵活调整，短视频可以少选）
+2. 每个片段长度 5-15 秒
+3. 片段之间不要重叠
+4. 按时间顺序排列
+5. 每个片段配一个精简的亮点字幕（用于字幕显示）
+6. 返回 JSON 格式
 
 转录文本：
 {transcript}
 
 请只返回纯 JSON 对象，不要使用 markdown 代码块（```）包裹，不要添加任何其他文字说明。
-返回格式示例：
-{"start": 12.5, "end": 28.3, "hook_text": "你的金句文案"}"""
+返回格式：
+{"clips": [{"start": 12.5, "end": 22.3, "hook_text": "亮点字幕1"}, {"start": 35.0, "end": 48.5, "hook_text": "亮点字幕2"}]}"""
 
 
 class AnalysisSkill:
@@ -141,8 +141,15 @@ class AnalysisSkill:
             raise ValueError("LLM 返回的 content 和 reasoning_content 都为空")
 
         print(f"[AnalysisSkill] 分析完成 ✓")
-        print(f"  金句时段: {result.get('start', '?')}s - {result.get('end', '?')}s")
-        print(f"  金句文案: {result.get('hook_text', '?')}")
+        clips = result.get("clips", [])
+        if clips:
+            print(f"  共提取 {len(clips)} 个片段:")
+            for i, clip in enumerate(clips):
+                print(f"  [{i+1}] {clip.get('start', '?')}s - {clip.get('end', '?')}s | {clip.get('hook_text', '?')}")
+        else:
+            # 兼容旧格式（单片段）
+            print(f"  金句时段: {result.get('start', '?')}s - {result.get('end', '?')}s")
+            print(f"  金句文案: {result.get('hook_text', '?')}")
 
         return result
 
