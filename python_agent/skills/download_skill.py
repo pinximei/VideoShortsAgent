@@ -64,7 +64,6 @@ class DownloadSkill:
                 "--output", output_template,
                 "--remote-components", "ejs:github",
                 "--no-playlist",
-                "--print-json",
             ]
 
             if browser:
@@ -76,52 +75,34 @@ class DownloadSkill:
             cmd.append(url)
 
             try:
+                # 合并 stdout+stderr 确保看到所有输出
                 result = subprocess.run(
-                    cmd, capture_output=True, text=True,
-                    timeout=600, cwd=output_dir
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    text=True, timeout=600
                 )
 
-                if result.returncode == 0:
-                    # 从 --print-json 输出解析信息
-                    try:
-                        # print-json 输出可能在最后一行
-                        json_lines = [l for l in result.stdout.strip().split("\n") if l.startswith("{")]
-                        if json_lines:
-                            info = json.loads(json_lines[-1])
-                            title = info.get("title", "unknown")
-                            duration = info.get("duration", 0)
-                        else:
-                            title = "unknown"
-                            duration = 0
-                    except Exception:
-                        title = "unknown"
-                        duration = 0
+                output = result.stdout or ""
 
-                    # 查找下载的文件
-                    downloaded = glob.glob(os.path.join(output_dir, "source_video.*"))
-                    if downloaded:
-                        filename = downloaded[0]
-                        file_size = os.path.getsize(filename) / (1024 * 1024)
+                # 检查是否有下载文件生成（最可靠的判断）
+                downloaded = glob.glob(os.path.join(output_dir, "source_video.*"))
+                if downloaded:
+                    filename = downloaded[0]
+                    file_size = os.path.getsize(filename) / (1024 * 1024)
+                    print(f"[DownloadSkill] ✅ 下载完成")
+                    print(f"  文件: {filename} ({file_size:.1f} MB)")
+                    return filename
 
-                        print(f"[DownloadSkill] ✅ 下载完成")
-                        print(f"  标题: {title}")
-                        print(f"  时长: {duration}s ({duration // 60}分{duration % 60}秒)")
-                        print(f"  文件: {filename} ({file_size:.1f} MB)")
-                        return filename
-                    else:
-                        last_error = "下载完成但未找到输出文件"
-                        continue
+                # 没有文件，判断错误类型
+                error_lower = output.lower()
+                if any(k in error_lower for k in ["cookie", "database", "permission", "dpapi", "sign in", "not a bot", "decrypt"]):
+                    browser_name = browser or "无cookies"
+                    print(f"[DownloadSkill] ⚠️ {browser_name} 失败: {output.strip()[-150:]}")
+                    last_error = output.strip()[-300:]
+                    continue
                 else:
-                    stderr = result.stderr or ""
-                    error_lower = stderr.lower()
-                    if any(k in error_lower for k in ["cookie", "database", "permission", "dpapi", "sign in", "not a bot", "decrypt"]):
-                        browser_name = browser or "无cookies"
-                        print(f"[DownloadSkill] ⚠️ {browser_name} 失败: {stderr[:150]}")
-                        last_error = stderr[:300]
-                        continue
-                    else:
-                        last_error = stderr[:300]
-                        continue
+                    last_error = output.strip()[-300:]
+                    print(f"[DownloadSkill] ⚠️ 下载失败: {output.strip()[-150:]}")
+                    continue
 
             except subprocess.TimeoutExpired:
                 last_error = "下载超时（600秒）"
