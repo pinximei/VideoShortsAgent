@@ -15,7 +15,6 @@ import traceback
 import threading
 import queue
 import io
-import gradio as gr
 
 # ========== Agent 引用 ==========
 _agent = None
@@ -155,6 +154,7 @@ def process_pipeline(video_path):
 # ========== 构建界面 ==========
 
 def create_app():
+    import gradio as gr
 
     with gr.Blocks(
         title="VideoShortsAgent",
@@ -235,6 +235,7 @@ def create_app():
 
 if __name__ == "__main__":
     init_agent()
+    import gradio as gr
     app = create_app()
     app.launch(
         server_name="0.0.0.0",
