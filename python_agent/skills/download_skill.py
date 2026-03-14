@@ -81,14 +81,24 @@ class DownloadSkill:
                     return filename
             except Exception as e:
                 last_error = e
-                error_msg = str(e)
-                if "cookie" in error_msg.lower() or "database" in error_msg.lower():
-                    print(f"[DownloadSkill] ⚠️ {browser[0] if browser else '无cookies'} 失败: {error_msg[:100]}")
+                error_msg = str(e).lower()
+                if "cookie" in error_msg or "database" in error_msg or "permission" in error_msg:
+                    browser_name = browser[0] if browser else '无cookies'
+                    print(f"[DownloadSkill] ⚠️ {browser_name} 失败: {str(e)[:100]}")
+                    continue
+                elif "sign in" in error_msg or "not a bot" in error_msg:
+                    print(f"[DownloadSkill] ⚠️ YouTube 要求登录验证，尝试下一种方式...")
                     continue
                 else:
-                    raise  # 非 cookies 相关错误直接抛出
+                    raise
 
-        raise RuntimeError(f"所有下载方式均失败: {last_error}")
+        # 所有方式失败，给出具体指引
+        raise RuntimeError(
+            "YouTube 下载失败。解决方法：\n"
+            "1. 关闭 Chrome 浏览器后重试（Chrome 运行时 cookies 被锁定）\n"
+            "2. 或者用 Bilibili 等其他平台链接\n"
+            "3. 或者手动下载视频后上传"
+        )
 
     @staticmethod
     def _progress_hook(d):
