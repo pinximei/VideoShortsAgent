@@ -2,9 +2,12 @@
 DownloadSkill - 视频下载技能
 
 支持从 YouTube 等平台下载视频。
-使用 yt-dlp 库实现，支持 URL 自动识别。
+使用 yt-dlp (CLI) 实现，支持 URL 自动识别。
 """
 import os
+import subprocess
+import glob
+import json
 
 
 class DownloadSkill:
@@ -12,10 +15,17 @@ class DownloadSkill:
 
     def __init__(self):
         try:
-            import yt_dlp
-            self._available = True
-            print(f"[DownloadSkill] yt-dlp 已就绪 ✓")
-        except ImportError:
+            result = subprocess.run(
+                ["C:\\Python310\\python.exe", "-m", "yt_dlp", "--version"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                self._available = True
+                print(f"[DownloadSkill] yt-dlp {result.stdout.strip()} 已就绪 ✓")
+            else:
+                self._available = False
+                print(f"[DownloadSkill] ⚠️ yt-dlp 不可用")
+        except Exception:
             self._available = False
             print(f"[DownloadSkill] ⚠️ yt-dlp 未安装（pip install yt-dlp）")
 
@@ -34,77 +44,96 @@ class DownloadSkill:
         if not self._available:
             raise RuntimeError("yt-dlp 未安装，请运行: pip install yt-dlp")
 
-        import yt_dlp
-
         output_template = os.path.join(output_dir, "source_video.%(ext)s")
-
-        base_opts = {
-            "format": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best",
-            "outtmpl": output_template,
-            "merge_output_format": "mp4",
-            "quiet": False,
-            "no_warnings": False,
-            "progress_hooks": [self._progress_hook],
-        }
 
         print(f"[DownloadSkill] 开始下载: {url}")
 
-        # 依次尝试不同浏览器 cookies，解决浏览器运行时数据库锁定问题
-        browsers = [("edge",), ("chrome",), ("firefox",), None]
+        # 清理之前下载的文件
+        for f in glob.glob(os.path.join(output_dir, "source_video.*")):
+            os.remove(f)
+
+        # Firefox 优先（无 DPAPI 问题），Chrome 次之
+        browsers = ["firefox", "chrome", "edge", None]
         last_error = None
 
         for browser in browsers:
-            opts = base_opts.copy()
+            cmd = [
+                "C:\\Python310\\python.exe", "-m", "yt_dlp",
+                "--format", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+                "--merge-output-format", "mp4",
+                "--output", output_template,
+                "--remote-components", "ejs:github",
+                "--no-playlist",
+                "--print-json",
+            ]
+
             if browser:
-                opts["cookiesfrombrowser"] = browser
-                print(f"[DownloadSkill] 尝试使用 {browser[0]} cookies...")
+                cmd.extend(["--cookies-from-browser", browser])
+                print(f"[DownloadSkill] 尝试使用 {browser} cookies...")
             else:
                 print(f"[DownloadSkill] 尝试无 cookies 模式...")
 
+            cmd.append(url)
+
             try:
-                with yt_dlp.YoutubeDL(opts) as ydl:
-                    info = ydl.extract_info(url, download=True)
-                    title = info.get("title", "unknown")
-                    duration = info.get("duration", 0)
+                result = subprocess.run(
+                    cmd, capture_output=True, text=True,
+                    timeout=600, cwd=output_dir
+                )
 
-                    filename = ydl.prepare_filename(info)
-                    if not os.path.exists(filename):
-                        filename = os.path.splitext(filename)[0] + ".mp4"
+                if result.returncode == 0:
+                    # 从 --print-json 输出解析信息
+                    try:
+                        # print-json 输出可能在最后一行
+                        json_lines = [l for l in result.stdout.strip().split("\n") if l.startswith("{")]
+                        if json_lines:
+                            info = json.loads(json_lines[-1])
+                            title = info.get("title", "unknown")
+                            duration = info.get("duration", 0)
+                        else:
+                            title = "unknown"
+                            duration = 0
+                    except Exception:
+                        title = "unknown"
+                        duration = 0
 
-                    file_size = os.path.getsize(filename) / (1024 * 1024)
+                    # 查找下载的文件
+                    downloaded = glob.glob(os.path.join(output_dir, "source_video.*"))
+                    if downloaded:
+                        filename = downloaded[0]
+                        file_size = os.path.getsize(filename) / (1024 * 1024)
 
-                    print(f"[DownloadSkill] ✅ 下载完成")
-                    print(f"  标题: {title}")
-                    print(f"  时长: {duration}s ({duration // 60}分{duration % 60}秒)")
-                    print(f"  文件: {filename} ({file_size:.1f} MB)")
-
-                    return filename
-            except Exception as e:
-                last_error = e
-                error_msg = str(e).lower()
-                if "cookie" in error_msg or "database" in error_msg or "permission" in error_msg:
-                    browser_name = browser[0] if browser else '无cookies'
-                    print(f"[DownloadSkill] ⚠️ {browser_name} 失败: {str(e)[:100]}")
-                    continue
-                elif "sign in" in error_msg or "not a bot" in error_msg:
-                    print(f"[DownloadSkill] ⚠️ YouTube 要求登录验证，尝试下一种方式...")
-                    continue
+                        print(f"[DownloadSkill] ✅ 下载完成")
+                        print(f"  标题: {title}")
+                        print(f"  时长: {duration}s ({duration // 60}分{duration % 60}秒)")
+                        print(f"  文件: {filename} ({file_size:.1f} MB)")
+                        return filename
+                    else:
+                        last_error = "下载完成但未找到输出文件"
+                        continue
                 else:
-                    raise
+                    stderr = result.stderr or ""
+                    error_lower = stderr.lower()
+                    if any(k in error_lower for k in ["cookie", "database", "permission", "dpapi", "sign in", "not a bot", "decrypt"]):
+                        browser_name = browser or "无cookies"
+                        print(f"[DownloadSkill] ⚠️ {browser_name} 失败: {stderr[:150]}")
+                        last_error = stderr[:300]
+                        continue
+                    else:
+                        last_error = stderr[:300]
+                        continue
 
-        # 所有方式失败，给出具体指引
+            except subprocess.TimeoutExpired:
+                last_error = "下载超时（600秒）"
+                continue
+            except Exception as e:
+                last_error = str(e)
+                continue
+
         raise RuntimeError(
-            "YouTube 下载失败。解决方法：\n"
-            "1. 关闭 Chrome 浏览器后重试（Chrome 运行时 cookies 被锁定）\n"
+            f"下载失败: {last_error}\n"
+            "解决方法：\n"
+            "1. 安装 Firefox 并登录 YouTube\n"
             "2. 或者用 Bilibili 等其他平台链接\n"
             "3. 或者手动下载视频后上传"
         )
-
-    @staticmethod
-    def _progress_hook(d):
-        if d["status"] == "downloading":
-            percent = d.get("_percent_str", "?%")
-            speed = d.get("_speed_str", "?")
-            print(f"\r[DownloadSkill] 下载中... {percent} ({speed})", end="", flush=True)
-        elif d["status"] == "finished":
-            print(f"\n[DownloadSkill] 下载完成，正在处理...")
