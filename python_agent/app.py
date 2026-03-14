@@ -138,47 +138,50 @@ def process_full_pipeline(video_path):
     return transcript_text, analysis_text, render_text, output_video
 
 
-def process_from_text(transcript_text, video_path):
-    """从手动输入的转录文字开始处理（跳过转录步骤）"""
-    if not transcript_text or not transcript_text.strip():
-        return "请先输入转录文字", "", None
-
-    print(f"[文字处理] 收到 {len(transcript_text)} 字符的转录文字")
+def process_from_text(transcript_text, json_file, video_path):
+    """从手动输入的转录文字或上传的 JSON 文件开始处理"""
 
     output_dir = os.path.join("output", "gradio_task")
     os.makedirs(output_dir, exist_ok=True)
-
-    # 将文字保存为 transcript.json 供 AnalysisSkill 使用
-    # 支持两种格式：
-    #   1. 纯文字 → 包装成单条记录
-    #   2. [时间] 文字 → 解析为带时间戳的结构
-    import re
-    segments = []
-    for line in transcript_text.strip().split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        # 尝试匹配 [1.0s - 3.0s] 文字 格式
-        match = re.match(r'\[(\d+\.?\d*)s?\s*-\s*(\d+\.?\d*)s?\]\s*(.*)', line)
-        if match:
-            segments.append({
-                "start": float(match.group(1)),
-                "end": float(match.group(2)),
-                "text": match.group(3)
-            })
-        else:
-            # 纯文字，给个默认时间
-            segments.append({
-                "start": len(segments) * 5.0,
-                "end": (len(segments) + 1) * 5.0,
-                "text": line
-            })
-
     transcript_path = os.path.join(output_dir, "transcript.json")
-    with open(transcript_path, "w", encoding="utf-8") as f:
-        json.dump(segments, f, ensure_ascii=False, indent=2)
 
-    print(f"[文字处理] 已保存 {len(segments)} 个片段到 {transcript_path}")
+    # 优先使用上传的 JSON 文件
+    if json_file is not None:
+        import shutil
+        src = json_file if isinstance(json_file, str) else json_file.name
+        shutil.copy2(src, transcript_path)
+        with open(transcript_path, "r", encoding="utf-8") as f:
+            segments = json.load(f)
+        print(f"[文字处理] 从 JSON 文件加载了 {len(segments)} 个片段")
+
+    elif transcript_text and transcript_text.strip():
+        # 从粘贴的文字解析
+        print(f"[文字处理] 收到 {len(transcript_text)} 字符的转录文字")
+        import re
+        segments = []
+        for line in transcript_text.strip().split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            match = re.match(r'\[(\d+\.?\d*)s?\s*-\s*(\d+\.?\d*)s?\]\s*(.*)', line)
+            if match:
+                segments.append({
+                    "start": float(match.group(1)),
+                    "end": float(match.group(2)),
+                    "text": match.group(3)
+                })
+            else:
+                segments.append({
+                    "start": len(segments) * 5.0,
+                    "end": (len(segments) + 1) * 5.0,
+                    "text": line
+                })
+        with open(transcript_path, "w", encoding="utf-8") as f:
+            json.dump(segments, f, ensure_ascii=False, indent=2)
+        print(f"[文字处理] 已保存 {len(segments)} 个片段")
+
+    else:
+        return "请上传 JSON 文件或输入转录文字", "", None
 
     # 分析金句
     print("[文字处理] 正在分析金句...")
@@ -272,9 +275,13 @@ def create_app():
                     with gr.Column(scale=1):
                         text_input = gr.Textbox(
                             label="📝 粘贴转录文字",
-                            lines=12,
+                            lines=10,
                             placeholder="支持两种格式：\n1. 纯文字（每行一句）\n2. [1.0s - 3.0s] 带时间戳文字",
                             interactive=True
+                        )
+                        json_input = gr.File(
+                            label="📁 或上传 JSON 文件（优先使用）",
+                            file_types=[".json"]
                         )
                         text_video_input = gr.Video(label="📤 上传视频（可选，用于渲染）")
                         btn_from_text = gr.Button("🚀 分析并处理", variant="primary", size="lg")
@@ -290,7 +297,7 @@ def create_app():
 
                 btn_from_text.click(
                     fn=process_from_text,
-                    inputs=[text_input, text_video_input],
+                    inputs=[text_input, json_input, text_video_input],
                     outputs=[text_analysis_output, text_render_output, text_video_output]
                 )
 
