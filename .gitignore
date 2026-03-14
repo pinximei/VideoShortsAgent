@@ -25,8 +25,11 @@ Thumbs.db
 # Tasks runtime
 tasks/
 
-# Artifacts
-*.mp4
-*.mp3
-*.wav
+# Runtime output
+output/
+
+# Test audio (auto-generated)
+test_audio.wav
+
+# Large media (keep test_video if user provides one)
 !test_video.*
