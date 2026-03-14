@@ -123,8 +123,18 @@ class AnalysisSkill:
         print(f"    {result_text}")
         print(f"{'='*60}\n")
 
-        # 4. 解析返回结果
-        result = json.loads(result_text)
+        # 4. 解析返回结果（清理可能的 markdown 代码块标记）
+        clean_text = result_text.strip()
+        if clean_text.startswith("```"):
+            # 去掉 ```json ... ``` 包裹
+            lines = clean_text.split("\n")
+            lines = [l for l in lines if not l.strip().startswith("```")]
+            clean_text = "\n".join(lines).strip()
+
+        result = json.loads(clean_text)
+
+        if not isinstance(result, dict):
+            raise ValueError(f"LLM 返回的不是 JSON 对象，而是 {type(result).__name__}: {result_text[:200]}")
 
         print(f"[AnalysisSkill] 分析完成 ✓")
         print(f"  金句时段: {result.get('start', '?')}s - {result.get('end', '?')}s")
