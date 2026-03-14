@@ -4,21 +4,16 @@ VideoShortsAgent CLI 入口
 使用方法：
     python -m python_agent.main --input video.mp4
     python -m python_agent.main --input video.mp4 --model tiny
+    python -m python_agent.main --input video.mp4 --prompt "挑一段最搞笑的片段"
 """
 import argparse
 import sys
 import os
 
-# 确保项目根目录在 Python 路径中
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
-
 
 def main():
-    # 解析命令行参数
     parser = argparse.ArgumentParser(
-        description="VideoShortsAgent - AI 视频自动再加工"
+        description="VideoShortsAgent - AI 驱动的短视频自动加工"
     )
     parser.add_argument(
         "--input", "-i",
@@ -36,6 +31,11 @@ def main():
         choices=["tiny", "base", "small", "medium", "large"],
         help="Whisper 模型大小（默认: base）"
     )
+    parser.add_argument(
+        "--prompt", "-p",
+        default="帮我把这个视频中最有爆款潜力的片段做成短视频",
+        help="给 Agent 的指令（可自定义）"
+    )
     args = parser.parse_args()
 
     # 检查输入文件
@@ -45,15 +45,23 @@ def main():
 
     # 创建并运行 Agent
     from python_agent.agent import VideoShortsAgent
+    from python_agent.config import get_dashscope_api_key
 
-    agent = VideoShortsAgent(whisper_model=args.model)
-    result = agent.run(args.input, args.output)
+    api_key = get_dashscope_api_key()
+    agent = VideoShortsAgent(api_key=api_key, whisper_model=args.model)
 
-    # 打印最终结果
+    # 用户的指令交给 Agent 自主决策
+    result = agent.run(
+        user_message=args.prompt,
+        video_path=args.input,
+        output_base=args.output
+    )
+
+    # 打印结果
     if result["status"] == "success":
-        print("\n🎉 处理完成！")
+        print(f"\n🎉 完成！共 {len(result['steps'])} 步")
     else:
-        print(f"\n💥 处理失败: {result.get('error', '未知错误')}")
+        print(f"\n⚠️ 状态: {result['status']}")
         sys.exit(1)
 
 
