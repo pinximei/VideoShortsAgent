@@ -45,6 +45,7 @@ class DownloadSkill:
             "quiet": False,
             "no_warnings": False,
             "progress_hooks": [self._progress_hook],
+            "cookiesfrombrowser": ("chrome",),  # 从 Chrome 提取 cookies 绕过反爬
         }
 
         print(f"[DownloadSkill] 开始下载: {url}")
