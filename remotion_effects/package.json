@@ -1,0 +1,21 @@
+{
+  "name": "remotion-effects",
+  "version": "1.0.0",
+  "description": "VideoShortsAgent 特效渲染引擎",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.tsx",
+    "render": "remotion render src/index.tsx",
+    "render:caption": "remotion render src/index.tsx CaptionOverlay --codec=vp9 --image-format=png",
+    "render:gradient": "remotion render src/index.tsx GradientBackground --codec=vp9 --image-format=png"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

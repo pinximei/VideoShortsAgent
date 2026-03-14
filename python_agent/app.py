@@ -1,7 +1,9 @@
 """
 VideoShortsAgent Gradio Web 界面
 
-提供可视化的操作界面：上传视频 → 查看转录 → 分析金句 → 生成短视频
+两种模式：
+- Agent 模式：LLM 自主决策，展示思考过程
+- Pipeline 模式：手动分步执行
 
 启动方式：
     python -m python_agent.app
@@ -10,209 +12,143 @@ import os
 import sys
 import json
 import traceback
+import threading
+import queue
+import io
 
-# ========== 全局 Skill 引用（启动后再加载） ==========
-_transcribe_skill = None
-_analysis_skill = None
-_render_skill = None
+# ========== Agent 引用 ==========
+_agent = None
 
 
-def init_skills():
-    """在 Gradio 启动后加载 Skills"""
-    global _transcribe_skill, _analysis_skill, _render_skill
-
+def init_agent():
+    """初始化 Agent"""
+    global _agent
     from python_agent.config import get_dashscope_api_key
-    from python_agent.skills.transcribe_skill import TranscribeSkill
-    from python_agent.skills.analysis_skill import AnalysisSkill
-    from python_agent.skills.render_skill import RenderSkill
-
-    print("=" * 50)
-    print("  正在初始化 Skills...")
-    print("=" * 50)
+    from python_agent.agent import VideoShortsAgent
 
     api_key = get_dashscope_api_key()
-    _transcribe_skill = TranscribeSkill(model_path="./faster-whisper-large-v3")
-    _analysis_skill = AnalysisSkill(api_key=api_key, model="qwen3.5-flash")
-    _render_skill = RenderSkill()
+    _agent = VideoShortsAgent(
+        api_key=api_key,
+        llm_model="qwen3.5-flash",
+        whisper_model="./faster-whisper-large-v3"
+    )
 
-    print("  所有 Skills 初始化完成 ✅")
-    print("=" * 50)
+
+class LogCapture:
+    """捕获 print 输出用于实时显示"""
+
+    def __init__(self):
+        self.logs = []
+        self._old_stdout = None
+
+    def start(self):
+        self._old_stdout = sys.stdout
+        sys.stdout = self
+
+    def stop(self):
+        if self._old_stdout:
+            sys.stdout = self._old_stdout
+            self._old_stdout = None
+
+    def write(self, text):
+        if text.strip():
+            self.logs.append(text)
+        if self._old_stdout:
+            self._old_stdout.write(text)
+
+    def flush(self):
+        if self._old_stdout:
+            self._old_stdout.flush()
+
+    def get_text(self):
+        return "".join(self.logs)
 
 
 # ========== 处理函数 ==========
 
-def process_transcribe(video_path):
-    """Step 1: 转录视频"""
+def process_agent(video_path, user_prompt):
+    """Agent 模式：LLM 自主完成整个流程"""
     if not video_path:
-        return "请先上传视频", None
+        return "请先上传视频", "", None
 
     if isinstance(video_path, dict):
         video_path = video_path.get("video", video_path.get("name", ""))
 
-    print(f"[转录] 视频路径: {video_path}")
+    if not user_prompt or not user_prompt.strip():
+        user_prompt = "帮我从这个视频中提取最精彩的片段做成短视频"
 
-    output_dir = os.path.join("output", "gradio_task")
-    os.makedirs(output_dir, exist_ok=True)
-
-    try:
-        result_path = _transcribe_skill.execute(video_path, output_dir)
-
-        with open(result_path, "r", encoding="utf-8") as f:
-            transcript = json.load(f)
-
-        text_lines = []
-        for seg in transcript:
-            text_lines.append(f"[{seg['start']:.1f}s - {seg['end']:.1f}s] {seg['text']}")
-
-        display_text = "\n".join(text_lines)
-        return display_text, result_path
-
-    except Exception as e:
-        traceback.print_exc()
-        return f"❌ 转录失败: {e}", None
-
-
-def process_analyze(transcript_path):
-    """Step 2: 分析金句"""
-    if not transcript_path:
-        return "请先完成转录"
+    # 捕获 Agent 日志
+    capture = LogCapture()
+    capture.start()
 
     try:
-        result = _analysis_skill.execute(transcript_path)
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        result = _agent.run(
+            user_message=user_prompt,
+            video_path=video_path
+        )
     except Exception as e:
         traceback.print_exc()
-        return f"❌ 分析失败: {e}"
+        capture.stop()
+        return f"❌ Agent 执行失败: {e}", capture.get_text(), None
+    finally:
+        capture.stop()
+
+    # 提取结果
+    agent_reply = result.get("reply", "")
+    log_text = capture.get_text()
+    task_id = result.get("task_id", "")
+
+    # 查找输出视频
+    output_video = None
+    task_dir = os.path.join("output", f"task_{task_id}")
+    video_file = os.path.join(task_dir, "output_short.mp4")
+    if os.path.exists(video_file):
+        output_video = video_file
+
+    return agent_reply, log_text, output_video
 
 
-def process_full_pipeline(video_path):
-    """一键处理：转录 → 分析 → 渲染"""
+def process_pipeline(video_path):
+    """Pipeline 模式：分步执行"""
     if not video_path:
         return "请先上传视频", "", "", None
 
     if isinstance(video_path, dict):
         video_path = video_path.get("video", video_path.get("name", ""))
 
-    print(f"[一键处理] 视频路径: {video_path}")
+    capture = LogCapture()
+    capture.start()
 
-    output_dir = os.path.join("output", "gradio_task")
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Step 1: 转录
-    print("[一键处理] Step 1/3: 转录...")
     try:
-        transcript_path = _transcribe_skill.execute(video_path, output_dir)
-        with open(transcript_path, "r", encoding="utf-8") as f:
-            transcript = json.load(f)
-
-        transcript_text = "\n".join(
-            f"[{s['start']:.1f}s - {s['end']:.1f}s] {s['text']}" for s in transcript
+        result = _agent.run(
+            user_message="帮我从这个视频中提取最精彩的片段做成短视频",
+            video_path=video_path
         )
     except Exception as e:
         traceback.print_exc()
-        return f"❌ 转录失败: {e}", "", "", None
+        capture.stop()
+        return f"❌ 处理失败: {e}", "", capture.get_text(), None
+    finally:
+        capture.stop()
 
-    # Step 2: 分析
-    print("[一键处理] Step 2/3: 分析金句...")
-    try:
-        analysis = _analysis_skill.execute(transcript_path)
-        analysis_text = json.dumps(analysis, ensure_ascii=False, indent=2)
-    except Exception as e:
-        traceback.print_exc()
-        return transcript_text, f"❌ 分析失败: {e}", "", None
+    agent_reply = result.get("reply", "")
+    log_text = capture.get_text()
+    task_id = result.get("task_id", "")
 
-    # Step 3: 渲染
-    print("[一键处理] Step 3/3: 渲染...")
-    try:
-        output_video = _render_skill.execute(video_path, analysis, output_dir)
-        render_text = f"✅ 输出: {output_video}"
-    except Exception as e:
-        traceback.print_exc()
-        render_text = f"❌ 渲染失败: {e}"
-        output_video = None
-
-    if output_video and not os.path.exists(output_video):
-        output_video = None
-
-    print("[一键处理] 完成！")
-    return transcript_text, analysis_text, render_text, output_video
-
-
-def process_from_text(transcript_text, json_file, video_path):
-    """从手动输入的转录文字或上传的 JSON 文件开始处理"""
-
-    output_dir = os.path.join("output", "gradio_task")
-    os.makedirs(output_dir, exist_ok=True)
-    transcript_path = os.path.join(output_dir, "transcript.json")
-
-    # 优先使用上传的 JSON 文件
-    if json_file is not None:
-        import shutil
-        src = json_file if isinstance(json_file, str) else json_file.name
-        shutil.copy2(src, transcript_path)
-        with open(transcript_path, "r", encoding="utf-8") as f:
-            segments = json.load(f)
-        print(f"[文字处理] 从 JSON 文件加载了 {len(segments)} 个片段")
-
-    elif transcript_text and transcript_text.strip():
-        # 从粘贴的文字解析
-        print(f"[文字处理] 收到 {len(transcript_text)} 字符的转录文字")
-        import re
-        segments = []
-        for line in transcript_text.strip().split("\n"):
-            line = line.strip()
-            if not line:
-                continue
-            match = re.match(r'\[(\d+\.?\d*)s?\s*-\s*(\d+\.?\d*)s?\]\s*(.*)', line)
-            if match:
-                segments.append({
-                    "start": float(match.group(1)),
-                    "end": float(match.group(2)),
-                    "text": match.group(3)
-                })
-            else:
-                segments.append({
-                    "start": len(segments) * 5.0,
-                    "end": (len(segments) + 1) * 5.0,
-                    "text": line
-                })
-        with open(transcript_path, "w", encoding="utf-8") as f:
-            json.dump(segments, f, ensure_ascii=False, indent=2)
-        print(f"[文字处理] 已保存 {len(segments)} 个片段")
-
-    else:
-        return "请上传 JSON 文件或输入转录文字", "", None
-
-    # 分析金句
-    print("[文字处理] 正在分析金句...")
-    try:
-        analysis = _analysis_skill.execute(transcript_path)
-        analysis_text = json.dumps(analysis, ensure_ascii=False, indent=2)
-    except Exception as e:
-        traceback.print_exc()
-        return f"❌ 分析失败: {e}", "", None
-
-    # 渲染（如果有视频）
-    render_text = ""
     output_video = None
-    if video_path:
-        if isinstance(video_path, dict):
-            video_path = video_path.get("video", video_path.get("name", ""))
-        print("[文字处理] 正在渲染...")
-        try:
-            output_video = _render_skill.execute(video_path, analysis, output_dir)
-            render_text = f"✅ 输出: {output_video}"
-        except Exception as e:
-            render_text = f"❌ 渲染失败: {e}"
-            output_video = None
+    task_dir = os.path.join("output", f"task_{task_id}")
+    video_file = os.path.join(task_dir, "output_short.mp4")
+    if os.path.exists(video_file):
+        output_video = video_file
 
-        if output_video and not os.path.exists(output_video):
-            output_video = None
-    else:
-        render_text = "⚠️ 未上传视频，跳过渲染"
+    # 提取步骤信息
+    steps = result.get("steps", [])
+    steps_text = "\n".join(
+        f"Step {s['iteration']}: {s['tool']}({json.dumps(s['args'], ensure_ascii=False)[:100]})"
+        for s in steps
+    )
 
-    print("[文字处理] 完成！")
-    return analysis_text, render_text, output_video
+    return agent_reply, steps_text, log_text, output_video
 
 
 # ========== 构建界面 ==========
@@ -220,98 +156,97 @@ def process_from_text(transcript_text, json_file, video_path):
 def create_app():
     import gradio as gr
 
-    with gr.Blocks(title="VideoShortsAgent") as app:
+    with gr.Blocks(
+        title="VideoShortsAgent",
+    ) as app:
 
-        gr.Markdown("# 🎬 VideoShortsAgent")
-        gr.Markdown("上传长视频 → AI 自动提取金句 → 生成短视频切片")
+        gr.Markdown("# 🎬 VideoShortsAgent", elem_classes="main-title")
+        gr.Markdown("上传长视频 → AI Agent 自动提取金句 → 生成短视频切片", elem_classes="subtitle")
 
         with gr.Tabs():
-            # Tab 1: 视频处理（完整流程）
-            with gr.Tab("📹 视频处理"):
+            # Tab 1: Agent 模式（核心）
+            with gr.Tab("🤖 Agent 模式"):
+                gr.Markdown("> AI 自主思考并决策，自动完成 转录→分析→渲染 全流程")
+
                 with gr.Row():
                     with gr.Column(scale=1):
-                        video_input = gr.Video(label="📤 上传视频")
-                        btn_full = gr.Button("🚀 一键处理", variant="primary", size="lg")
-
-                        gr.Markdown("---")
-                        gr.Markdown("#### 分步操作")
-                        btn_transcribe = gr.Button("📝 Step 1: 转录")
-                        btn_analyze = gr.Button("🔍 Step 2: 分析金句")
+                        agent_video = gr.Video(label="📤 上传视频")
+                        agent_prompt = gr.Textbox(
+                            label="💬 指令（可选）",
+                            value="帮我从这个视频中提取最精彩的片段做成短视频",
+                            lines=2
+                        )
+                        agent_btn = gr.Button("🚀 开始处理", variant="primary", size="lg")
 
                     with gr.Column(scale=2):
-                        transcript_output = gr.Textbox(
-                            label="📝 转录结果", lines=10, max_lines=20, interactive=False
-                        )
-                        analysis_output = gr.Textbox(
-                            label="🔍 金句分析", lines=4, interactive=False
-                        )
-                        render_output = gr.Textbox(
-                            label="🎨 渲染状态", lines=2, interactive=False
-                        )
-                        video_output = gr.Video(label="📹 输出短视频")
+                        agent_reply = gr.Markdown(label="📋 Agent 回复")
+                        agent_output = gr.Video(label="📹 输出短视频")
 
-                transcript_path_state = gr.State(None)
+                with gr.Accordion("📜 Agent 执行日志", open=False):
+                    agent_logs = gr.Textbox(
+                        label="实时日志", lines=20, max_lines=40,
+                        interactive=False, elem_classes="log-box"
+                    )
 
-                btn_transcribe.click(
-                    fn=process_transcribe,
-                    inputs=[video_input],
-                    outputs=[transcript_output, transcript_path_state]
-                )
-                btn_analyze.click(
-                    fn=process_analyze,
-                    inputs=[transcript_path_state],
-                    outputs=[analysis_output]
-                )
-                btn_full.click(
-                    fn=process_full_pipeline,
-                    inputs=[video_input],
-                    outputs=[transcript_output, analysis_output, render_output, video_output]
+                agent_btn.click(
+                    fn=process_agent,
+                    inputs=[agent_video, agent_prompt],
+                    outputs=[agent_reply, agent_logs, agent_output]
                 )
 
-            # Tab 2: 文字处理（粘贴转录文字，跳过转录步骤）
-            with gr.Tab("📝 文字处理"):
-                gr.Markdown("已有转录文字？直接粘贴，跳过转录步骤")
+            # Tab 2: 一键处理（简化版）
+            with gr.Tab("⚡ 一键处理"):
+                gr.Markdown("> 上传视频，一键自动完成全流程")
+
                 with gr.Row():
                     with gr.Column(scale=1):
-                        text_input = gr.Textbox(
-                            label="📝 粘贴转录文字",
-                            lines=10,
-                            placeholder="支持两种格式：\n1. 纯文字（每行一句）\n2. [1.0s - 3.0s] 带时间戳文字",
-                            interactive=True
-                        )
-                        json_input = gr.File(
-                            label="📁 或上传 JSON 文件（优先使用）",
-                            file_types=[".json"]
-                        )
-                        text_video_input = gr.Video(label="📤 上传视频（可选，用于渲染）")
-                        btn_from_text = gr.Button("🚀 分析并处理", variant="primary", size="lg")
+                        pipeline_video = gr.Video(label="📤 上传视频")
+                        pipeline_btn = gr.Button("🚀 一键处理", variant="primary", size="lg")
 
-                    with gr.Column(scale=1):
-                        text_analysis_output = gr.Textbox(
-                            label="🔍 金句分析", lines=6, interactive=False
+                    with gr.Column(scale=2):
+                        pipeline_reply = gr.Markdown(label="📋 处理结果")
+                        pipeline_steps = gr.Textbox(
+                            label="📊 执行步骤", lines=5, interactive=False
                         )
-                        text_render_output = gr.Textbox(
-                            label="🎨 渲染状态", lines=2, interactive=False
-                        )
-                        text_video_output = gr.Video(label="📹 输出短视频")
+                        pipeline_output = gr.Video(label="📹 输出短视频")
 
-                btn_from_text.click(
-                    fn=process_from_text,
-                    inputs=[text_input, json_input, text_video_input],
-                    outputs=[text_analysis_output, text_render_output, text_video_output]
+                with gr.Accordion("📜 执行日志", open=False):
+                    pipeline_logs = gr.Textbox(
+                        label="日志", lines=15, max_lines=30,
+                        interactive=False, elem_classes="log-box"
+                    )
+
+                pipeline_btn.click(
+                    fn=process_pipeline,
+                    inputs=[pipeline_video],
+                    outputs=[pipeline_reply, pipeline_steps, pipeline_logs, pipeline_output]
                 )
+
+        gr.Markdown("---")
+        gr.Markdown(
+            "**VideoShortsAgent** | "
+            "Powered by Qwen + Whisper + FFmpeg + Remotion | "
+            "[GitHub](https://github.com/pinximei/VideoShortsAgent)",
+            elem_classes="subtitle"
+        )
 
     return app
 
 
 if __name__ == "__main__":
-    # 1. 先加载 Whisper 模型（不受 Gradio 超时限制）
-    init_skills()
-
-    # 2. 再启动 Gradio（此时模型已在内存中）
+    init_agent()
     app = create_app()
     app.launch(
         server_name="0.0.0.0",
         server_port=7860,
-        share=False
+        share=False,
+        theme=gr.themes.Soft(
+            primary_hue="indigo",
+            secondary_hue="blue",
+        ),
+        css="""
+        .main-title { text-align: center; margin-bottom: 0; }
+        .subtitle { text-align: center; color: #666; margin-top: 0; }
+        .log-box textarea { font-family: 'Consolas', 'Monaco', monospace !important; font-size: 12px !important; }
+        """
     )

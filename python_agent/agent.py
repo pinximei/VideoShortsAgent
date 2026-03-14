@@ -92,12 +92,13 @@ class VideoShortsAgent:
 
         self.tools.add(
             name="render",
-            description="将视频中的指定片段裁剪出来并添加字幕，生成短视频。",
+            description="将视频中的指定片段裁剪出来并添加字幕/特效，生成短视频。可选传入 effects_json 来启用 Remotion 特效。",
             parameters={
                 "video_path": "原始视频文件路径",
                 "start": "片段开始时间（秒）",
                 "end": "片段结束时间（秒）",
-                "hook_text": "要叠加的字幕文案"
+                "hook_text": "要叠加的字幕文案",
+                "effects_json": "可选，特效配置 JSON 字符串，如 {\"caption_style\":\"spring\",\"gradient\":true}。不传则使用默认 ASS 字幕。"
             },
             func=self._tool_render
         )
@@ -112,13 +113,20 @@ class VideoShortsAgent:
         result = self.analysis_skill.execute(transcript_path)
         return json.dumps(result, ensure_ascii=False, indent=2)
 
-    def _tool_render(self, video_path: str, start: str, end: str, hook_text: str) -> str:
+    def _tool_render(self, video_path: str, start: str, end: str, hook_text: str,
+                     effects_json: str = "") -> str:
         analysis = {
             "start": float(start),
             "end": float(end),
             "hook_text": hook_text
         }
-        output_path = self.render_skill.execute(video_path, analysis, self._task_dir)
+        effects = None
+        if effects_json:
+            try:
+                effects = json.loads(effects_json)
+            except json.JSONDecodeError:
+                pass
+        output_path = self.render_skill.execute(video_path, analysis, self._task_dir, effects=effects)
         return f"渲染完成，输出文件: {output_path}"
 
     # ========== ReAct 主循环 ==========
