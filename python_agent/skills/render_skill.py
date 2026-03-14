@@ -135,9 +135,8 @@ class RenderSkill:
             if os.path.exists(clip_path):
                 os.remove(clip_path)
 
-        # FFmpeg concat 拼接
         print(f"\n[RenderSkill] 拼接 {len(segment_paths)} 个片段...")
-        self._concat_videos(segment_paths, output_path, output_dir)
+        self._concat_videos(segment_paths, output_path, output_dir, effects)
 
         # 清理片段文件
         for path in segment_paths:
@@ -187,15 +186,33 @@ Dialogue: 0,0:00:00.00,{end_h}:{end_m:02d}:{end_s:05.2f},Hook,,0,0,0,,{{\\fad(50
         ]
         self._run_cmd(cmd, "烧录字幕")
 
-    def _concat_videos(self, video_paths: list, output_path: str, output_dir: str):
+    def _concat_videos(self, video_paths: list, output_path: str, output_dir: str,
+                        effects: dict = None):
         """FFmpeg xfade 拼接多个视频（交叉淡入淡出转场）"""
         if len(video_paths) == 1:
-            # 单个视频直接复制
             import shutil
             shutil.copy2(video_paths[0], output_path)
             return
 
-        transition_duration = 0.5  # 转场时长（秒）
+        # 从 effects 读取转场配置
+        transition = "fade"  # 默认
+        transition_duration = 0.5
+        if effects:
+            transition = effects.get("transition", "fade")
+            transition_duration = float(effects.get("transition_duration", 0.5))
+
+        # 验证转场类型
+        valid_transitions = [
+            "fade", "wipeleft", "wiperight", "wipeup", "wipedown",
+            "slideup", "slidedown", "slideleft", "slideright",
+            "circleopen", "circleclose", "dissolve", "pixelize",
+            "diagtl", "diagtr", "diagbl", "diagbr",
+        ]
+        if transition not in valid_transitions:
+            print(f"[RenderSkill] ⚠️ 未知转场 '{transition}'，使用 fade")
+            transition = "fade"
+
+        print(f"[RenderSkill] 转场: {transition} ({transition_duration}s)")
 
         # 获取每个片段的时长
         durations = []
@@ -223,7 +240,7 @@ Dialogue: 0,0:00:00.00,{end_h}:{end_m:02d}:{end_s:05.2f},Hook,,0,0,0,,{{\\fad(50
         # 视频滤镜链
         if len(video_paths) == 2:
             filter_parts.append(
-                f"[0:v][1:v]xfade=transition=fade:duration={transition_duration}:offset={offsets[0]:.3f}[vout]"
+                f"[0:v][1:v]xfade=transition={transition}:duration={transition_duration}:offset={offsets[0]:.3f}[vout]"
             )
             filter_parts.append(
                 f"[0:a][1:a]acrossfade=d={transition_duration}[aout]"
@@ -237,7 +254,7 @@ Dialogue: 0,0:00:00.00,{end_h}:{end_m:02d}:{end_s:05.2f},Hook,,0,0,0,,{{\\fad(50
                 v_out = "[vout]" if i == len(video_paths) - 2 else f"[v{i}]"
                 a_out = "[aout]" if i == len(video_paths) - 2 else f"[a{i}]"
                 filter_parts.append(
-                    f"{v_prev}[{i+1}:v]xfade=transition=fade:duration={transition_duration}:offset={offsets[i]:.3f}{v_out}"
+                    f"{v_prev}[{i+1}:v]xfade=transition={transition}:duration={transition_duration}:offset={offsets[i]:.3f}{v_out}"
                 )
                 filter_parts.append(
                     f"{a_prev}[{i+1}:a]acrossfade=d={transition_duration}{a_out}"
