@@ -69,7 +69,7 @@ class VideoShortsAgent:
     - 出错时自主决定重试策略
     """
 
-    def __init__(self, api_key: str, llm_model: str = "qwen-plus", whisper_model: str = "base"):
+    def __init__(self, api_key: str, llm_model: str = "qwen3.5-flash", whisper_model: str = "base"):
         """初始化 Agent
 
         Args:
