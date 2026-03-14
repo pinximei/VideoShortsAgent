@@ -89,7 +89,7 @@ class VideoShortsAgent:
         self.llm_model = llm_model
 
         # 2. 初始化 Skills
-        self.transcribe_skill = TranscribeSkill(model_size=whisper_model)
+        self.transcribe_skill = TranscribeSkill(model_path=whisper_model)
         self.analysis_skill = AnalysisSkill(api_key=api_key, model=llm_model)
         self.render_skill = RenderSkill()
 

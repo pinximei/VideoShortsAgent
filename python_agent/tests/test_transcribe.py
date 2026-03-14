@@ -57,7 +57,16 @@ def main():
 
     from python_agent.skills.transcribe_skill import TranscribeSkill
 
-    skill = TranscribeSkill(model_size="tiny")  # 用 tiny 模型加速首次测试
+    # 优先使用本地下载的大模型，没有则用 tiny
+    local_model = os.path.join(ROOT_DIR, "faster-whisper-large-v3")
+    if os.path.exists(local_model):
+        model_path = local_model
+        print(f"[测试] 使用本地模型: {model_path}")
+    else:
+        model_path = "tiny"
+        print(f"[测试] 本地模型未找到，使用在线 tiny 模型")
+
+    skill = TranscribeSkill(model_path=model_path)
     result_path = skill.execute(test_file, output_dir)
 
     # 4. 打印结果

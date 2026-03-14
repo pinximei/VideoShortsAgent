@@ -27,9 +27,8 @@ def main():
     )
     parser.add_argument(
         "--model", "-m",
-        default="base",
-        choices=["tiny", "base", "small", "medium", "large"],
-        help="Whisper 模型大小（默认: base）"
+        default="./faster-whisper-large-v3",
+        help="Whisper 模型路径或名称（默认: ./faster-whisper-large-v3）"
     )
     parser.add_argument(
         "--llm",

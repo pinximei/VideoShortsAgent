@@ -31,15 +31,16 @@ class TranscribeSkill:
             - compute_type="int8": 量化推理，减少内存占用
     """
 
-    def __init__(self, model_size: str = "base"):
+    def __init__(self, model_path: str = "base"):
         """初始化转录模型
 
         Args:
-            model_size: Whisper 模型大小，可选 tiny/base/small/medium/large
-                        模型越大越准，但越慢。入门用 base 即可。
+            model_path: Whisper 模型路径或名称
+                        - 本地路径：如 "./faster-whisper-large-v3"（直接加载，不下载）
+                        - 模型名称：如 tiny / base / small（会从 HuggingFace 下载）
         """
-        print(f"[TranscribeSkill] 正在加载 Whisper {model_size} 模型...")
-        self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        print(f"[TranscribeSkill] 正在加载 Whisper 模型: {model_path}...")
+        self.model = WhisperModel(model_path, device="cpu", compute_type="int8")
         print(f"[TranscribeSkill] 模型加载完成 ✓")
 
     def execute(self, video_path: str, output_dir: str) -> str:
