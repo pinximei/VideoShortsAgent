@@ -83,7 +83,7 @@ class AnalysisSkill:
         print(f"[AnalysisSkill] 文本长度: {len(transcript_text)} 字符, {len(transcript)} 个片段")
 
         # 2. 构建提示词
-        prompt = ANALYSIS_PROMPT.format(transcript=transcript_text)
+        prompt = ANALYSIS_PROMPT.replace("{transcript}", transcript_text)
 
         # ========== 调试日志：LLM 输入 ==========
         print(f"\n{'='*60}")
@@ -111,7 +111,9 @@ class AnalysisSkill:
         )
 
         # ========== 调试日志：LLM 输出 ==========
-        result_text = response.choices[0].message.content
+        msg = response.choices[0].message
+        result_text = msg.content or ""
+        reasoning_text = getattr(msg, 'reasoning_content', None) or ""
         usage = response.usage
 
         print(f"\n{'='*60}")
@@ -121,25 +123,73 @@ class AnalysisSkill:
         print(f"    输入 tokens: {usage.prompt_tokens if usage else '?'}")
         print(f"    输出 tokens: {usage.completion_tokens if usage else '?'}")
         print(f"    总计 tokens: {usage.total_tokens if usage else '?'}")
-        print(f"  [原始返回内容]:")
-        print(f"    {result_text}")
+        print(f"  [content ({len(result_text)}字)]:")
+        print(f"    {result_text[:500]}")
+        if reasoning_text:
+            print(f"  [reasoning_content ({len(reasoning_text)}字)]:")
+            print(f"    {reasoning_text[:300]}")
         print(f"{'='*60}\n")
 
-        # 4. 解析返回结果（清理可能的 markdown 代码块标记）
-        clean_text = result_text.strip()
-        if clean_text.startswith("```"):
-            # 去掉 ```json ... ``` 包裹
-            lines = clean_text.split("\n")
-            lines = [l for l in lines if not l.strip().startswith("```")]
-            clean_text = "\n".join(lines).strip()
-
-        result = json.loads(clean_text)
-
-        if not isinstance(result, dict):
-            raise ValueError(f"LLM 返回的不是 JSON 对象，而是 {type(result).__name__}: {result_text[:200]}")
+        # 4. 从 LLM 返回中提取 JSON 对象
+        #    优先从 content 提取；如果 content 为空（思考模式），从 reasoning_content 提取
+        if result_text.strip():
+            result = self._extract_json(result_text)
+        elif reasoning_text.strip():
+            print(f"[AnalysisSkill] content 为空，尝试从 reasoning_content 提取 JSON")
+            result = self._extract_json(reasoning_text)
+        else:
+            raise ValueError("LLM 返回的 content 和 reasoning_content 都为空")
 
         print(f"[AnalysisSkill] 分析完成 ✓")
         print(f"  金句时段: {result.get('start', '?')}s - {result.get('end', '?')}s")
         print(f"  金句文案: {result.get('hook_text', '?')}")
 
         return result
+
+    @staticmethod
+    def _extract_json(text: str) -> dict:
+        """从 LLM 输出中提取 JSON 对象
+
+        兼容多种格式：
+        - 纯 JSON
+        - ```json ... ``` 包裹
+        - 思考模式前后有其他文本
+        """
+        import re
+
+        text = text.strip()
+        print(f"[_extract_json] 原始文本({len(text)}字): {repr(text[:300])}")
+
+        # 方法 1：直接解析
+        try:
+            obj = json.loads(text)
+            print(f"[_extract_json] 方法 1 成功: type={type(obj).__name__}")
+            if isinstance(obj, dict):
+                return obj
+            print(f"[_extract_json] 方法 1 结果不是 dict: {repr(obj)[:200]}")
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"[_extract_json] 方法 1 失败: {e}")
+
+        # 方法 2：去掉 markdown 代码块
+        clean = re.sub(r'```(?:json)?\s*', '', text)
+        clean = clean.strip()
+        try:
+            obj = json.loads(clean)
+            print(f"[_extract_json] 方法 2 成功: type={type(obj).__name__}")
+            if isinstance(obj, dict):
+                return obj
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"[_extract_json] 方法 2 失败: {e}")
+
+        # 方法 3：正则提取第一个 {...}
+        match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', text)
+        if match:
+            print(f"[_extract_json] 方法 3 匹配到: {repr(match.group()[:200])}")
+            try:
+                obj = json.loads(match.group())
+                if isinstance(obj, dict):
+                    return obj
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"[_extract_json] 方法 3 失败: {e}")
+
+        raise ValueError(f"无法从 LLM 输出中提取 JSON 对象: {text[:300]}")
