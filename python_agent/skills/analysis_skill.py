@@ -35,7 +35,9 @@ ANALYSIS_PROMPT = """你是一个爆款短视频内容专家。
 转录文本：
 {transcript}
 
-请只返回 JSON，不要包含其他内容。"""
+请只返回纯 JSON 对象，不要使用 markdown 代码块（```）包裹，不要添加任何其他文字说明。
+返回格式示例：
+{"start": 12.5, "end": 28.3, "hook_text": "你的金句文案"}"""
 
 
 class AnalysisSkill:
