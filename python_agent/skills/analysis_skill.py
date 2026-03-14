@@ -49,7 +49,7 @@ class AnalysisSkill:
             - 这样就能用 openai 的 SDK 调用 Qwen 模型
     """
 
-    def __init__(self, api_key: str, model: str = "qwen3"):
+    def __init__(self, api_key: str, model: str = "qwen3-flash"):
         """初始化 Qwen 客户端
 
         Args:
