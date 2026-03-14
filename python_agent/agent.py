@@ -19,6 +19,7 @@ from python_agent.skills.transcribe_skill import TranscribeSkill
 from python_agent.skills.analysis_skill import AnalysisSkill
 from python_agent.skills.render_skill import RenderSkill
 from python_agent.skills.download_skill import DownloadSkill
+from python_agent.skills.dubbing_skill import DubbingSkill
 
 
 SYSTEM_PROMPT = (
@@ -26,9 +27,15 @@ SYSTEM_PROMPT = (
     "你的任务是将用户提供的长视频，自动加工成有吸引力的短视频切片。\n\n"
     "标准流程：\n"
     "0. 如果用户提供的是 URL，先使用 download 下载视频\n"
-    "1. 使用 transcribe 将视频语音转为文字\n"
-    "2. 使用 analyze 从转录文本中找出多个精彩片段（返回 clips 数组）\n"
-    "3. 使用 render 渲染最终视频，传入 analyze 的结果 + 特效配置\n\n"
+    "1. 使用 transcribe 将视频语音转为文字（会自动检测语言）\n"
+    "2. 使用 analyze 理解视频全部内容，浓缩为 3-5 个关键段落（返回 clips 数组，每个含 tts_text）\n"
+    "3. 使用 dubbing 工具生成 TTS 配音（所有语言都需要，analyze 会返回 tts_text）\n"
+    "   - 【重要】dubbing 返回的完整 JSON 字符串，必须原样传给 render 的 tts_info_json 参数\n"
+    "4. 使用 render 渲染最终视频\n"
+    "   - 【重要】video_path 永远使用原始视频（source_video），不要使用任何中间文件\n"
+    "   - dubbing 不产出视频文件，只产出 TTS 音频信息\n"
+    "   - render 的 tts_info_json 填入 dubbing 返回的完整 JSON 字符串\n"
+    "   - TTS 时长决定画面时长，视频画面适配语音\n\n"
     "可用特效（通过 render 的 effects_json 参数指定）：\n"
     "- caption_style: 字幕动画风格，可选 'spring'（弹出）/ 'fade'（淡入）/ 'typewriter'（打字机）\n"
     "- gradient: true/false，是否叠加渐变背景氛围层\n"
@@ -50,13 +57,17 @@ MAX_ITERATIONS = 10
 class VideoShortsAgent:
     """ReAct Agent - LLM 驱动的短视频加工 Agent"""
 
-    def __init__(self, api_key: str, llm_model: str = "qwen3.5-flash", whisper_model: str = "base"):
+    def __init__(self, api_key: str, llm_model: str = "qwen3.5-flash",
+                 whisper_model: str = "base", transcribe_mode: str = "local",
+                 groq_api_key: str = ""):
         """初始化 Agent
 
         Args:
             api_key: DashScope API Key
             llm_model: Qwen 模型名称
-            whisper_model: Whisper 模型大小
+            whisper_model: Whisper 模型大小（local 模式）
+            transcribe_mode: "local" 或 "groq"
+            groq_api_key: Groq API Key（groq 模式）
         """
         print("=" * 60)
         print("  VideoShortsAgent (ReAct) 初始化中...")
@@ -70,10 +81,14 @@ class VideoShortsAgent:
         self.llm_model = llm_model
 
         # 2. 初始化 Skills
-        self.transcribe_skill = TranscribeSkill(model_path=whisper_model)
+        self.transcribe_skill = TranscribeSkill(
+            model_path=whisper_model, mode=transcribe_mode,
+            groq_api_key=groq_api_key
+        )
         self.analysis_skill = AnalysisSkill(api_key=api_key, model=llm_model)
         self.render_skill = RenderSkill()
         self.download_skill = DownloadSkill()
+        self.dubbing_skill = DubbingSkill()
 
         # 3. 注册 Tools
         self.tools = ToolRegistry()
@@ -95,24 +110,37 @@ class VideoShortsAgent:
 
         self.tools.add(
             name="transcribe",
-            description="将视频/音频中的语音转为带时间戳的文字。输入视频路径，输出 transcript.json 的路径。",
+            description="将视频/音频中的语音转为带时间戳的文字，并自动检测语言。输入视频路径，输出 transcript.json 的路径和检测到的语言。",
             parameters={"video_path": "要转录的视频文件路径"},
             func=self._tool_transcribe
         )
 
         self.tools.add(
             name="analyze",
-            description="从转录文本中分析并提取多个精彩片段（3-5个），返回 clips 数组，每个包含 start、end、hook_text。",
-            parameters={"transcript_path": "transcript.json 文件路径"},
+            description="从转录文本中分析并提取多个精彩片段（3-5个），返回 clips 数组，每个包含 start、end、hook_text。如果源语言是英文，还会返回 tts_text（中文配音文本）。",
+            parameters={
+                "transcript_path": "transcript.json 文件路径",
+                "language": "（可选）源语言代码，如 'en'。如果 transcript.json 中已包含 language 信息则无需指定。用于旧格式的 transcript 文件。"
+            },
             func=self._tool_analyze
         )
 
         self.tools.add(
+            name="dubbing",
+            description="为英文视频生成中文 TTS 配音音频。需要 analyze 返回的包含 tts_text 的结果。返回 TTS 信息 JSON（包含每个片段的音频路径和实际时长），需传给 render。",
+            parameters={
+                "analysis_json": "analyze 返回的完整 JSON 字符串，clips 中需含 tts_text 字段"
+            },
+            func=self._tool_dubbing
+        )
+
+        self.tools.add(
             name="render",
-            description="根据分析结果渲染短视频。支持多片段裁剪+字幕+拼接。可通过 effects_json 启用 Remotion 特效。",
+            description="根据分析结果渲染短视频。支持多片段裁剪+字幕+拼接。如果有 tts_info_json（来自 dubbing），会以 TTS 时长为主时钟。",
             parameters={
                 "video_path": "原始视频文件路径",
                 "analysis_json": "analyze 返回的完整 JSON 字符串，包含 clips 数组",
+                "tts_info_json": "（可选）dubbing 返回的 TTS 信息 JSON。有此参数时，视频会静音并使用 TTS 音频。",
                 "effects_json": "特效配置 JSON，如 {\"caption_style\":\"spring\",\"gradient\":true}。不传则使用默认 ASS 字幕。"
             },
             func=self._tool_render
@@ -125,14 +153,44 @@ class VideoShortsAgent:
         return f"下载完成，视频保存在: {output_path}"
 
     def _tool_transcribe(self, video_path: str) -> str:
-        result_path = self.transcribe_skill.execute(video_path, self._task_dir)
-        return f"转录完成，结果保存在: {result_path}"
+        # 如果 transcript.json 已存在，跳过耗时的转录
+        existing = os.path.join(self._task_dir, "transcript.json")
+        if os.path.exists(existing):
+            try:
+                with open(existing, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                lang = data.get("language", "unknown") if isinstance(data, dict) else "unknown"
+                print(f"[Agent] transcript.json 已存在，跳过转录，语言: {lang}")
+                return f"转录文件已存在，跳过转录: {existing}\n检测到语言: {lang}"
+            except Exception:
+                pass  # 文件损坏，重新转录
+        result_path, detected_lang = self.transcribe_skill.execute(video_path, self._task_dir)
+        return f"转录完成，结果保存在: {result_path}\n检测到语言: {detected_lang}"
 
-    def _tool_analyze(self, transcript_path: str) -> str:
+    def _tool_analyze(self, transcript_path: str, language: str = "") -> str:
+        # 如果用户指定了语言且 transcript 是旧格式，需要注入 language
+        if language:
+            with open(transcript_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                # 旧格式：升级为新格式并写回
+                upgraded = {"language": language, "language_probability": 1.0, "segments": data}
+                with open(transcript_path, "w", encoding="utf-8") as f:
+                    json.dump(upgraded, f, ensure_ascii=False, indent=2)
+                print(f"[Agent] 已将旧格式 transcript 升级为新格式，语言设为: {language}")
         result = self.analysis_skill.execute(transcript_path)
         return json.dumps(result, ensure_ascii=False, indent=2)
 
-    def _tool_render(self, video_path: str, analysis_json: str, effects_json: str = "") -> str:
+    def _tool_dubbing(self, analysis_json: str) -> str:
+        try:
+            analysis = json.loads(analysis_json)
+        except json.JSONDecodeError:
+            return f"错误：analysis_json 不是合法的 JSON: {analysis_json[:200]}"
+        result = self.dubbing_skill.execute(analysis, self._task_dir)
+        return json.dumps(result, ensure_ascii=False, indent=2)
+
+    def _tool_render(self, video_path: str, analysis_json: str,
+                     tts_info_json: str = "", effects_json: str = "") -> str:
         try:
             analysis = json.loads(analysis_json)
         except json.JSONDecodeError:
@@ -143,25 +201,39 @@ class VideoShortsAgent:
                 effects = json.loads(effects_json)
             except json.JSONDecodeError:
                 pass
-        output_path = self.render_skill.execute(video_path, analysis, self._task_dir, effects=effects)
+        tts_info = None
+        if tts_info_json:
+            try:
+                tts_info = json.loads(tts_info_json)
+            except json.JSONDecodeError:
+                pass
+        output_path = self.render_skill.execute(
+            video_path, analysis, self._task_dir, effects=effects, tts_info=tts_info
+        )
         return f"渲染完成，输出文件: {output_path}"
 
     # ========== ReAct 主循环 ==========
 
-    def run(self, user_message: str, video_path: str = None, output_base: str = "output") -> dict:
+    def run(self, user_message: str, video_path: str = None, output_base: str = "output",
+            task_dir: str = None) -> dict:
         """执行 Agent 的 ReAct 循环
 
         Args:
             user_message: 用户的指令
             video_path: 视频文件路径（可选）
             output_base: 输出根目录
+            task_dir: 已有任务目录路径（可选），用于复用之前的转录结果
 
         Returns:
             包含任务结果的字典
         """
-        # 1. 创建任务目录
-        task_id = uuid.uuid4().hex[:8]
-        self._task_dir = os.path.join(output_base, f"task_{task_id}")
+        # 1. 创建或复用任务目录
+        if task_dir and os.path.isdir(task_dir):
+            self._task_dir = task_dir
+            task_id = os.path.basename(task_dir).replace("task_", "") or uuid.uuid4().hex[:8]
+        else:
+            task_id = uuid.uuid4().hex[:8]
+            self._task_dir = os.path.join(output_base, f"task_{task_id}")
         self._video_path = video_path
         os.makedirs(self._task_dir, exist_ok=True)
 

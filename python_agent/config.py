@@ -16,3 +16,8 @@ def get_dashscope_api_key() -> str:
     if not key:
         raise ValueError("请在 .env 文件中设置 DASHSCOPE_API_KEY")
     return key
+
+
+def get_groq_api_key() -> str:
+    """获取 Groq API Key（用于 Whisper 在线转录）"""
+    return os.getenv("GROQ_API_KEY", "")

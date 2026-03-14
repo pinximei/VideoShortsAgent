@@ -20,24 +20,42 @@ from openai import OpenAI
 
 
 # 发送给 Qwen 的提示词模板
-ANALYSIS_PROMPT = """你是一个爆款短视频内容专家。
+ANALYSIS_PROMPT = """你是一个专业的短视频内容策划专家。
 
-请从以下视频转录文本中，选出多段最有"爆款潜力"的片段，用于拼接成一个精彩短视频。
+请仔细阅读以下视频转录文本，理解视频讲述的完整内容，然后将其浓缩为一个连贯的短视频解说。
+
+**核心思路**：先理解整个视频讲了什么，然后用你的语言重新组织成一段流畅的叙述，再从视频中找到与每段叙述最匹配的画面片段。
 
 要求：
-1. 选出 3-5 个精彩片段（根据视频长度灵活调整，短视频可以少选）
-2. 每个片段长度 5-15 秒
-3. 片段之间不要重叠
-4. 按时间顺序排列
-5. 每个片段配一个精简的亮点字幕（用于字幕显示）
-6. 返回 JSON 格式
+1. 先通读全文，理解视频的主题和核心观点
+2. **转录纠错**：语音识别可能存在专有名词错误（如把 "Skills" 识别成 "Scale"），请根据上下文语义自动判断并修正这类错误，确保 tts_text 和 hook_text 中使用正确的术语
+3. 将内容浓缩为 **2-5 个关键段落**，每段对应一个完整的核心观点
+4. **内容完整性优先**：每个片段必须把一件事讲清楚、讲完整。宁可减少片段数量，也不要为了凑数而让某段解说含糊不清或话说一半
+5. **第一个片段必须是简短的背景介绍**：交代视频的主题和背景
+6. 后续片段依次讲解核心内容，每段围绕一个完整的观点展开
+7. 为每段找到转录文本中最匹配的时间区间（start, end），作为视频画面来源
+8. 片段时长不做硬性限制，以能讲清楚该段内容为准（通常 8-20 秒）
+9. 片段按叙述逻辑排列（通常与时间顺序一致）
+10. 每个片段配一个中文字幕（hook_text），概括该段内容
+11. 每个片段提供 tts_text 字段：用自然流畅的中文重新组织该段内容的解说词，用于语音合成配音
+12. **字数控制**：中文语音合成速度约为每秒 4 个汉字。tts_text 的字数应大致控制在 (片段秒数 × 4) 以内，如果内容多可以适当增加片段时长
+13. hook_text 应与 tts_text 内容一致（可以是 tts_text 本身或其精简版）
+14. 最终拼接后应完整概述视频的主题，让观众快速了解整个视频在讲什么
 
 转录文本：
 {transcript}
 
 请只返回纯 JSON 对象，不要使用 markdown 代码块（```）包裹，不要添加任何其他文字说明。
 返回格式：
-{"clips": [{"start": 12.5, "end": 22.3, "hook_text": "亮点字幕1"}, {"start": 35.0, "end": 48.5, "hook_text": "亮点字幕2"}]}"""
+{"clips": [{"start": 12.5, "end": 22.3, "hook_text": "中文字幕", "tts_text": "控制在时长内的中文解说词"}, ...]}"""
+
+# 英文源语言时的额外指令
+ANALYSIS_PROMPT_EN_ADDON = """
+
+注意：这段视频的原始语言是英文。
+额外要求：
+- tts_text 不是逐字翻译，而是用自然流畅的中文重新讲述核心内容
+"""
 
 
 class AnalysisSkill:
@@ -72,18 +90,31 @@ class AnalysisSkill:
             transcript_path: transcript.json 文件路径
 
         Returns:
-            包含 start, end, hook_text 的字典
+            包含 start, end, hook_text (及可能的 tts_text) 的字典
         """
-        # 1. 读取转录文件
+        # 1. 读取转录文件（兼容新旧格式）
         with open(transcript_path, "r", encoding="utf-8") as f:
-            transcript = json.load(f)
+            raw_data = json.load(f)
 
-        # 将 transcript 列表格式化为可读文本
-        transcript_text = json.dumps(transcript, ensure_ascii=False, indent=2)
-        print(f"[AnalysisSkill] 文本长度: {len(transcript_text)} 字符, {len(transcript)} 个片段")
+        # 新格式: {"language": "en", "segments": [...]}
+        # 旧格式: [{"start": ..., "end": ..., "text": ...}, ...]
+        if isinstance(raw_data, dict) and "segments" in raw_data:
+            segments = raw_data["segments"]
+            source_lang = raw_data.get("language", "zh")
+        else:
+            segments = raw_data
+            source_lang = "zh"
 
-        # 2. 构建提示词
+        # 将 segments 格式化为可读文本
+        transcript_text = json.dumps(segments, ensure_ascii=False, indent=2)
+        print(f"[AnalysisSkill] 文本长度: {len(transcript_text)} 字符, {len(segments)} 个片段")
+        print(f"[AnalysisSkill] 源语言: {source_lang}")
+
+        # 2. 构建提示词（英文源时追加翻译要求）
         prompt = ANALYSIS_PROMPT.replace("{transcript}", transcript_text)
+        if source_lang != "zh":
+            prompt += ANALYSIS_PROMPT_EN_ADDON
+            print(f"[AnalysisSkill] 非中文源，已追加 tts_text 翻译要求")
 
         # ========== 调试日志：LLM 输入 ==========
         print(f"\n{'='*60}")
