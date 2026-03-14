@@ -32,6 +32,11 @@ def main():
         help="Whisper 模型大小（默认: base）"
     )
     parser.add_argument(
+        "--llm",
+        default="qwen3",
+        help="Qwen 模型名称，如 qwen3 / qwen-max / qwen-plus / qwen-turbo（默认: qwen3）"
+    )
+    parser.add_argument(
         "--prompt", "-p",
         default="帮我把这个视频中最有爆款潜力的片段做成短视频",
         help="给 Agent 的指令（可自定义）"
@@ -48,7 +53,7 @@ def main():
     from python_agent.config import get_dashscope_api_key
 
     api_key = get_dashscope_api_key()
-    agent = VideoShortsAgent(api_key=api_key, whisper_model=args.model)
+    agent = VideoShortsAgent(api_key=api_key, llm_model=args.llm, whisper_model=args.model)
 
     # 用户的指令交给 Agent 自主决策
     result = agent.run(

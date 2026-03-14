@@ -49,17 +49,19 @@ class AnalysisSkill:
             - 这样就能用 openai 的 SDK 调用 Qwen 模型
     """
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, model: str = "qwen3"):
         """初始化 Qwen 客户端
 
         Args:
             api_key: DashScope API Key
+            model: Qwen 模型名称（qwen-max / qwen-plus / qwen-turbo）
         """
+        self.model = model
         self.client = OpenAI(
             api_key=api_key,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
-        print("[AnalysisSkill] 已初始化 Qwen 客户端 ✓")
+        print(f"[AnalysisSkill] 已初始化 Qwen 客户端 (model={model}) ✓")
 
     def execute(self, transcript_path: str) -> dict:
         """执行金句分析
@@ -82,9 +84,9 @@ class AnalysisSkill:
         prompt = ANALYSIS_PROMPT.format(transcript=transcript_text)
 
         # 3. 调用 Qwen-Max
-        print("[AnalysisSkill] 正在调用 Qwen-Max 分析金句...")
+        print(f"[AnalysisSkill] 正在调用 {self.model} 分析金句...")
         response = self.client.chat.completions.create(
-            model="qwen-max",
+            model=self.model,
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}  # 强制 JSON 输出
         )

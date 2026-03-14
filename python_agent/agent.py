@@ -69,11 +69,12 @@ class VideoShortsAgent:
     - 出错时自主决定重试策略
     """
 
-    def __init__(self, api_key: str, whisper_model: str = "base"):
+    def __init__(self, api_key: str, llm_model: str = "qwen3", whisper_model: str = "base"):
         """初始化 Agent
 
         Args:
             api_key: DashScope API Key
+            llm_model: Qwen 模型名称（如 qwen-max / qwen-plus / qwen-turbo）
             whisper_model: Whisper 模型大小
         """
         print("=" * 60)
@@ -85,10 +86,11 @@ class VideoShortsAgent:
             api_key=api_key,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
+        self.llm_model = llm_model
 
         # 2. 初始化 Skills
         self.transcribe_skill = TranscribeSkill(model_size=whisper_model)
-        self.analysis_skill = AnalysisSkill(api_key=api_key)
+        self.analysis_skill = AnalysisSkill(api_key=api_key, model=llm_model)
         self.render_skill = RenderSkill()
 
         # 3. 注册工具（把 Skill 包装成 LLM 可调用的 Tool）
@@ -209,7 +211,7 @@ class VideoShortsAgent:
 
             # 3a. 调用 LLM（思考 + 决策）
             response = self.llm.chat.completions.create(
-                model="qwen-max",
+                model=self.llm_model,
                 messages=messages,
                 tools=self.tools.get_schemas(),  # 告诉 LLM 有哪些工具可用
                 tool_choice="auto"               # 让 LLM 自己决定是否调用工具
