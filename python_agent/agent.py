@@ -23,8 +23,7 @@ from python_agent.skills.analysis_skill import AnalysisSkill
 from python_agent.skills.render_skill import RenderSkill
 
 
-# Agent 的系统提示词 —— 定义 Agent 的角色和行为规则
-# system prompt 基础部分（Skills 索引由 SkillRegistry 动态生成）
+# Agent 的系统提示词基础部分，Skills 索引由 SkillRegistry 动态拼接
 SYSTEM_PROMPT_BASE = (
     "你是一个专业的短视频剪辑 Agent。\n\n"
     "你的任务是将用户提供的长视频，自动加工成有吸引力的短视频切片。\n\n"
@@ -33,6 +32,11 @@ SYSTEM_PROMPT_BASE = (
     "- 如果某一步失败，尝试分析原因并决定是否重试\n"
     "- 所有中间文件都保存在任务目录中\n"
     "- 任务完成后，给用户一个清晰的总结\n"
+    "\n"
+    "技能（Skills）使用流程：\n"
+    "1. 首先，使用 `read_skill` 工具阅读你想要使用的技能的完整文档，了解其功能、输入和输出。\n"
+    "2. 然后，根据 `read_skill` 返回的文档，使用 `execute_skill` 工具执行该技能，并传入正确的 JSON 格式参数。\n"
+    "3. 技能执行结果将作为 `execute_skill` 工具的输出返回给你。\n"
 )
 
 # ReAct 循环的最大轮次（防止无限循环）
@@ -85,36 +89,25 @@ class VideoShortsAgent:
         # 4. 注册 Tools（结构化调用）
         self.tools = ToolRegistry()
         self._register_tools()
-        # 5. 将 Skills 也注册到 ToolRegistry（让 LLM 通过 tool_calls 发现）
-        self.skill_registry.register_as_tools(self.tools)
 
         print("\n[Agent] 初始化完成 ✓")
 
     def _register_tools(self):
-        """将三个 Skill 注册为 Agent 可用的工具
-
-        每个工具需要：
-        - name: 英文名称（LLM 通过它来调用）
-        - description: 功能描述（LLM 据此判断何时使用）
-        - parameters: 参数说明
-        - func: 实际执行的函数
-        """
-        # 保存任务目录引用，供工具闭包使用
+        """注册所有工具（包括 Skill 操作工具）"""
         self._task_dir = None
         self._video_path = None
 
+        # ===== 业务工具 =====
         self.tools.add(
             name="transcribe",
             description="将视频/音频中的语音转为带时间戳的文字。输入视频路径，输出 transcript.json 的路径。",
-            parameters={
-                "video_path": "要转录的视频文件路径"
-            },
+            parameters={"video_path": "要转录的视频文件路径"},
             func=self._tool_transcribe
         )
 
         self.tools.add(
             name="render",
-            description="将视频中的指定片段裁剪出来，并添加字幕，生成短视频。需要提供原始视频路径和分析结果。",
+            description="将视频中的指定片段裁剪出来并添加字幕，生成短视频。",
             parameters={
                 "video_path": "原始视频文件路径",
                 "start": "片段开始时间（秒）",
@@ -124,20 +117,31 @@ class VideoShortsAgent:
             func=self._tool_render
         )
 
-    # ========== 工具实现（桥接 Skill） ==========
+        # ===== Skill 操作工具（通用） =====
+        self.tools.add(
+            name="read_skill",
+            description="读取指定技能（Skill）的完整文档。在使用某个技能之前，必须先调用此工具阅读文档，了解其输入输出格式。",
+            parameters={"skill_name": "要读取的技能名称"},
+            func=self._tool_read_skill
+        )
+
+        self.tools.add(
+            name="execute_skill",
+            description="执行指定的技能（Skill）。必须先用 read_skill 阅读文档后才能调用。参数以 JSON 字符串传递。",
+            parameters={
+                "skill_name": "要执行的技能名称",
+                "arguments": "技能参数，JSON 字符串格式，具体参数请参考 read_skill 返回的文档"
+            },
+            func=self._tool_execute_skill
+        )
+
+    # ========== 工具实现 ==========
 
     def _tool_transcribe(self, video_path: str) -> str:
-        """转录工具"""
         result_path = self.transcribe_skill.execute(video_path, self._task_dir)
         return f"转录完成，结果保存在: {result_path}"
 
-    def _tool_analyze(self, transcript_path: str) -> str:
-        """分析工具"""
-        result = self.analysis_skill.execute(transcript_path)
-        return json.dumps(result, ensure_ascii=False)
-
     def _tool_render(self, video_path: str, start: str, end: str, hook_text: str) -> str:
-        """渲染工具"""
         analysis = {
             "start": float(start),
             "end": float(end),
@@ -145,6 +149,21 @@ class VideoShortsAgent:
         }
         output_path = self.render_skill.execute(video_path, analysis, self._task_dir)
         return f"渲染完成，输出文件: {output_path}"
+
+    def _tool_read_skill(self, skill_name: str) -> str:
+        """读取 Skill 完整文档"""
+        doc = self.skill_registry.get_full_doc(skill_name)
+        print(f"  📄 已加载 Skill 文档: {skill_name}")
+        return doc
+
+    def _tool_execute_skill(self, skill_name: str, arguments: str) -> str:
+        """执行 Skill"""
+        try:
+            args = json.loads(arguments)
+        except json.JSONDecodeError:
+            return f"错误：arguments 不是合法的 JSON 字符串: {arguments}"
+        print(f"  ⚡ 执行 Skill: {skill_name}，参数: {args}")
+        return self.skill_registry.execute(skill_name, args, self._skill_context)
 
     # ========== ReAct 主循环 ==========
 
@@ -258,40 +277,15 @@ class VideoShortsAgent:
                     print(f"\n  🔧 执行工具: {func_name}")
                     print(f"     参数: {func_args}")
 
-                    # 检查是否是 Skill（LLM 可能通过 tool_calls 调用已注册的 Skill）
-                    if func_name in self.skill_registry.names:
-                        if self.skill_registry.should_inject_doc(func_name):
-                            # ===== 首次调用：注入完整文档，不执行 =====
-                            full_doc = self.skill_registry.get_full_doc(func_name)
-                            tool_result = (
-                                f"注意：{func_name} 是一个技能（Skill），不是工具（Tool）。"
-                                f"以下是该技能的完整文档，请阅读后重新调用：\n\n{full_doc}"
-                            )
-                            print(f"\n  📘 首次调用 Skill: {func_name}")
-                            print(f"     已注入完整文档，要求 LLM 阅读后重新调用")
-                        else:
-                            # ===== 再次调用：已读过文档，执行 executor =====
-                            print(f"\n  📘 再次调用 Skill: {func_name}，执行 executor")
-                            tool_result = self.skill_registry.execute(func_name, func_args, self._skill_context)
-                            print(f"     执行结果: {tool_result[:200]}")
+                    # 统一通过 ToolRegistry 执行（含 read_skill、execute_skill）
+                    tool_result = self.tools.call(func_name, func_args)
+                    print(f"     结果: {tool_result[:200]}...")
 
-                        result["steps"].append({
-                            "iteration": iteration,
-                            "skill": func_name,
-                            "args": func_args,
-                            "mode": "skills"
-                        })
-                    else:
-                        # 正常工具执行
-                        tool_result = self.tools.call(func_name, func_args)
-                        print(f"     结果: {tool_result[:200]}...")
-
-                        result["steps"].append({
-                            "iteration": iteration,
-                            "tool": func_name,
-                            "args": func_args,
-                            "mode": "tool"
-                        })
+                    result["steps"].append({
+                        "iteration": iteration,
+                        "tool": func_name,
+                        "args": func_args,
+                    })
 
                     messages.append({
                         "role": "tool",
@@ -299,49 +293,12 @@ class VideoShortsAgent:
                         "content": tool_result
                     })
             else:
-                reply_text = assistant_message.content or ""
-                messages.append({"role": "assistant", "content": reply_text})
+                # LLM 没有调用工具 → 任务完成
+                final_reply = assistant_message.content
+                print(f"\n  💬 Agent 最终回复: {final_reply}")
 
-                # ========== 通用 Skills 检测 ==========
-                skill_call = self.skill_registry.parse_skill_call(reply_text)
-                if skill_call:
-                    skill_name = skill_call["name"]
-                    skill_args = skill_call["args"]
-
-                    if "error" in skill_call:
-                        messages.append({"role": "user", "content": skill_call["error"]})
-                        print(f"\n  📘 Skill 调用失败: {skill_call['error']}")
-                        continue
-
-                    print(f"\n  📘 检测到 Skill 调用: {skill_name}")
-                    print(f"     参数: {skill_args}")
-
-                    if self.skill_registry.should_inject_doc(skill_name):
-                        # ===== 首次调用：注入完整文档，不执行 =====
-                        full_doc = self.skill_registry.get_full_doc(skill_name)
-                        messages.append({"role": "user", "content": (
-                            f"收到。以下是 {skill_name} 技能的完整文档，请阅读后重新按格式调用：\n\n{full_doc}"
-                        )})
-                        print(f"     首次调用，已注入完整文档，等待 LLM 阅读后重新调用")
-                    else:
-                        # ===== 再次调用：已读过文档，执行 executor =====
-                        print(f"     执行 {skill_name} executor...")
-                        skill_result = self.skill_registry.execute(skill_name, skill_args, self._skill_context)
-                        messages.append({"role": "user", "content": f"{skill_name} 技能执行完成，结果：\n{skill_result}"})
-                        print(f"     结果: {skill_result[:200]}")
-
-                    result["steps"].append({
-                        "iteration": iteration,
-                        "skill": skill_name,
-                        "args": skill_args,
-                        "mode": "skills"
-                    })
-                    continue
-
-                # 没有 Skill 也没有 Tool → 任务完成
-                print(f"\n  💬 Agent 最终回复: {reply_text}")
                 result["status"] = "success"
-                result["reply"] = reply_text
+                result["reply"] = final_reply
                 break
         else:
             # 超过最大迭代次数
