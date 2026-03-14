@@ -271,6 +271,36 @@ class SkillRegistry:
         # 执行
         return self._executors[name].execute(args, context)
 
+    def register_as_tools(self, tool_registry):
+        """将所有 Skill 注册到 ToolRegistry
+
+        这样 LLM 可以通过 tool_calls 发现和调用 Skills。
+        实际执行时，Agent 会拦截并走 Skill 流程（两级加载）。
+
+        Args:
+            tool_registry: ToolRegistry 实例
+        """
+        for name, info in self._skills.items():
+            metadata = info["metadata"]
+            desc = metadata.get("description", "")
+            params = metadata.get("parameters", [])
+
+            # 将 SKILL.md 的 parameters 转为 ToolRegistry 格式
+            param_dict = {}
+            if isinstance(params, list):
+                for p in params:
+                    if isinstance(p, dict):
+                        param_dict[p.get("name", "")] = p.get("description", "")
+
+            # 注册为 tool（func 设为 None，由 Agent 拦截处理）
+            tool_registry.add(
+                name=name,
+                description=f"[Skill] {desc}",
+                parameters=param_dict,
+                func=None  # Agent 会拦截，不会走到这里
+            )
+            print(f"[SkillRegistry] 已将 Skill '{name}' 注册到 ToolRegistry ✓")
+
     @property
     def names(self) -> list:
         """所有已注册的 Skill 名称"""

@@ -36,7 +36,7 @@ class Tool:
         func: 实际执行的 Python 函数
     """
 
-    def __init__(self, name: str, description: str, parameters: dict, func: Callable):
+    def __init__(self, name: str, description: str, parameters: dict, func: Callable = None):
         self.name = name
         self.description = description
         self.parameters = parameters

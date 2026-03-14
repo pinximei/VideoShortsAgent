@@ -85,6 +85,8 @@ class VideoShortsAgent:
         # 4. 注册 Tools（结构化调用）
         self.tools = ToolRegistry()
         self._register_tools()
+        # 5. 将 Skills 也注册到 ToolRegistry（让 LLM 通过 tool_calls 发现）
+        self.skill_registry.register_as_tools(self.tools)
 
         print("\n[Agent] 初始化完成 ✓")
 
@@ -258,28 +260,38 @@ class VideoShortsAgent:
 
                     # 检查是否是 Skill（LLM 可能通过 tool_calls 调用已注册的 Skill）
                     if func_name in self.skill_registry.names:
-                        print(f"\n  📘 LLM 通过 tool_calls 调用了 Skill: {func_name}（自动转交 SkillRegistry）")
-
-                        # 按需注入完整文档
                         if self.skill_registry.should_inject_doc(func_name):
+                            # ===== 首次调用：注入完整文档，不执行 =====
                             full_doc = self.skill_registry.get_full_doc(func_name)
-                            print(f"     已注入 {func_name} 完整文档")
+                            tool_result = (
+                                f"注意：{func_name} 是一个技能（Skill），不是工具（Tool）。"
+                                f"以下是该技能的完整文档，请阅读后重新调用：\n\n{full_doc}"
+                            )
+                            print(f"\n  📘 首次调用 Skill: {func_name}")
+                            print(f"     已注入完整文档，要求 LLM 阅读后重新调用")
+                        else:
+                            # ===== 再次调用：已读过文档，执行 executor =====
+                            print(f"\n  📘 再次调用 Skill: {func_name}，执行 executor")
+                            tool_result = self.skill_registry.execute(func_name, func_args, self._skill_context)
+                            print(f"     执行结果: {tool_result[:200]}")
 
-                        # 通过 SkillRegistry 执行
-                        tool_result = self.skill_registry.execute(func_name, func_args, self._skill_context)
+                        result["steps"].append({
+                            "iteration": iteration,
+                            "skill": func_name,
+                            "args": func_args,
+                            "mode": "skills"
+                        })
                     else:
                         # 正常工具执行
                         tool_result = self.tools.call(func_name, func_args)
+                        print(f"     结果: {tool_result[:200]}...")
 
-                    print(f"     结果: {tool_result[:200]}...")
-
-                    result["steps"].append({
-                        "iteration": iteration,
-                        "tool": func_name,
-                        "args": func_args,
-                        "result": tool_result,
-                        "mode": "skill" if func_name in self.skill_registry.names else "tool"
-                    })
+                        result["steps"].append({
+                            "iteration": iteration,
+                            "tool": func_name,
+                            "args": func_args,
+                            "mode": "tool"
+                        })
 
                     messages.append({
                         "role": "tool",
@@ -304,17 +316,19 @@ class VideoShortsAgent:
                     print(f"\n  📘 检测到 Skill 调用: {skill_name}")
                     print(f"     参数: {skill_args}")
 
-                    # 按需注入完整文档（首次使用时）
                     if self.skill_registry.should_inject_doc(skill_name):
+                        # ===== 首次调用：注入完整文档，不执行 =====
                         full_doc = self.skill_registry.get_full_doc(skill_name)
-                        messages.append({"role": "user", "content": f"收到。以下是 {skill_name} 技能的完整文档：\n{full_doc}"})
-                        print(f"     已注入 {skill_name} 完整文档")
-
-                    # 通用执行
-                    print(f"     正在执行 {skill_name}...")
-                    skill_result = self.skill_registry.execute(skill_name, skill_args, self._skill_context)
-                    messages.append({"role": "user", "content": f"{skill_name} 技能执行完成，结果：\n{skill_result}"})
-                    print(f"     结果: {skill_result[:200]}")
+                        messages.append({"role": "user", "content": (
+                            f"收到。以下是 {skill_name} 技能的完整文档，请阅读后重新按格式调用：\n\n{full_doc}"
+                        )})
+                        print(f"     首次调用，已注入完整文档，等待 LLM 阅读后重新调用")
+                    else:
+                        # ===== 再次调用：已读过文档，执行 executor =====
+                        print(f"     执行 {skill_name} executor...")
+                        skill_result = self.skill_registry.execute(skill_name, skill_args, self._skill_context)
+                        messages.append({"role": "user", "content": f"{skill_name} 技能执行完成，结果：\n{skill_result}"})
+                        print(f"     结果: {skill_result[:200]}")
 
                     result["steps"].append({
                         "iteration": iteration,
