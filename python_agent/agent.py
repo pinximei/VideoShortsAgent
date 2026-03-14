@@ -18,12 +18,14 @@ from python_agent.tools import ToolRegistry
 from python_agent.skills.transcribe_skill import TranscribeSkill
 from python_agent.skills.analysis_skill import AnalysisSkill
 from python_agent.skills.render_skill import RenderSkill
+from python_agent.skills.download_skill import DownloadSkill
 
 
 SYSTEM_PROMPT = (
     "你是一个专业的短视频剪辑 Agent。\n\n"
     "你的任务是将用户提供的长视频，自动加工成有吸引力的短视频切片。\n\n"
     "标准流程：\n"
+    "0. 如果用户提供的是 URL，先使用 download 下载视频\n"
     "1. 使用 transcribe 将视频语音转为文字\n"
     "2. 使用 analyze 从转录文本中找出多个精彩片段（返回 clips 数组）\n"
     "3. 使用 render 渲染最终视频，传入 analyze 的结果 + 特效配置\n\n"
@@ -69,6 +71,7 @@ class VideoShortsAgent:
         self.transcribe_skill = TranscribeSkill(model_path=whisper_model)
         self.analysis_skill = AnalysisSkill(api_key=api_key, model=llm_model)
         self.render_skill = RenderSkill()
+        self.download_skill = DownloadSkill()
 
         # 3. 注册 Tools
         self.tools = ToolRegistry()
@@ -80,6 +83,13 @@ class VideoShortsAgent:
         """注册所有工具"""
         self._task_dir = None
         self._video_path = None
+
+        self.tools.add(
+            name="download",
+            description="从 YouTube 等平台下载视频。输入 URL，返回下载后的本地文件路径。",
+            parameters={"url": "视频 URL（YouTube、Bilibili 等）"},
+            func=self._tool_download
+        )
 
         self.tools.add(
             name="transcribe",
@@ -107,6 +117,10 @@ class VideoShortsAgent:
         )
 
     # ========== 工具实现 ==========
+
+    def _tool_download(self, url: str) -> str:
+        output_path = self.download_skill.execute(url, self._task_dir)
+        return f"下载完成，视频保存在: {output_path}"
 
     def _tool_transcribe(self, video_path: str) -> str:
         result_path = self.transcribe_skill.execute(video_path, self._task_dir)

@@ -66,16 +66,24 @@ class LogCapture:
 
 # ========== 处理函数 ==========
 
-def process_agent(video_path, user_prompt):
+def process_agent(video_path, video_url, user_prompt):
     """Agent 模式：LLM 自主完成整个流程"""
-    if not video_path:
-        return "请先上传视频", "", None
-
-    if isinstance(video_path, dict):
-        video_path = video_path.get("video", video_path.get("name", ""))
+    # URL 优先
+    if video_url and video_url.strip():
+        effective_video = None  # Agent 会自己用 download 工具下载
+        if not user_prompt or not user_prompt.strip():
+            user_prompt = f"请先下载这个视频 {video_url} ，然后提取多个精彩片段，加上亮点字幕，拼接成短视频"
+        elif video_url not in user_prompt:
+            user_prompt = f"视频链接: {video_url}\n{user_prompt}"
+    elif video_path:
+        if isinstance(video_path, dict):
+            video_path = video_path.get("video", video_path.get("name", ""))
+        effective_video = video_path
+    else:
+        return "请上传视频或输入视频 URL", "", None
 
     if not user_prompt or not user_prompt.strip():
-        user_prompt = "帮我从这个视频中提取最精彩的片段做成短视频"
+        user_prompt = "提取视频中多个精彩片段，加上亮点字幕，拼接成一个短视频"
 
     # 捕获 Agent 日志
     capture = LogCapture()
@@ -84,7 +92,7 @@ def process_agent(video_path, user_prompt):
     try:
         result = _agent.run(
             user_message=user_prompt,
-            video_path=video_path
+            video_path=effective_video if video_url is None or not video_url.strip() else None
         )
     except Exception as e:
         traceback.print_exc()
@@ -166,14 +174,19 @@ def create_app():
         with gr.Tabs():
             # Tab 1: Agent 模式（核心）
             with gr.Tab("🤖 Agent 模式"):
-                gr.Markdown("> AI 自主思考并决策，自动完成 转录→分析→渲染 全流程")
+                gr.Markdown("> 支持上传视频或 YouTube 链接，AI 自动完成 下载→转录→分析→渲染")
 
                 with gr.Row():
                     with gr.Column(scale=1):
-                        agent_video = gr.Video(label="📤 上传视频")
+                        agent_video = gr.Video(label="📤 上传视频（方式一）")
+                        agent_url = gr.Textbox(
+                            label="🔗 或输入视频 URL（方式二）",
+                            placeholder="粘贴 YouTube / Bilibili 链接...",
+                            lines=1
+                        )
                         agent_prompt = gr.Textbox(
                             label="💬 指令（可选）",
-                            value="提取视频中多个精彩片段，加上亮点字幕，拼接成一个短视频",
+                            value="提取视频中多个精彩片段，加上亮点字幕和特效，拼接成一个短视频",
                             lines=2
                         )
                         agent_btn = gr.Button("🚀 开始处理", variant="primary", size="lg")
@@ -190,7 +203,7 @@ def create_app():
 
                 agent_btn.click(
                     fn=process_agent,
-                    inputs=[agent_video, agent_prompt],
+                    inputs=[agent_video, agent_url, agent_prompt],
                     outputs=[agent_reply, agent_logs, agent_output]
                 )
 
