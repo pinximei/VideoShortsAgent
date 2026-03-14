@@ -32,7 +32,7 @@ def init_skills():
 
     api_key = get_dashscope_api_key()
     _transcribe_skill = TranscribeSkill(model_path="./faster-whisper-large-v3")
-    _analysis_skill = AnalysisSkill(api_key=api_key, model="qwen3-flash")
+    _analysis_skill = AnalysisSkill(api_key=api_key, model="qwen-plus")
     _render_skill = RenderSkill()
 
     print("  所有 Skills 初始化完成 ✅")

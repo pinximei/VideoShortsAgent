@@ -32,8 +32,8 @@ def main():
     )
     parser.add_argument(
         "--llm",
-        default="qwen3-flash",
-        help="Qwen 模型名称，如 qwen3-flash / qwen-max / qwen-plus（默认: qwen3-flash）"
+        default="qwen-plus",
+        help="Qwen 模型名称，如 qwen-plus / qwen-max / qwen-turbo（默认: qwen-plus）"
     )
     parser.add_argument(
         "--prompt", "-p",
