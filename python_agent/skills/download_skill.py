@@ -5,14 +5,19 @@ DownloadSkill - 视频下载技能
 使用 yt-dlp 库实现，支持 URL 自动识别。
 """
 import os
-import yt_dlp
 
 
 class DownloadSkill:
     """视频下载技能"""
 
     def __init__(self):
-        print(f"[DownloadSkill] yt-dlp 已就绪 ✓")
+        try:
+            import yt_dlp
+            self._available = True
+            print(f"[DownloadSkill] yt-dlp 已就绪 ✓")
+        except ImportError:
+            self._available = False
+            print(f"[DownloadSkill] ⚠️ yt-dlp 未安装（pip install yt-dlp）")
 
     def execute(self, url: str, output_dir: str) -> str:
         """下载视频
@@ -25,6 +30,11 @@ class DownloadSkill:
             下载后的视频文件路径
         """
         os.makedirs(output_dir, exist_ok=True)
+
+        if not self._available:
+            raise RuntimeError("yt-dlp 未安装，请运行: pip install yt-dlp")
+
+        import yt_dlp
 
         output_template = os.path.join(output_dir, "source_video.%(ext)s")
 
