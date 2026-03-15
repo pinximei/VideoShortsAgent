@@ -305,11 +305,11 @@ class VideoShortsAgent:
         self._use_remotion = use_remotion
         # 1. 创建或复用任务目录
         if task_dir and os.path.isdir(task_dir):
-            self._task_dir = task_dir
+            self._task_dir = os.path.abspath(task_dir)
             task_id = os.path.basename(task_dir).replace("task_", "") or uuid.uuid4().hex[:8]
         else:
             task_id = uuid.uuid4().hex[:8]
-            self._task_dir = os.path.join(output_base, f"task_{task_id}")
+            self._task_dir = os.path.abspath(os.path.join(output_base, f"task_{task_id}"))
         self._video_path = video_path
         os.makedirs(self._task_dir, exist_ok=True)
 
