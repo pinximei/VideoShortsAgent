@@ -1,143 +1,281 @@
 # 🎬 VideoShortsAgent
 
-AI 驱动的短视频自动剪辑工具。输入长视频或 YouTube 链接，Agent 自动完成 **转录 → 金句提取 → 多片段裁剪 → 特效转场 → 拼接输出**。
+AI 驱动的视频短片生成工具。**两大核心功能**：
 
-## ✨ 核心特性
+1. **🎬 AI 精彩片段提取**：输入长视频 → AI 自动挑出精彩片段 → 加配音+字幕特效+转场 → 生成 60 秒短视频
+2. **🗣️ 全片中文翻译配音**：英文视频 → 语音识别 → AI 翻译 → 中文配音 → 字幕烧录
 
-- **ReAct Agent**：Qwen LLM 自主决策，自动选择工具和特效
-- **多片段提取**：AI 分析转录文本，提取 3-5 个精彩片段
-- **平滑转场**：FFmpeg xfade 支持 16 种转场效果（fade/wipeleft/circleopen 等）
-- **Remotion 动态特效**：每段独立字幕动画（spring/fade/typewriter）
-- **中文字幕+配音**：固定流水线，翻译纠错 + edge-tts 配音 + 字幕烧录
-- **YouTube 下载**：粘贴链接即可，支持 YouTube/Bilibili/TikTok 等 1000+ 平台
-- **Gradio Web UI**：双 Tab 操作（Agent 模式 + 中文字幕模式）
+> 📺 适合做科普、技术分享、学习笔记、内容二创
 
-## 🏗️ 架构
+---
+
+## ✨ 功能亮点
+
+| 特性 | 说明 |
+|------|------|
+| 🤖 AI Agent 自主决策 | Qwen LLM 自动选择精彩片段、特效、转场 |
+| 🎵 中文 TTS 配音 | Edge TTS，语速自动适配原始节奏 |
+| 🎨 Remotion 字幕特效 | spring 弹出 / fade 淡入 / typewriter 打字机 |
+| 🔀 16 种转场效果 | fade / wipeleft / circleopen / dissolve 等 |
+| 🌐 支持 1000+ 平台 | YouTube / B站 / TikTok 等链接直接输入 |
+| 🔒 本地运行 | 完全免费，数据不上传 |
+| 🖥️ Web UI | Gradio 双 Tab 操作，无需命令行 |
+
+---
+
+## 📋 前置条件
+
+在使用之前，请确保你的电脑安装了以下软件：
+
+### 1. Python 3.10+
+
+- **下载地址**：https://www.python.org/downloads/
+- 安装时 **务必勾选** `Add Python to PATH`
+- 验证安装：
+  ```bash
+  python --version
+  # 输出应为 Python 3.10.x 或更高
+  ```
+
+### 2. FFmpeg 4.4+
+
+FFmpeg 是视频处理的核心工具，**必须安装**。
+
+**Windows 安装方法**：
+1. 下载：https://github.com/BtbN/FFmpeg-Builds/releases
+   - 选择 `ffmpeg-master-latest-win64-gpl.zip`
+2. 解压到 `C:\ffmpeg`
+3. 添加环境变量：
+   - 右键"此电脑" → 属性 → 高级系统设置 → 环境变量
+   - 在 `Path` 中添加 `C:\ffmpeg\bin`
+4. 验证安装：
+   ```bash
+   ffmpeg -version
+   # 输出应显示 ffmpeg version 4.x 或更高
+   ```
+
+**Mac 安装方法**：
+```bash
+brew install ffmpeg
+```
+
+### 3. Node.js 18+（Remotion 特效可选）
+
+如果你想使用 **字幕动画特效**（spring/fade/typewriter），需要安装 Node.js。不安装也能正常使用（会自动降级为 ASS 静态字幕）。
+
+- **下载地址**：https://nodejs.org/ （选 LTS 版本）
+- 验证安装：
+  ```bash
+  node --version
+  # 输出应为 v18.x 或更高
+  ```
+
+### 4. API Key
+
+你需要至少一个 LLM API Key：
+
+| API Key | 用途 | 必需？ | 获取地址 |
+|---------|------|--------|----------|
+| `DASHSCOPE_API_KEY` | 通义千问 LLM (翻译+分析) | ✅ 必需 | https://dashscope.console.aliyun.com/ |
+| `GROQ_API_KEY` | Groq Whisper (极速转录) | ⭐ 推荐 | https://console.groq.com/ |
+
+> **DASHSCOPE_API_KEY 获取步骤**：
+> 1. 注册/登录阿里云
+> 2. 打开 [DashScope 控制台](https://dashscope.console.aliyun.com/)
+> 3. 点击"API-KEY 管理" → 创建 API Key
+> 4. 复制保存
+
+> **GROQ_API_KEY 获取步骤**（推荐，转录速度快 10 倍）：
+> 1. 注册 https://console.groq.com/
+> 2. 左侧菜单 API Keys → Create API Key
+> 3. 复制保存
+
+---
+
+## 🚀 安装步骤
+
+### 第一步：克隆项目
+
+```bash
+git clone https://github.com/pinximei/VideoShortsAgent.git
+cd VideoShortsAgent
+```
+
+### 第二步：安装 Python 依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+### 第三步：配置 API Key
+
+在项目根目录创建 `.env` 文件：
+
+```bash
+# .env 文件内容
+DASHSCOPE_API_KEY=sk-你的阿里云API密钥
+GROQ_API_KEY=gsk_你的Groq密钥
+```
+
+> 💡 Windows 用户可以直接新建文本文件，重命名为 `.env`（注意去掉 `.txt` 后缀）
+
+### 第四步：安装 Remotion 特效（可选）
+
+```bash
+cd remotion_effects
+npm install
+cd ..
+```
+
+> 跳过此步骤也能正常使用，字幕会自动降级为静态样式
+
+### 第五步：启动！
+
+**Windows 用户**：双击 `start.bat`
+
+**命令行启动**：
+```bash
+python -m python_agent.app
+# 浏览器自动打开 http://localhost:7860
+```
+
+---
+
+## 📖 使用指南
+
+### 模式一：🎬 AI Agent 精彩片段提取
+
+适合：从长视频中提取精彩片段，生成短视频
+
+1. 打开 Web UI，切换到 **🎬 AI Agent** Tab
+2. 上传视频或粘贴视频链接（YouTube/B站等）
+3. 在指令框输入想要的效果，例如：
+   ```
+   从这个视频中提取 3 个最精彩的片段，生成 60 秒短视频
+   ```
+4. 点击 **开始处理**
+5. 等待 Agent 自动完成：转录 → 分析 → 配音 → 特效 → 拼接
+6. 下载生成的短视频
+
+**AI 会自动为你做**：
+- ✅ 从长视频中挑出最有价值的片段
+- ✅ 为每段生成中文 TTS 配音
+- ✅ 添加字幕动画特效（spring/fade/typewriter）
+- ✅ 添加转场效果（fade/wipeleft/circleopen 等）
+- ✅ 拼接成完整短视频
+
+### 模式二：🗣️ 全片中文翻译配音
+
+适合：把完整的英文视频翻译成中文配音版本
+
+1. 切换到 **📝 中文字幕** Tab
+2. 三种输入方式任选其一：
+   - 📁 上传本地视频文件
+   - 🔗 粘贴视频链接（YouTube/B站等）
+   - 📂 输入已有任务目录（跳过转录，适合重复处理）
+3. 点击 **开始处理**
+4. 等待五步流水线完成：
+   ```
+   ① 语音识别 → ② AI 翻译 → ③ TTS 配音 → ④ 音轨合成 → ⑤ 字幕烧录
+   ```
+5. 下载带中文配音和字幕的视频
+
+---
+
+## 🔧 技术架构
 
 ```
-用户输入（视频/URL + 指令）
-     ↓
-┌─────────────────────────────────────────────┐
-│  Tab 1: ReAct Agent (Qwen)                  │
-│  transcribe → analyze → dubbing → render    │
-│  LLM 自主决策，多片段裁剪+特效+转场          │
-├─────────────────────────────────────────────┤
-│  Tab 2: 中文字幕（固定流水线）                │
-│  transcribe → LLM翻译纠错 → TTS配音          │
-│  → ASS字幕 → FFmpeg烧录+替换音频             │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│  🎬 AI Agent 模式                              │
+│  ReAct Agent (Qwen) 自主决策                    │
+│  download → transcribe → analyze → dub → render │
+│  多片段裁剪 + Remotion特效 + 转场拼接            │
+├──────────────────────────────────────────────┤
+│  🗣️ 中文字幕模式（固定流水线）                    │
+│  transcribe → LLM翻译 → TTS配音                 │
+│  → concat音轨合成 → FFmpeg字幕烧录               │
+└──────────────────────────────────────────────┘
 ```
+
+### Agent 工具链
+
+| 工具 | 功能 | 技术栈 |
+|------|------|--------|
+| `download` | 从 URL 下载视频 | yt-dlp |
+| `transcribe` | 语音转文字 | Groq Whisper / faster-whisper |
+| `analyze` | 提取精彩片段 + 规划特效 | Qwen LLM |
+| `dubbing` | 中文 TTS 配音 | Edge TTS（句级精确同步）|
+| `render` | 多段裁剪 + 字幕 + 转场拼接 | FFmpeg + Remotion |
+
+### 特效系统
+
+**字幕动画**（Remotion）：
+
+| 动画 | 效果 |
+|------|------|
+| `spring` | 弹性弹出（默认） |
+| `fade` | 淡入淡出 |
+| `typewriter` | 打字机逐字显示 |
+
+**转场效果**（FFmpeg xfade）：
+`fade` / `wipeleft` / `wiperight` / `circleopen` / `circleclose` / `slideup` / `slidedown` / `dissolve` / `pixelize` 等 16 种
+
+---
 
 ## 📁 项目结构
 
 ```
 VideoShortsAgent/
 ├── python_agent/
+│   ├── app.py                # Gradio Web UI（双 Tab）
 │   ├── agent.py              # ReAct Agent 主循环
 │   ├── tools.py              # 工具注册器
 │   ├── config.py             # 配置管理
-│   ├── main.py               # CLI 入口
-│   ├── app.py                # Gradio Web UI（双 Tab）
 │   └── skills/
-│       ├── download_skill.py  # yt-dlp 视频下载
-│       ├── transcribe_skill.py # Whisper 语音转录（Groq/本地）
-│       ├── analysis_skill.py  # Qwen 金句分析+片段规划
-│       ├── dubbing_skill.py   # edge-tts 中文配音（句级同步）
-│       └── render_skill.py    # FFmpeg 渲染+转场+Remotion
-├── remotion_effects/          # Remotion 特效（可选）
-│   └── src/compositions/
-│       ├── CaptionOverlay.tsx  # 字幕弹出动画
-│       └── GradientBackground.tsx # 渐变背景
-├── .env                       # API Key 配置
+│       ├── download_skill.py   # yt-dlp 视频下载
+│       ├── transcribe_skill.py # Whisper 语音转录
+│       ├── analysis_skill.py   # Qwen 金句分析
+│       ├── dubbing_skill.py    # Edge TTS 配音
+│       └── render_skill.py     # FFmpeg + Remotion 渲染
+├── remotion_effects/           # Remotion 特效组件（可选）
+├── .env                        # API Key 配置
 ├── requirements.txt
-└── start.bat                  # Windows 一键启动
+└── start.bat                   # Windows 一键启动
 ```
 
-## 🚀 快速开始
+---
 
-### 1. 安装依赖
+## ❓ 常见问题
 
-```bash
-# Python 依赖
-pip install -r requirements.txt
+### Q: 没有 GPU 可以用吗？
+A: 可以。推荐配置 `GROQ_API_KEY` 使用云端 Whisper 转录（速度快 10 倍）。没有 GPU 也可以用本地 Whisper，只是速度慢一些。
 
-# Whisper 模型（首次需下载）
-python download_model.py
-```
+### Q: FFmpeg 报错 "不是内部或外部命令"
+A: FFmpeg 没有添加到系统 PATH。请按照上面的安装步骤，将 FFmpeg 的 bin 目录添加到环境变量。
 
-### 2. 配置 API Key
+### Q: Remotion 渲染失败或黑屏
+A: 确保 Node.js 已安装且版本 ≥ 18。在 `remotion_effects` 目录下运行 `npm install`。渲染失败时会自动降级为 ASS 静态字幕。
 
-```bash
-cp .env.example .env
-# 编辑 .env，填入：
-# DASHSCOPE_API_KEY=sk-xxx     （必须，Qwen LLM）
-# GROQ_API_KEY=gsk_xxx         （推荐，极速转录）
-```
+### Q: 支持 Mac/Linux 吗？
+A: 支持。安装 Python + FFmpeg + Node.js 后，运行 `python -m python_agent.app` 即可。
 
-### 3. 启动
+### Q: API Key 收费吗？
+A: 通义千问（qwen-turbo）有免费额度，足够日常使用。Groq 有免费 tier，速率限制内免费。
 
-**方式一：Web UI**
-```bash
-# Windows 双击 start.bat
-# 或命令行：
-python -m python_agent.app
-# 打开 http://localhost:7860
-```
-
-**方式二：命令行**
-```bash
-python -m python_agent.main --input video/test.mp4 --model ./faster-whisper-large-v3
-```
-
-## 🔧 Agent 工具链
-
-| 工具 | 功能 | 技术栈 |
-|------|------|--------|
-| `download` | 从 URL 下载视频 | yt-dlp + Chrome cookies |
-| `transcribe` | 语音转文字 | faster-whisper / Groq API |
-| `analyze` | 提取精彩片段+规划特效 | Qwen 3.5-flash |
-| `dubbing` | 中文 TTS 配音 | edge-tts（句级精确同步）|
-| `render` | 多段裁剪+字幕+转场拼接 | FFmpeg + Remotion |
-
-## 🎨 特效系统
-
-Agent 为每段视频独立选择字幕动画和转场效果：
-
-| 字幕动画 | 效果 |
-|----------|------|
-| `spring` | 弹性弹出 |
-| `fade` | 淡入淡出 |
-| `typewriter` | 打字机效果 |
-| `slide` | 滑入 |
-| `bounce` | 弹跳 |
-
-**转场效果**：`fade` / `wipeleft` / `circleopen` / `circleclose` / `slideup` / `dissolve` / `pixelize` 等 16 种
-
-## 📝 中文字幕模式
-
-固定流水线，不走 Agent，速度快：
-
-1. **转录** → Groq Whisper（极速）或本地 faster-whisper
-2. **翻译纠错** → qwen-turbo（分批 50 条/批，自动翻译英文/纠正中文）
-3. **TTS 配音** → edge-tts（逐段生成中文语音）
-4. **合成音轨** → FFmpeg（按时间戳对齐所有语音段）
-5. **烧录输出** → FFmpeg（字幕烧录 + 原声替换为中文配音）
-
-支持三种输入：上传视频 / URL 下载 / 已有任务目录（跳过转录）
+---
 
 ## 🔮 未来规划
 
-- **AI 视频美化**：接入 Seedance / 可灵等视频生成模型，对剪辑片段进行风格化美化（画质增强、风格迁移、运动增强）
-- **AI 视频生成**：输入文字脚本，Seedance 生成视频片段 → 配音 → 字幕 → 拼接为完整短视频
-- **多语言字幕**：支持日语、韩语等更多目标语言
-- **智能剪辑建议**：AI 分析视频内容，自动推荐最佳剪辑方案
+- 🎨 **AI 视频美化**：接入 Seedance / 可灵，画质增强+风格迁移
+- 🌍 **多语言字幕**：支持日语、韩语等更多语言
+- 📱 **竖版适配**：自动裁切为 9:16 短视频格式
+- 🧠 **智能剪辑建议**：AI 分析最佳剪辑方案
 
-## 📋 系统要求
+---
 
-- Python 3.10+
-- FFmpeg 4.4+
-- Node.js 18+（Remotion 特效可选）
-- CUDA GPU（推荐，加速 Whisper 转录）
+## ⭐ Star History
+
+如果觉得有用，请给个 Star 支持一下！🙏
 
 ## 📄 License
 
