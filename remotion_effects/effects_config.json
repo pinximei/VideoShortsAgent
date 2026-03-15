@@ -1,0 +1,28 @@
+{
+  "caption_styles": {
+    "spring": "弹性弹出动画，活力感强，适合科技/产品/欢快内容",
+    "fade": "淡入淡出，优雅沉稳，适合纪录片/情感/教育内容",
+    "typewriter": "打字机逐字显现，适合悬疑/叙事/科技解说内容"
+  },
+  "overlays": {
+    "gradient": {
+      "description": "渐变背景氛围层，增加视觉层次感和画面质感",
+      "default_colors": ["#FF6B6B", "#4ECDC4"]
+    }
+  },
+  "transitions": {
+    "fade": "淡入淡出，通用百搭",
+    "circleopen": "圆形展开，适合揭示/惊喜内容",
+    "wipeleft": "左划切换，适合叙事推进/时间线",
+    "wiperight": "右划切换，适合回顾/倒叙",
+    "slideup": "上滑切换，适合递进/升华",
+    "slidedown": "下滑切换，适合总结/收尾"
+  },
+  "presets": {
+    "科技": {"caption_style": "spring", "transition": "circleopen", "gradient": true, "gradient_colors": ["#667eea", "#764ba2"]},
+    "情感": {"caption_style": "fade", "transition": "fade", "gradient": true, "gradient_colors": ["#f093fb", "#f5576c"]},
+    "叙事": {"caption_style": "typewriter", "transition": "wipeleft", "gradient": false},
+    "活力": {"caption_style": "spring", "transition": "slideup", "gradient": true, "gradient_colors": ["#43e97b", "#38f9d7"]},
+    "严肃": {"caption_style": "fade", "transition": "fade", "gradient": false}
+  }
+}

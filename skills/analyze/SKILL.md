@@ -1,6 +1,6 @@
 ---
 name: analyze
-description: 从转录文本中分析并提取爆款金句（15-30秒片段）
+description: 从转录文本中分析内容并提取关键主题段落
 parameters:
   - name: transcript_path
     description: transcript.json 文件路径
@@ -9,7 +9,7 @@ parameters:
 
 ## 功能
 
-从视频转录文本（transcript.json）中，利用 LLM 分析并找出最有"爆款潜力"的 15-30 秒片段。
+从视频转录文本（transcript.json）中，利用 LLM 分析内容并提取若干完整描述主题的关键段落。
 
 ## 输入
 

@@ -17,8 +17,10 @@ DEFAULT_VOICE = VOICE_MALE
 
 # 句间停顿（秒）
 SENTENCE_PAUSE = 0.2
-# 每段 TTS 开头静音（秒）- 让画面先出现再说话
-CLIP_LEAD_SILENCE = 0.3
+# 音频无法居中时的最小前置留白（秒）
+MIN_LEAD_SILENCE = 0.3
+# 前置留白上限（秒）,切换场景后应尽快出声
+MAX_LEAD_SILENCE = 0.5
 
 
 class DubbingSkill:
@@ -28,8 +30,11 @@ class DubbingSkill:
         self.voice = voice
         print(f"[DubbingSkill] 语音: {self.voice} ✓")
 
-    def execute(self, analysis: dict, output_dir: str) -> dict:
+    def execute(self, analysis: dict, output_dir: str, voice: str = "") -> dict:
         """执行 TTS 生成（按句分段，精确计时）
+
+        Args:
+            voice: 可选，语音角色名称（如 'zh-CN-YunyangNeural'），为空时使用初始化时的默认值
 
         Returns:
             {
@@ -44,6 +49,12 @@ class DubbingSkill:
                 }, ...]
             }
         """
+        # 如果指定了 voice，临时覆盖
+        original_voice = self.voice
+        if voice:
+            self.voice = voice
+            print(f"[DubbingSkill] 使用指定语音: {self.voice}")
+
         tts_dir = os.path.join(output_dir, "tts_segments")
         os.makedirs(tts_dir, exist_ok=True)
 
@@ -73,16 +84,15 @@ class DubbingSkill:
             if not sentence_audios:
                 continue
 
-            # 3. 拼接所有句子为一个完整音频（含句间停顿）
+            # 3. 拼接所有句子为一个完整音频（居中对齐，前后留白）
             clip_audio_path = os.path.join(tts_dir, f"tts_clip_{i}.mp3")
-            sentence_timeline = self._concat_sentence_audios(
-                sentence_audios, clip_audio_path, tts_dir, i
+            video_duration = float(clip.get("end", 0)) - float(clip.get("start", 0))
+            sentence_timeline, total_duration = self._concat_sentence_audios(
+                sentence_audios, clip_audio_path, tts_dir, i, video_duration
             )
 
-            # 4. 计算总时长（用句子时间轴，比 ffprobe 更可靠）
-            if sentence_timeline:
-                total_duration = sentence_timeline[-1]["end"]
-            else:
+            # 4. 总时长兜底（拼接计算失败时用 ffprobe）
+            if total_duration <= 0:
                 total_duration = self._get_audio_duration(clip_audio_path)
 
             # ffprobe 校验（可能返回 0，不用作主要来源）
@@ -102,6 +112,9 @@ class DubbingSkill:
             for sa in sentence_audios:
                 if os.path.exists(sa["path"]):
                     os.remove(sa["path"])
+
+        # 恢复原始语音设置
+        self.voice = original_voice
 
         print(f"\n[DubbingSkill] ✅ 完成: {len(tts_clips)} 个 TTS 音频（句级精确计时）")
         return {"tts_clips": tts_clips}
@@ -126,21 +139,42 @@ class DubbingSkill:
 
     def _concat_sentence_audios(self, sentence_audios: list,
                                  output_path: str, tts_dir: str,
-                                 clip_index: int) -> list:
-        """拼接句子音频，插入停顿，返回精确时间轴
+                                 clip_index: int, video_duration: float = 0) -> tuple:
+        """拼接句子音频，居中对齐于视频画面（前后留白），返回精确时间轴和总时长
+
+        Args:
+            video_duration: 视频画面时长（秒），用于计算居中留白
 
         Returns:
-            [{"text": "...", "start": 0.0, "end": 3.2}, ...]
+            (timeline, total_duration)
+            timeline: [{"text": "...", "start": 0.0, "end": 3.2}, ...]
+            total_duration: 包含前后留白的总时长
         """
-        # 生成静音文件（句间停顿）
+        # 计算语音内容时长（句子 + 句间停顿）
+        content_duration = sum(sa["duration"] for sa in sentence_audios)
+        content_duration += SENTENCE_PAUSE * max(0, len(sentence_audios) - 1)
+
+        # 计算前后留白：前留白 ≤ 0.5 秒（快速出声），剩余放尾部
+        if video_duration > 0 and video_duration > content_duration:
+            total_padding = video_duration - content_duration
+            lead_silence = min(total_padding / 2, MAX_LEAD_SILENCE)
+            trail_silence = total_padding - lead_silence
+            print(f"    留白分配: 视频={video_duration:.1f}s, 语音={content_duration:.1f}s, "
+                  f"前={lead_silence:.1f}s, 后={trail_silence:.1f}s")
+        else:
+            lead_silence = MIN_LEAD_SILENCE
+            trail_silence = 0.0
+
+        # 生成静音文件
         silence_path = os.path.join(tts_dir, f"silence_{clip_index}.mp3")
         self._generate_silence(silence_path, SENTENCE_PAUSE)
 
-        # 生成开头静音（让画面先出现）
         lead_silence_path = os.path.join(tts_dir, f"lead_{clip_index}.mp3")
-        self._generate_silence(lead_silence_path, CLIP_LEAD_SILENCE)
+        self._generate_silence(lead_silence_path, lead_silence)
 
-        # 构建拼接列表：开头静音 + 句子（句间停顿）
+        temp_files = [silence_path, lead_silence_path]
+
+        # 构建拼接列表：前留白 + 句子（句间停顿） + 后留白
         concat_list_path = os.path.join(tts_dir, f"concat_{clip_index}.txt")
         with open(concat_list_path, "w", encoding="utf-8") as f:
             f.write(f"file '{lead_silence_path}'\n")
@@ -148,6 +182,14 @@ class DubbingSkill:
                 f.write(f"file '{sa['path']}'\n")
                 if j < len(sentence_audios) - 1:
                     f.write(f"file '{silence_path}'\n")
+            # 添加尾部留白
+            if trail_silence > 0.05:
+                trail_silence_path = os.path.join(tts_dir, f"trail_{clip_index}.mp3")
+                self._generate_silence(trail_silence_path, trail_silence)
+                f.write(f"file '{trail_silence_path}'\n")
+                temp_files.append(trail_silence_path)
+
+        temp_files.append(concat_list_path)
 
         # FFmpeg concat
         cmd = [
@@ -159,9 +201,9 @@ class DubbingSkill:
         except Exception as e:
             print(f"    ⚠️ 拼接失败: {e}")
 
-        # 计算每句的精确时间轴（偏移开头静音）
+        # 计算每句的精确时间轴（偏移前留白）
         timeline = []
-        current_time = CLIP_LEAD_SILENCE
+        current_time = lead_silence
         for j, sa in enumerate(sentence_audios):
             start = current_time
             end = start + sa["duration"]
@@ -172,12 +214,15 @@ class DubbingSkill:
             })
             current_time = end + (SENTENCE_PAUSE if j < len(sentence_audios) - 1 else 0)
 
-        # 清理临时文件
-        for f in [silence_path, lead_silence_path, concat_list_path]:
-            if os.path.exists(f):
-                os.remove(f)
+        # 总时长 = 最后一句结束 + 尾部留白
+        total_duration = (timeline[-1]["end"] if timeline else 0) + trail_silence
 
-        return timeline
+        # 清理临时文件
+        for path in temp_files:
+            if os.path.exists(path):
+                os.remove(path)
+
+        return timeline, total_duration
 
     def _generate_silence(self, output_path: str, duration: float):
         """生成静音音频文件"""

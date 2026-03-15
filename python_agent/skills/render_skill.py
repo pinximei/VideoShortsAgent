@@ -115,10 +115,22 @@ class RenderSkill:
             self._attach_audio(clip_path, tts_path, with_audio_path)
             os.replace(with_audio_path, clip_path)
 
-        ass_path = os.path.join(output_dir, "subtitle.ass")
+        # 字幕/特效
         sentences = tts_clip.get("sentences") if tts_clip else None
-        self._generate_ass(subtitle_text, target_duration, ass_path, sentences=sentences)
-        self._burn_subtitle(clip_path, ass_path, output_path)
+        use_remotion = (effects or {}).get("use_remotion", False) and self._remotion_available
+        caption_style = (effects or {}).get("caption_style", "spring")
+
+        if use_remotion:
+            # Remotion 特效覆盖层
+            self._apply_remotion_caption(
+                clip_path, subtitle_text, target_duration, output_path,
+                output_dir, caption_style, sentences=sentences, effects=effects
+            )
+        else:
+            # ASS 字幕烧录
+            ass_path = os.path.join(output_dir, "subtitle.ass")
+            self._generate_ass(subtitle_text, target_duration, ass_path, sentences=sentences)
+            self._burn_subtitle(clip_path, ass_path, output_path)
 
         if os.path.exists(clip_path):
             os.remove(clip_path)
@@ -126,8 +138,31 @@ class RenderSkill:
     def _render_multi(self, video_path: str, clips: list, output_path: str,
                       output_dir: str, effects: dict = None, tts_clips: list = None):
         """渲染多个片段并拼接"""
+        MAX_TOTAL_DURATION = 65.0  # 总时长上限 65 秒（留 5 秒余量给转场）
         print(f"[RenderSkill] 多片段模式: {len(clips)} 个片段"
               f"{f', {len(tts_clips)} 个 TTS' if tts_clips else ''}")
+
+        # 清理旧的中间文件（避免上次残留文件干扰）
+        import glob
+        for pattern in ["segment_*.mp4", "clip_*_raw.mp4", "clip_*_audio.mp4",
+                        "caption_overlay_*.webm", "gradient_overlay_*.webm", "subtitle_*.ass"]:
+            for old_file in glob.glob(os.path.join(output_dir, pattern)):
+                os.remove(old_file)
+
+        # 硬限制：总时长截断
+        cumulative_duration = 0.0
+        valid_clip_count = len(clips)
+        for i, clip in enumerate(clips):
+            tts_clip = tts_clips[i] if tts_clips and i < len(tts_clips) else None
+            dur = tts_clip["duration"] if tts_clip else (float(clip["end"]) - float(clip["start"]))
+            cumulative_duration += dur
+            if cumulative_duration > MAX_TOTAL_DURATION:
+                valid_clip_count = i
+                print(f"[RenderSkill] ⚠️ 总时长 {cumulative_duration:.0f}s 超限，只保留前 {i} 个片段")
+                break
+        clips = clips[:valid_clip_count]
+        if tts_clips:
+            tts_clips = tts_clips[:valid_clip_count]
 
         segment_paths = []
         for i, clip in enumerate(clips):
@@ -160,16 +195,36 @@ class RenderSkill:
             # 裁剪（静音）
             self._clip_video(video_path, start, end, clip_path, silent=silent)
 
+            # 裁剪结果检查
+            if not os.path.exists(clip_path) or os.path.getsize(clip_path) < 1024:
+                print(f"  ⚠️ 片段 {i+1} 裁剪失败或文件过小，跳过")
+                continue
+
             # 附加 TTS 音频
-            if tts_path:
+            if tts_path and os.path.exists(tts_path):
                 with_audio_path = os.path.join(output_dir, f"clip_{i}_audio.mp4")
                 self._attach_audio(clip_path, tts_path, with_audio_path)
-                os.replace(with_audio_path, clip_path)
+                if os.path.exists(with_audio_path):
+                    os.replace(with_audio_path, clip_path)
+                else:
+                    print(f"  ⚠️ 附加音频失败，使用静音视频继续")
 
-            # 字幕（使用精确时间轴）
+            # 字幕/特效（每段独立选择）
             sentences = tts_clip.get("sentences") if tts_clip else None
-            self._generate_ass(subtitle_text, target_duration, ass_path, sentences=sentences)
-            self._burn_subtitle(clip_path, ass_path, segment_path)
+            use_remotion = (effects or {}).get("use_remotion", False) and self._remotion_available
+            # 优先使用 clip 级别的 caption_style，降级到全局 effects
+            caption_style = clip.get("caption_style") or (effects or {}).get("caption_style", "spring")
+
+            if use_remotion:
+                self._apply_remotion_caption(
+                    clip_path, subtitle_text, target_duration, segment_path,
+                    output_dir, caption_style, sentences=sentences, effects=effects,
+                    clip_index=i
+                )
+            else:
+                ass_path = os.path.join(output_dir, f"subtitle_{i}.ass")
+                self._generate_ass(subtitle_text, target_duration, ass_path, sentences=sentences)
+                self._burn_subtitle(clip_path, ass_path, segment_path)
 
             segment_paths.append(segment_path)
 
@@ -177,7 +232,7 @@ class RenderSkill:
                 os.remove(clip_path)
 
         print(f"\n[RenderSkill] 拼接 {len(segment_paths)} 个片段...")
-        self._concat_videos(segment_paths, output_path, output_dir, effects)
+        self._concat_videos(segment_paths, output_path, output_dir, effects, clips=clips)
 
         for path in segment_paths:
             if os.path.exists(path):
@@ -321,32 +376,228 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             f.write(ass_content)
 
     def _burn_subtitle(self, video_path: str, ass_path: str, output_path: str):
+        # Windows 路径处理：反斜杠→正斜杠，冒号用 \: 转义（FFmpeg filtergraph 语法）
         ass_escaped = ass_path.replace("\\", "/").replace(":", "\\:")
         cmd = [
             "ffmpeg", "-y", "-i", video_path,
-            "-vf", f"ass='{ass_escaped}'",
+            "-vf", f"subtitles=filename='{ass_escaped}'",
+            "-c:v", "libx264", "-c:a", "copy",
+            "-pix_fmt", "yuv420p",
+            "-movflags", "+faststart",
+            "-preset", "ultrafast",
+            output_path
+        ]
+        self._run_cmd(cmd, "烧录字幕", timeout=600)
+
+    # ========== Remotion 特效 ==========
+
+    def _apply_remotion_caption(self, video_path: str, text: str, duration: float,
+                                output_path: str, output_dir: str, caption_style: str = "spring",
+                                sentences: list = None, effects: dict = None, clip_index: int = 0):
+        """使用 Remotion 渲染字幕特效覆盖层并叠加到视频上
+
+        流程：
+        1. 获取视频分辨率
+        2. Remotion 渲染透明字幕覆盖层（WebM/VP9）
+        3. 可选：渲染渐变背景覆盖层
+        4. FFmpeg 将覆盖层叠加到视频上
+        """
+        width, height = self._get_video_resolution(video_path)
+        fps = 30
+        total_frames = max(1, int(duration * fps))
+
+        print(f"[RenderSkill] Remotion 特效: {width}x{height}, {total_frames} 帧, style={caption_style}")
+
+        # 1. 渲染字幕覆盖层
+        props = {"style": caption_style}
+        if sentences and len(sentences) > 0:
+            # 传递精确时间轴，Remotion 组件逐句显示
+            props["sentences"] = sentences
+        else:
+            props["text"] = text
+
+        caption_overlay_path = os.path.join(output_dir, f"caption_overlay_{clip_index}.webm")
+        self._render_remotion_overlay(
+            composition="CaptionOverlay",
+            props=props,
+            output_path=caption_overlay_path,
+            width=width, height=height, fps=fps, frames=total_frames,
+            output_dir=output_dir, tag=f"caption_{clip_index}"
+        )
+
+        if not os.path.exists(caption_overlay_path):
+            print(f"[RenderSkill] ⚠️ Remotion 渲染失败，降级为 ASS 字幕")
+            ass_path = os.path.join(output_dir, f"subtitle_{clip_index}.ass")
+            self._generate_ass(text, duration, ass_path, sentences=sentences)
+            self._burn_subtitle(video_path, ass_path, output_path)
+            return
+
+        # 2. 可选：渲染渐变背景覆盖层
+        gradient_overlay_path = None
+        if effects and effects.get("gradient", False):
+            colors = effects.get("gradient_colors", ["#FF6B6B", "#4ECDC4"])
+            gradient_overlay_path = os.path.join(output_dir, f"gradient_overlay_{clip_index}.webm")
+            self._render_remotion_overlay(
+                composition="GradientBackground",
+                props={"colorFrom": colors[0], "colorTo": colors[1], "opacity": 0.3},
+                output_path=gradient_overlay_path,
+                width=width, height=height, fps=fps, frames=total_frames,
+                output_dir=output_dir, tag=f"gradient_{clip_index}"
+            )
+
+        # 3. 叠加覆盖层到视频
+        overlays = [caption_overlay_path]
+        if gradient_overlay_path and os.path.exists(gradient_overlay_path):
+            overlays.insert(0, gradient_overlay_path)  # 渐变在字幕下方
+
+        self._overlay_videos(video_path, overlays, output_path)
+
+        # overlay 失败时降级：直接拷贝原视频
+        if not os.path.exists(output_path):
+            print(f"[RenderSkill] ⚠️ 覆盖层叠加失败，降级为 ASS 字幕")
+            ass_path = os.path.join(output_dir, f"subtitle_fallback_{clip_index}.ass")
+            self._generate_ass(text, duration, ass_path, sentences=sentences)
+            self._burn_subtitle(video_path, ass_path, output_path)
+
+        # 清理临时覆盖层
+        for p in [caption_overlay_path, gradient_overlay_path]:
+            if p and os.path.exists(p):
+                os.remove(p)
+
+    def _render_remotion_overlay(self, composition: str, props: dict, output_path: str,
+                                 width: int, height: int, fps: int, frames: int,
+                                 output_dir: str, tag: str = "overlay"):
+        """调用 Remotion CLI 渲染透明覆盖层（PNG 序列帧）"""
+        # 写入 props 文件（Windows 下必须用绝对路径 + 正斜杠）
+        props_path = os.path.abspath(os.path.join(output_dir, f"remotion_props_{tag}.json"))
+        with open(props_path, "w", encoding="utf-8") as f:
+            json.dump(props, f, ensure_ascii=False)
+
+        # Windows 路径转正斜杠（Remotion CLI 要求）
+        props_path_fwd = props_path.replace("\\", "/")
+
+        # 渲染为 PNG 序列帧到临时目录
+        seq_dir = os.path.join(output_dir, f"remotion_seq_{tag}")
+        os.makedirs(seq_dir, exist_ok=True)
+        seq_dir_fwd = os.path.abspath(seq_dir).replace("\\", "/")
+
+        cmd = [
+            "npx", "remotion", "render", "src/index.tsx", composition,
+            f"--output={seq_dir_fwd}",
+            f"--props={props_path_fwd}",
+            "--image-format=png", "--sequence",
+            f"--width={width}", f"--height={height}",
+            f"--frames=0-{frames - 1}",
+        ]
+        print(f"[RenderSkill] Remotion 渲染: {composition} ({frames} 帧)")
+        self._run_cmd(cmd, f"Remotion:{composition}", cwd=REMOTION_DIR,
+                      timeout=600, shell=True)
+
+        # PNG 序列帧 → 带 alpha 的视频（mov+png codec，完整保留透明度）
+        # 查找实际帧文件名模式
+        import glob
+        png_files = sorted(glob.glob(os.path.join(seq_dir, "*.png")))
+        if png_files:
+            # Remotion 输出格式为 element-0.png, element-1.png... 或 frame0.png...
+            first = os.path.basename(png_files[0])
+            # 提取模式
+            import re
+            m = re.match(r"(.+?)(\d+)(\.png)$", first)
+            if m:
+                prefix = m.group(1)
+                num_len = len(m.group(2))
+                pattern_fwd = os.path.join(seq_dir, f"{prefix}%0{num_len}d.png").replace("\\", "/")
+            else:
+                pattern_fwd = os.path.join(seq_dir, "%d.png").replace("\\", "/")
+
+            # 合成为 mov+png（保留 alpha 通道）
+            merge_cmd = [
+                "ffmpeg", "-y",
+                "-framerate", str(fps),
+                "-i", pattern_fwd,
+                "-c:v", "png",
+                "-pix_fmt", "rgba",
+                output_path
+            ]
+            # 输出改为 .mov 以支持 PNG codec
+            if output_path.endswith(".webm"):
+                output_path_mov = output_path.replace(".webm", ".mov")
+            else:
+                output_path_mov = output_path + ".mov"
+            merge_cmd[-1] = output_path_mov
+            self._run_cmd(merge_cmd, "合成覆盖层")
+
+            # 记录实际路径（覆盖调用者的路径）
+            if os.path.exists(output_path_mov):
+                if output_path != output_path_mov:
+                    os.replace(output_path_mov, output_path)
+
+        # 清理
+        import shutil
+        if os.path.exists(seq_dir):
+            shutil.rmtree(seq_dir, ignore_errors=True)
+        if os.path.exists(props_path):
+            os.remove(props_path)
+
+    def _overlay_videos(self, base_path: str, overlay_paths: list, output_path: str):
+        """将多个透明覆盖层叠加到基础视频上"""
+        inputs = ["-i", base_path]
+        for p in overlay_paths:
+            inputs += ["-i", p]
+
+        # 构建 filter_complex：逐层叠加
+        if len(overlay_paths) == 1:
+            filter_complex = "[0:v][1:v]overlay=0:0:shortest=1[vout]"
+        else:
+            # 多层叠加
+            parts = []
+            prev = "[0:v]"
+            for i in range(len(overlay_paths)):
+                out = "[vout]" if i == len(overlay_paths) - 1 else f"[tmp{i}]"
+                parts.append(f"{prev}[{i+1}:v]overlay=0:0:shortest=1{out}")
+                prev = out
+            filter_complex = ";".join(parts)
+
+        cmd = [
+            "ffmpeg", "-y",
+        ] + inputs + [
+            "-filter_complex", filter_complex,
+            "-map", "[vout]", "-map", "0:a?",
             "-c:v", "libx264", "-c:a", "copy",
             "-pix_fmt", "yuv420p",
             "-movflags", "+faststart",
             "-preset", "fast",
             output_path
         ]
-        self._run_cmd(cmd, "烧录字幕")
+        self._run_cmd(cmd, "叠加覆盖层")
+
+    def _get_video_resolution(self, video_path: str) -> tuple:
+        """获取视频分辨率，返回 (width, height)"""
+        cmd = [
+            "ffprobe", "-v", "quiet",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height",
+            "-of", "csv=p=0:s=x",
+            video_path
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            parts = result.stdout.strip().split("x")
+            return int(parts[0]), int(parts[1])
+        except Exception:
+            return 1080, 1920  # 默认竖屏
 
     def _concat_videos(self, video_paths: list, output_path: str, output_dir: str,
-                        effects: dict = None):
-        """FFmpeg xfade 拼接多个视频（交叉淡入淡出转场）"""
+                        effects: dict = None, clips: list = None):
+        """FFmpeg xfade 拼接多个视频（支持每段不同转场效果）"""
         if len(video_paths) == 1:
             import shutil
             shutil.copy2(video_paths[0], output_path)
             return
 
-        # 从 effects 读取转场配置
-        transition = "fade"  # 默认
-        transition_duration = 0.5
-        if effects:
-            transition = effects.get("transition", "fade")
-            transition_duration = float(effects.get("transition_duration", 0.5))
+        # 全局默认转场
+        default_transition = (effects or {}).get("transition", "fade")
+        transition_duration = float((effects or {}).get("transition_duration", 0.5))
 
         # 验证转场类型
         valid_transitions = [
@@ -355,11 +606,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "circleopen", "circleclose", "dissolve", "pixelize",
             "diagtl", "diagtr", "diagbl", "diagbr",
         ]
-        if transition not in valid_transitions:
-            print(f"[RenderSkill] ⚠️ 未知转场 '{transition}'，使用 fade")
-            transition = "fade"
 
-        print(f"[RenderSkill] 转场: {transition} ({transition_duration}s)")
+        # 为每个转场点确定转场类型（从 clip 级别读取，降级到全局默认）
+        transitions = []
+        for i in range(len(video_paths) - 1):
+            t = default_transition
+            if clips and i < len(clips):
+                t = clips[i].get("transition_to_next", "") or default_transition
+            if t not in valid_transitions:
+                print(f"[RenderSkill] ⚠️ 未知转场 '{t}'，使用 fade")
+                t = "fade"
+            transitions.append(t)
+        print(f"[RenderSkill] 转场序列: {transitions} ({transition_duration}s)")
 
         # 获取每个片段的时长
         durations = []
@@ -369,13 +627,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             print(f"  片段时长: {path} = {dur:.2f}s")
 
         # 构建 xfade 滤镜链
-        # 2个片段: [0:v][1:v]xfade=transition=fade:duration=0.5:offset=T
-        # 3个片段: 先合前2个，再合第3个
         inputs = []
         for path in video_paths:
             inputs.extend(["-i", path])
 
-        # 计算每个转场的 offset（前面所有片段时长之和 - 转场时长累积）
+        # 计算每个转场的 offset
         filter_parts = []
         offsets = []
         cumulative = 0
@@ -384,31 +640,48 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             offset = cumulative - transition_duration * (i + 1)
             offsets.append(max(0, offset))
 
-        # 视频滤镜链
+        # 检测片段是否有音频流
+        has_audio = False
+        try:
+            probe_cmd = ["ffprobe", "-v", "quiet", "-select_streams", "a",
+                         "-show_entries", "stream=codec_type", "-of", "csv=p=0",
+                         video_paths[0]]
+            probe_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=5)
+            has_audio = "audio" in probe_result.stdout
+        except Exception:
+            pass
+
+        # 视频/音频滤镜链（每段用独立转场）
         if len(video_paths) == 2:
             filter_parts.append(
-                f"[0:v][1:v]xfade=transition={transition}:duration={transition_duration}:offset={offsets[0]:.3f}[vout]"
+                f"[0:v][1:v]xfade=transition={transitions[0]}:duration={transition_duration}:offset={offsets[0]:.3f}[vout]"
             )
-            filter_parts.append(
-                f"[0:a][1:a]acrossfade=d={transition_duration}[aout]"
-            )
-            map_args = ["-map", "[vout]", "-map", "[aout]"]
+            if has_audio:
+                filter_parts.append(
+                    f"[0:a][1:a]acrossfade=d={transition_duration}[aout]"
+                )
+                map_args = ["-map", "[vout]", "-map", "[aout]"]
+            else:
+                map_args = ["-map", "[vout]"]
         else:
-            # 多个片段：链式 xfade
             v_prev = "[0:v]"
             a_prev = "[0:a]"
             for i in range(len(video_paths) - 1):
                 v_out = "[vout]" if i == len(video_paths) - 2 else f"[v{i}]"
                 a_out = "[aout]" if i == len(video_paths) - 2 else f"[a{i}]"
                 filter_parts.append(
-                    f"{v_prev}[{i+1}:v]xfade=transition={transition}:duration={transition_duration}:offset={offsets[i]:.3f}{v_out}"
+                    f"{v_prev}[{i+1}:v]xfade=transition={transitions[i]}:duration={transition_duration}:offset={offsets[i]:.3f}{v_out}"
                 )
-                filter_parts.append(
-                    f"{a_prev}[{i+1}:a]acrossfade=d={transition_duration}{a_out}"
-                )
+                if has_audio:
+                    filter_parts.append(
+                        f"{a_prev}[{i+1}:a]acrossfade=d={transition_duration}{a_out}"
+                    )
                 v_prev = v_out
                 a_prev = a_out
-            map_args = ["-map", "[vout]", "-map", "[aout]"]
+            if has_audio:
+                map_args = ["-map", "[vout]", "-map", "[aout]"]
+            else:
+                map_args = ["-map", "[vout]"]
 
         filter_complex = ";".join(filter_parts)
         print(f"  转场滤镜: {filter_complex[:200]}...")
@@ -438,9 +711,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     # ========== 工具方法 ==========
 
-    def _run_cmd(self, cmd: list, step_name: str, cwd: str = None, timeout: int = 120):
+    def _run_cmd(self, cmd: list, step_name: str, cwd: str = None,
+                 timeout: int = 120, shell: bool = False):
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
+            result = subprocess.run(cmd, capture_output=True, text=True,
+                                    timeout=timeout, cwd=cwd, shell=shell)
             if result.returncode != 0:
                 stderr = result.stderr[-500:] if result.stderr else ""
                 print(f"[RenderSkill] ⚠️ {step_name}警告: {stderr}")

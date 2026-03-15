@@ -1,4 +1,4 @@
-import {Composition} from 'remotion';
+import {registerRoot, Composition} from 'remotion';
 import {CaptionOverlay} from './compositions/CaptionOverlay';
 import {GradientBackground} from './compositions/GradientBackground';
 
@@ -6,7 +6,7 @@ import {GradientBackground} from './compositions/GradientBackground';
  * Remotion Root - 注册所有特效组件
  *
  * 每个 Composition 是一个独立的特效模板，可通过 CLI 渲染：
- *   npx remotion render src/index.ts CaptionOverlay --props='...'
+ *   npx remotion render src/index.tsx CaptionOverlay --props='...'
  */
 export const RemotionRoot: React.FC = () => {
   return (
@@ -15,12 +15,13 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="CaptionOverlay"
         component={CaptionOverlay}
-        durationInFrames={150}
+        durationInFrames={9000}
         fps={30}
         width={1080}
         height={1920}
         defaultProps={{
           text: '示例金句文案',
+          sentences: [],
           style: 'spring' as const,
         }}
       />
@@ -29,7 +30,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="GradientBackground"
         component={GradientBackground}
-        durationInFrames={150}
+        durationInFrames={9000}
         fps={30}
         width={1080}
         height={1920}
@@ -42,3 +43,5 @@ export const RemotionRoot: React.FC = () => {
     </>
   );
 };
+
+registerRoot(RemotionRoot);

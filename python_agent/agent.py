@@ -21,34 +21,96 @@ from python_agent.skills.render_skill import RenderSkill
 from python_agent.skills.download_skill import DownloadSkill
 from python_agent.skills.dubbing_skill import DubbingSkill
 
-
-SYSTEM_PROMPT = (
-    "你是一个专业的短视频剪辑 Agent。\n\n"
-    "你的任务是将用户提供的长视频，自动加工成有吸引力的短视频切片。\n\n"
-    "标准流程：\n"
-    "0. 如果用户提供的是 URL，先使用 download 下载视频\n"
-    "1. 使用 transcribe 将视频语音转为文字（会自动检测语言）\n"
-    "2. 使用 analyze 理解视频全部内容，浓缩为 3-5 个关键段落（返回 clips 数组，每个含 tts_text）\n"
-    "3. 使用 dubbing 工具生成 TTS 配音（所有语言都需要，analyze 会返回 tts_text）\n"
-    "   - 【重要】dubbing 返回的完整 JSON 字符串，必须原样传给 render 的 tts_info_json 参数\n"
-    "4. 使用 render 渲染最终视频\n"
-    "   - 【重要】video_path 永远使用原始视频（source_video），不要使用任何中间文件\n"
-    "   - dubbing 不产出视频文件，只产出 TTS 音频信息\n"
-    "   - render 的 tts_info_json 填入 dubbing 返回的完整 JSON 字符串\n"
-    "   - TTS 时长决定画面时长，视频画面适配语音\n\n"
-    "可用特效（通过 render 的 effects_json 参数指定）：\n"
-    "- caption_style: 字幕动画风格，可选 'spring'（弹出）/ 'fade'（淡入）/ 'typewriter'（打字机）\n"
-    "- gradient: true/false，是否叠加渐变背景氛围层\n"
-    "- gradient_colors: [颜色1, 颜色2]，渐变色，如 ['#FF6B6B', '#4ECDC4']\n"
-    "- transition: 片段间转场效果，可选 'fade'（淡入淡出）/ 'wipeleft'（左划）/ 'wiperight'（右划）/ 'circleopen'（圆形展开）/ 'slideup'（上滑）/ 'slidedown'（下滑）\n"
-    "- transition_duration: 转场时长（秒），默认 0.5\n"
-    "示例: {\"caption_style\": \"spring\", \"transition\": \"circleopen\", \"transition_duration\": 0.8}\n\n"
-    "注意事项：\n"
-    "- render 的 analysis_json 直接填入 analyze 返回的完整 JSON 字符串\n"
-    "- 根据视频内容风格主动选择合适的特效组合\n"
-    "- 每一步完成后检查结果是否合理再进行下一步\n"
-    "- 任务完成后给用户一个清晰的总结\n"
+EFFECTS_CONFIG_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "remotion_effects", "effects_config.json"
 )
+
+
+def _load_effects_config() -> dict:
+    """加载特效配置文件"""
+    try:
+        with open(EFFECTS_CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def build_system_prompt() -> str:
+    """动态构建 System Prompt，特效描述从 effects_config.json 加载"""
+    config = _load_effects_config()
+
+    # 构建特效描述
+    effects_lines = []
+
+    # 字幕风格
+    caption_styles = config.get("caption_styles", {})
+    if caption_styles:
+        styles_desc = " / ".join(
+            f"'{k}'（{v}）" for k, v in caption_styles.items()
+        )
+        effects_lines.append(f"- caption_style: 字幕动画风格，可选 {styles_desc}")
+
+    # 覆盖层
+    overlays = config.get("overlays", {})
+    if "gradient" in overlays:
+        g = overlays["gradient"]
+        effects_lines.append(f"- gradient: true/false，{g.get('description', '渐变背景氛围层')}")
+        colors = g.get("default_colors", ["#FF6B6B", "#4ECDC4"])
+        effects_lines.append(f"- gradient_colors: [颜色1, 颜色2]，渐变色，默认 {colors}")
+
+    # 转场
+    transitions = config.get("transitions", {})
+    if transitions:
+        trans_desc = " / ".join(
+            f"'{k}'（{v}）" for k, v in transitions.items()
+        )
+        effects_lines.append(f"- transition: 片段间转场效果，可选 {trans_desc}")
+    effects_lines.append("- transition_duration: 转场时长（秒），默认 0.5")
+
+    # 预设
+    presets = config.get("presets", {})
+    presets_desc = ""
+    if presets:
+        preset_items = []
+        for name, preset in presets.items():
+            preset_items.append(f"  - {name}风格: {json.dumps(preset, ensure_ascii=False)}")
+        presets_desc = (
+            "\n风格预设（可直接使用，也可自由组合）：\n"
+            + "\n".join(preset_items) + "\n"
+        )
+
+    effects_section = "\n".join(effects_lines)
+
+    return (
+        "你是一个专业的短视频剪辑 Agent。\n\n"
+        "你的任务是将用户提供的长视频，自动加工成有吸引力的短视频切片。\n\n"
+        "标准流程：\n"
+        "0. 如果用户提供的是 URL，先使用 download 下载视频\n"
+        "1. 使用 transcribe 将视频语音转为文字（会自动检测语言）\n"
+        "2. 使用 analyze 理解视频全部内容，浓缩为若干关键段落，完整描述主题（返回 clips 数组，每个含 tts_text）\n"
+        "3. 使用 dubbing 工具生成 TTS 配音（所有语言都需要，analyze 会返回 tts_text）\n"
+        "   - 【重要】dubbing 返回的完整 JSON 字符串，必须原样传给 render 的 tts_info_json 参数\n"
+        "   - 根据视频内容风格选择合适的语音角色（通过 voice 参数）\n"
+        "4. 使用 render 渲染最终视频\n"
+        "   - 【重要】video_path 永远使用原始视频（source_video），不要使用任何中间文件\n"
+        "   - dubbing 不产出视频文件，只产出 TTS 音频信息\n"
+        "   - render 的 tts_info_json 填入 dubbing 返回的完整 JSON 字符串\n"
+        "   - TTS 时长决定画面时长，视频画面适配语音\n"
+        "   - 【重要】根据视频内容风格，自动选择最合适的特效组合（通过 effects_json 参数）\n\n"
+        f"可用特效（通过 render 的 effects_json 参数指定）：\n{effects_section}\n"
+        f"{presets_desc}\n"
+        "可用语音角色（通过 dubbing 的 voice 参数指定）：\n"
+        "- zh-CN-YunyangNeural: 男声，专业播音腔，适合新闻/科技/严肃内容\n"
+        "- zh-CN-YunjianNeural: 男声，充满激情，适合体育/励志/热血内容\n"
+        "- zh-CN-YunxiNeural: 男声，阳光活泼，适合日常/休闲/故事类内容\n"
+        "- zh-CN-XiaoxiaoNeural: 女声，温暖自然，适合生活/情感/教育内容\n"
+        "- zh-CN-XiaoyiNeural: 女声，活泼可爱，适合卡通/娱乐/轻松内容\n\n"
+        "注意事项：\n"
+        "- render 的 analysis_json 直接填入 analyze 返回的完整 JSON 字符串\n"
+        "- 根据视频内容风格，主动选择最匹配的特效预设或自由组合特效参数\n"
+        "- 每一步完成后检查结果是否合理再进行下一步\n"
+        "- 任务完成后给用户一个清晰的总结\n"
+    )
 
 # ReAct 循环的最大轮次
 MAX_ITERATIONS = 10
@@ -100,6 +162,7 @@ class VideoShortsAgent:
         """注册所有工具"""
         self._task_dir = None
         self._video_path = None
+        self._use_remotion = False
 
         self.tools.add(
             name="download",
@@ -117,7 +180,7 @@ class VideoShortsAgent:
 
         self.tools.add(
             name="analyze",
-            description="从转录文本中分析并提取多个精彩片段（3-5个），返回 clips 数组，每个包含 start、end、hook_text。如果源语言是英文，还会返回 tts_text（中文配音文本）。",
+            description="从转录文本中分析内容并提取若干关键主题段落，返回 clips 数组，每个包含 start、end、hook_text。如果源语言是英文，还会返回 tts_text（中文配音文本）。",
             parameters={
                 "transcript_path": "transcript.json 文件路径",
                 "language": "（可选）源语言代码，如 'en'。如果 transcript.json 中已包含 language 信息则无需指定。用于旧格式的 transcript 文件。"
@@ -127,9 +190,10 @@ class VideoShortsAgent:
 
         self.tools.add(
             name="dubbing",
-            description="为英文视频生成中文 TTS 配音音频。需要 analyze 返回的包含 tts_text 的结果。返回 TTS 信息 JSON（包含每个片段的音频路径和实际时长），需传给 render。",
+            description="为视频生成中文 TTS 配音音频。需要 analyze 返回的包含 tts_text 的结果。返回 TTS 信息 JSON（包含每个片段的音频路径和实际时长），需传给 render。可通过 voice 参数指定语音角色。",
             parameters={
-                "analysis_json": "analyze 返回的完整 JSON 字符串，clips 中需含 tts_text 字段"
+                "analysis_json": "analyze 返回的完整 JSON 字符串，clips 中需含 tts_text 字段",
+                "voice": "（可选）语音角色名称，如 'zh-CN-YunyangNeural'。不指定则使用默认语音。"
             },
             func=self._tool_dubbing
         )
@@ -181,12 +245,12 @@ class VideoShortsAgent:
         result = self.analysis_skill.execute(transcript_path)
         return json.dumps(result, ensure_ascii=False, indent=2)
 
-    def _tool_dubbing(self, analysis_json: str) -> str:
+    def _tool_dubbing(self, analysis_json: str, voice: str = "") -> str:
         try:
             analysis = json.loads(analysis_json)
         except json.JSONDecodeError:
             return f"错误：analysis_json 不是合法的 JSON: {analysis_json[:200]}"
-        result = self.dubbing_skill.execute(analysis, self._task_dir)
+        result = self.dubbing_skill.execute(analysis, self._task_dir, voice=voice)
         return json.dumps(result, ensure_ascii=False, indent=2)
 
     def _tool_render(self, video_path: str, analysis_json: str,
@@ -207,15 +271,25 @@ class VideoShortsAgent:
                 tts_info = json.loads(tts_info_json)
             except json.JSONDecodeError:
                 pass
+        # 注入渲染模式到 effects
+        if effects is None:
+            effects = {}
+        effects["use_remotion"] = self._use_remotion
+        # 强制使用原始视频路径（不信任 LLM 传入的 video_path）
+        actual_video_path = video_path
+        if self._video_path and os.path.exists(self._video_path):
+            if os.path.abspath(video_path) != os.path.abspath(self._video_path):
+                print(f"[Agent] ⚠️ video_path 被覆盖: {video_path} → {self._video_path}")
+            actual_video_path = self._video_path
         output_path = self.render_skill.execute(
-            video_path, analysis, self._task_dir, effects=effects, tts_info=tts_info
+            actual_video_path, analysis, self._task_dir, effects=effects, tts_info=tts_info
         )
         return f"渲染完成，输出文件: {output_path}"
 
     # ========== ReAct 主循环 ==========
 
     def run(self, user_message: str, video_path: str = None, output_base: str = "output",
-            task_dir: str = None) -> dict:
+            task_dir: str = None, use_remotion: bool = False) -> dict:
         """执行 Agent 的 ReAct 循环
 
         Args:
@@ -223,10 +297,12 @@ class VideoShortsAgent:
             video_path: 视频文件路径（可选）
             output_base: 输出根目录
             task_dir: 已有任务目录路径（可选），用于复用之前的转录结果
+            use_remotion: 是否使用 Remotion 特效渲染（否则使用 FFmpeg ASS 字幕）
 
         Returns:
             包含任务结果的字典
         """
+        self._use_remotion = use_remotion
         # 1. 创建或复用任务目录
         if task_dir and os.path.isdir(task_dir):
             self._task_dir = task_dir
@@ -252,7 +328,7 @@ class VideoShortsAgent:
             full_message = user_message
 
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": build_system_prompt()},
             {"role": "user", "content": full_message}
         ]
 
