@@ -5,6 +5,7 @@ DownloadSkill - 视频下载技能
 使用 yt-dlp (CLI) 实现，支持 URL 自动识别。
 """
 import os
+import sys
 import subprocess
 import glob
 import json
@@ -16,7 +17,7 @@ class DownloadSkill:
     def __init__(self):
         try:
             result = subprocess.run(
-                ["C:\\Python310\\python.exe", "-m", "yt_dlp", "--version"],
+                [sys.executable, "-m", "yt_dlp", "--version"],
                 capture_output=True, text=True, timeout=5
             )
             if result.returncode == 0:
@@ -58,7 +59,7 @@ class DownloadSkill:
 
         for browser in browsers:
             cmd = [
-                "C:\\Python310\\python.exe", "-m", "yt_dlp",
+                sys.executable, "-m", "yt_dlp",
                 "--format", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
                 "--merge-output-format", "mp4",
                 "--output", output_template,

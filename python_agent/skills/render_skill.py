@@ -138,7 +138,8 @@ class RenderSkill:
     def _render_multi(self, video_path: str, clips: list, output_path: str,
                       output_dir: str, effects: dict = None, tts_clips: list = None):
         """渲染多个片段并拼接"""
-        MAX_TOTAL_DURATION = 65.0  # 总时长上限 65 秒（留 5 秒余量给转场）
+        from python_agent.config import get_config
+        MAX_TOTAL_DURATION = get_config().max_video_duration
         print(f"[RenderSkill] 多片段模式: {len(clips)} 个片段"
               f"{f', {len(tts_clips)} 个 TTS' if tts_clips else ''}")
 

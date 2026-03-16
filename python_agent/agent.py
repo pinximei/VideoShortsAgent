@@ -12,7 +12,8 @@ import os
 import json
 import uuid
 from datetime import datetime
-from openai import OpenAI
+from python_agent.llm_client import create_llm_client
+from python_agent.config import get_config
 
 from python_agent.tools import ToolRegistry
 from python_agent.skills.transcribe_skill import TranscribeSkill
@@ -33,6 +34,16 @@ def _load_effects_config() -> dict:
             return json.load(f)
     except Exception:
         return {}
+
+
+PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "prompts")
+
+
+def _load_prompt(filename: str) -> str:
+    """加载提示词文件"""
+    path = os.path.join(PROMPTS_DIR, filename)
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 def build_system_prompt() -> str:
@@ -67,53 +78,28 @@ def build_system_prompt() -> str:
         effects_lines.append(f"- transition: 片段间转场效果，可选 {trans_desc}")
     effects_lines.append("- transition_duration: 转场时长（秒），默认 0.5")
 
+    effects_section = "可用特效（通过 render 的 effects_json 参数指定）：\n" + "\n".join(effects_lines) if effects_lines else ""
+
     # 预设
     presets = config.get("presets", {})
-    presets_desc = ""
+    presets_section = ""
     if presets:
         preset_items = []
         for name, preset in presets.items():
             preset_items.append(f"  - {name}风格: {json.dumps(preset, ensure_ascii=False)}")
-        presets_desc = (
+        presets_section = (
             "\n风格预设（可直接使用，也可自由组合）：\n"
             + "\n".join(preset_items) + "\n"
         )
 
-    effects_section = "\n".join(effects_lines)
-
-    return (
-        "你是一个专业的短视频剪辑 Agent。\n\n"
-        "你的任务是将用户提供的长视频，自动加工成有吸引力的短视频切片。\n\n"
-        "标准流程：\n"
-        "0. 如果用户提供的是 URL，先使用 download 下载视频\n"
-        "1. 使用 transcribe 将视频语音转为文字（会自动检测语言）\n"
-        "2. 使用 analyze 理解视频全部内容，浓缩为若干关键段落，完整描述主题（返回 clips 数组，每个含 tts_text）\n"
-        "3. 使用 dubbing 工具生成 TTS 配音（所有语言都需要，analyze 会返回 tts_text）\n"
-        "   - 【重要】dubbing 返回的完整 JSON 字符串，必须原样传给 render 的 tts_info_json 参数\n"
-        "   - 根据视频内容风格选择合适的语音角色（通过 voice 参数）\n"
-        "4. 使用 render 渲染最终视频\n"
-        "   - 【重要】video_path 永远使用原始视频（source_video），不要使用任何中间文件\n"
-        "   - dubbing 不产出视频文件，只产出 TTS 音频信息\n"
-        "   - render 的 tts_info_json 填入 dubbing 返回的完整 JSON 字符串\n"
-        "   - TTS 时长决定画面时长，视频画面适配语音\n"
-        "   - 【重要】根据视频内容风格，自动选择最合适的特效组合（通过 effects_json 参数）\n\n"
-        f"可用特效（通过 render 的 effects_json 参数指定）：\n{effects_section}\n"
-        f"{presets_desc}\n"
-        "可用语音角色（通过 dubbing 的 voice 参数指定）：\n"
-        "- zh-CN-YunyangNeural: 男声，专业播音腔，适合新闻/科技/严肃内容\n"
-        "- zh-CN-YunjianNeural: 男声，充满激情，适合体育/励志/热血内容\n"
-        "- zh-CN-YunxiNeural: 男声，阳光活泼，适合日常/休闲/故事类内容\n"
-        "- zh-CN-XiaoxiaoNeural: 女声，温暖自然，适合生活/情感/教育内容\n"
-        "- zh-CN-XiaoyiNeural: 女声，活泼可爱，适合卡通/娱乐/轻松内容\n\n"
-        "注意事项：\n"
-        "- render 的 analysis_json 直接填入 analyze 返回的完整 JSON 字符串\n"
-        "- 根据视频内容风格，主动选择最匹配的特效预设或自由组合特效参数\n"
-        "- 每一步完成后检查结果是否合理再进行下一步\n"
-        "- 任务完成后给用户一个清晰的总结\n"
+    # 读取模板并填充
+    template = _load_prompt("agent_system.txt")
+    return template.format(
+        effects_section=effects_section,
+        presets_section=presets_section
     )
 
-# ReAct 循环的最大轮次
-MAX_ITERATIONS = 10
+# ReAct 循环的最大轮次（从 Config 读取）
 
 
 class VideoShortsAgent:
@@ -135,12 +121,9 @@ class VideoShortsAgent:
         print("  VideoShortsAgent (ReAct) 初始化中...")
         print("=" * 60)
 
-        # 1. 初始化 LLM 客户端
-        self.llm = OpenAI(
-            api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
-        self.llm_model = llm_model
+        # 1. 初始化 LLM 客户端（从 Config 读取 provider 配置）
+        self.llm = create_llm_client(api_key=api_key)
+        self.llm_model = llm_model or get_config().llm_model
 
         # 2. 初始化 Skills
         self.transcribe_skill = TranscribeSkill(
@@ -339,9 +322,10 @@ class VideoShortsAgent:
         debug_dir = os.path.join(self._task_dir, "llm_debug")
         os.makedirs(debug_dir, exist_ok=True)
 
-        for iteration in range(1, MAX_ITERATIONS + 1):
+        max_iter = get_config().max_iterations
+        for iteration in range(1, max_iter + 1):
             print(f"\n{'='*60}")
-            print(f"  📍 [EVENT] iteration_start | iteration={iteration}/{MAX_ITERATIONS}")
+            print(f"  📍 [EVENT] iteration_start | iteration={iteration}/{max_iter}")
             print(f"{'='*60}")
 
             # 保存 LLM 输入

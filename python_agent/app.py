@@ -19,19 +19,19 @@ import io
 _agent = None
 
 
-def init_agent(transcribe_mode="local", groq_api_key=""):
+def init_agent(transcribe_mode="", groq_api_key=""):
     """初始化 Agent"""
     global _agent
-    from python_agent.config import get_dashscope_api_key
+    from python_agent.config import get_config
     from python_agent.agent import VideoShortsAgent
 
-    api_key = get_dashscope_api_key()
+    cfg = get_config()
     _agent = VideoShortsAgent(
-        api_key=api_key,
-        llm_model="qwen3.5-flash",
-        whisper_model="./faster-whisper-large-v3",
-        transcribe_mode=transcribe_mode,
-        groq_api_key=groq_api_key
+        api_key=cfg.llm_api_key,
+        llm_model=cfg.llm_model,
+        whisper_model=cfg.whisper_model_path,
+        transcribe_mode=transcribe_mode or cfg.transcribe_mode,
+        groq_api_key=groq_api_key or cfg.groq_api_key
     )
 
 
@@ -69,67 +69,9 @@ class LogCapture:
 
 
 def _correct_transcript_with_llm(segments: list) -> list:
-    """用 LLM 对转录文本进行纠错（分批处理，保持时间戳不变）"""
-    from python_agent.config import get_dashscope_api_key
-    from openai import OpenAI
-
-    BATCH_SIZE = 50
-    api_key = get_dashscope_api_key()
-    client = OpenAI(
-        api_key=api_key,
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        timeout=120,
-    )
-
-    all_corrected = []
-    total_batches = (len(segments) + BATCH_SIZE - 1) // BATCH_SIZE
-    print(f"[字幕] LLM 纠错: {len(segments)} 条片段，分 {total_batches} 批处理")
-
-    for batch_idx in range(total_batches):
-        batch = segments[batch_idx * BATCH_SIZE: (batch_idx + 1) * BATCH_SIZE]
-        full_text = "\n".join(
-            f"[{s['start']:.1f}-{s['end']:.1f}] {s['text']}" for s in batch
-        )
-
-        prompt = f"""你是视频配音字幕专家。将每条语音识别文本翻译为中文。
-
-**要求**：
-- 逐条翻译 保持原始条数不变
-- 保持每条的 start 和 end 时间戳不变
-- 准确传达原文含义 不要丢失重要内容
-- 语言简洁自然 去掉口语废话（所以、那么、嗯）
-- 保留必要的标点符号（逗号、句号）
-- 技术术语必须正确（Agent Scale→Agent Skills）
-
-**规则**：
-1. 输入多少条 输出必须同样多条
-2. 每条时间戳原样保留
-3. 直接返回纯 JSON 数组
-
-原始文本：
-{full_text}
-
-返回：[{{"start": 0.0, "end": 3.5, "text": "准确中文翻译"}}]"""
-
-        try:
-            print(f"  批次 {batch_idx + 1}/{total_batches} ({len(batch)} 条)...", end=" ")
-            response = client.chat.completions.create(
-                model="qwen-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
-            result_text = response.choices[0].message.content.strip()
-            if result_text.startswith("```"):
-                result_text = result_text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-            corrected = json.loads(result_text)
-            all_corrected.extend(corrected)
-            print(f"✅ {len(corrected)} 条")
-        except Exception as e:
-            print(f"⚠️ 失败({e})，使用原文")
-            all_corrected.extend(batch)
-
-    print(f"[字幕] LLM 纠错完成，共 {len(all_corrected)} 条字幕")
-    return all_corrected
+    """用 LLM 对转录文本进行翻译纠错（委托给 TranslateSkill）"""
+    from python_agent.skills.translate_skill import TranslateSkill
+    return TranslateSkill().execute(segments)
 
 
 def process_subtitle(video_path, video_url, task_dir_input, transcribe_mode="local", groq_api_key=""):
@@ -209,16 +151,14 @@ def process_subtitle(video_path, video_url, task_dir_input, transcribe_mode="loc
         print(f"\n[字幕] 步骤 2/5: 翻译纠错...")
         corrected_segments = _correct_transcript_with_llm(segments)
 
-        # ③ TTS 中文配音（自然语速，不变速）
+        # ③ TTS 中文配音（并发批处理，大幅提速）
         print(f"\n[字幕] 步骤 3/5: 生成中文配音...")
         tts_dir = os.path.join(task_dir, "tts_segments")
         os.makedirs(tts_dir, exist_ok=True)
         import edge_tts
         import asyncio
-
-        async def _generate_tts(text, out_path):
-            communicate = edge_tts.Communicate(text, "zh-CN-YunxiNeural", rate="+25%")
-            await communicate.save(out_path)
+        from python_agent.config import get_config
+        _tts_voice = get_config().tts_voice
 
         def _get_audio_duration(path):
             r = subprocess.run(
@@ -231,30 +171,52 @@ def process_subtitle(video_path, video_url, task_dir_input, transcribe_mode="loc
             except:
                 return 0.0
 
-        tts_ok_count = 0
+        async def _generate_one(text, out_path):
+            communicate = edge_tts.Communicate(text, _tts_voice, rate="+25%")
+            await communicate.save(out_path)
+
+        async def _generate_batch(tasks):
+            """并发生成一批 TTS"""
+            await asyncio.gather(*[_generate_one(t, p) for t, p in tasks])
+
+        # 收集需要生成的任务
+        tts_tasks = []
         for idx, seg in enumerate(corrected_segments):
             tts_path = os.path.join(tts_dir, f"seg_{idx:04d}.mp3")
-            seg_duration = seg["end"] - seg["start"]
+            tts_tasks.append((seg["text"], tts_path, seg))
+
+        # 并发批处理（每批 10 个）
+        BATCH_SIZE = 10
+        tts_ok_count = 0
+        total = len(tts_tasks)
+        for batch_start in range(0, total, BATCH_SIZE):
+            batch = tts_tasks[batch_start:batch_start + BATCH_SIZE]
+            batch_items = [(text, path) for text, path, _ in batch]
             try:
-                asyncio.run(_generate_tts(seg["text"], tts_path))
-                # 如果 TTS 超出时间窗口，加速适配
-                tts_dur = _get_audio_duration(tts_path)
-                if tts_dur > 0 and tts_dur > seg_duration and seg_duration > 0.5:
-                    speed = min(tts_dur / seg_duration, 1.5)
-                    tmp_path = tts_path + ".tmp.mp3"
-                    subprocess.run([
-                        "ffmpeg", "-y", "-i", tts_path,
-                        "-af", f"atempo={speed:.2f}",
-                        "-c:a", "libmp3lame", tmp_path
-                    ], capture_output=True, timeout=15)
-                    if os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 100:
-                        os.replace(tmp_path, tts_path)
-                tts_ok_count += 1
+                asyncio.run(_generate_batch(batch_items))
             except Exception as e:
-                pass  # 失败的段不生成，后续跳过
-            if (idx + 1) % 50 == 0:
-                print(f"  已生成 {idx + 1}/{len(corrected_segments)} 段")
-        print(f"[字幕] TTS 完成: {tts_ok_count}/{len(corrected_segments)} 段")
+                print(f"  ⚠️ 批次 TTS 失败: {e}")
+
+            # 对本批生成的文件做变速检查
+            for text, path, seg in batch:
+                if os.path.exists(path) and os.path.getsize(path) > 100:
+                    seg_duration = seg["end"] - seg["start"]
+                    tts_dur = _get_audio_duration(path)
+                    if tts_dur > 0 and tts_dur > seg_duration and seg_duration > 0.5:
+                        speed = min(tts_dur / seg_duration, 1.5)
+                        tmp_path = path + ".tmp.mp3"
+                        subprocess.run([
+                            "ffmpeg", "-y", "-i", path,
+                            "-af", f"atempo={speed:.2f}",
+                            "-c:a", "libmp3lame", tmp_path
+                        ], capture_output=True, timeout=15)
+                        if os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 100:
+                            os.replace(tmp_path, path)
+                    tts_ok_count += 1
+
+            done = min(batch_start + BATCH_SIZE, total)
+            print(f"  已生成 {done}/{total} 段")
+        print(f"[字幕] TTS 完成: {tts_ok_count}/{total} 段")
 
         # ④ 合成音轨（concat 拼接：静音填充 + TTS 顺序拼接，音量零损失）
         print(f"\n[字幕] 步骤 4/5: 合成音轨 + 生成字幕...")
@@ -714,6 +676,109 @@ def create_app():
                 )
 
 
+            # Tab 3: 设置
+            with gr.Tab("⚙️ 设置"):
+                gr.Markdown("> 修改配置后点击「保存」，将写入 `.env` 文件（部分设置需重启后生效）")
+
+                from python_agent.config import get_config as _gc
+                _cfg = _gc()
+
+                with gr.Accordion("🤖 LLM 模型配置", open=True):
+                    set_api_key = gr.Textbox(
+                        label="API Key", value=_cfg.llm_api_key[:8] + "..." if len(_cfg.llm_api_key) > 8 else _cfg.llm_api_key,
+                        type="password", lines=1,
+                        info="LLM 服务的 API Key"
+                    )
+                    set_base_url = gr.Textbox(
+                        label="API 地址 (Base URL)", value=_cfg.llm_base_url, lines=1,
+                        info="支持任何 OpenAI 兼容 API（DashScope / DeepSeek / Ollama 等）"
+                    )
+                    with gr.Row():
+                        set_model = gr.Textbox(
+                            label="主模型", value=_cfg.llm_model, lines=1,
+                            info="Agent 和分析使用的模型"
+                        )
+                        set_translate_model = gr.Textbox(
+                            label="翻译模型", value=_cfg.llm_translate_model, lines=1,
+                            info="字幕翻译使用的模型"
+                        )
+
+                with gr.Accordion("🎙️ 语音配置", open=True):
+                    set_tts_voice = gr.Dropdown(
+                        label="默认语音角色",
+                        choices=[
+                            "zh-CN-YunyangNeural",
+                            "zh-CN-YunjianNeural",
+                            "zh-CN-YunxiNeural",
+                            "zh-CN-XiaoxiaoNeural",
+                            "zh-CN-XiaoyiNeural",
+                        ],
+                        value=_cfg.tts_voice,
+                        info="TTS 配音的默认语音角色"
+                    )
+                    set_groq_key = gr.Textbox(
+                        label="Groq API Key", type="password", lines=1,
+                        value=_cfg.groq_api_key[:8] + "..." if len(_cfg.groq_api_key) > 8 else _cfg.groq_api_key,
+                        info="用于 Groq Whisper 转录（推荐）"
+                    )
+
+                with gr.Accordion("🎬 视频参数", open=True):
+                    with gr.Row():
+                        set_max_iter = gr.Number(
+                            label="Agent 最大迭代次数", value=_cfg.max_iterations,
+                            precision=0, minimum=1, maximum=50,
+                            info="Agent 单次任务最多执行多少轮"
+                        )
+                        set_max_dur = gr.Number(
+                            label="最大视频时长 (秒)", value=_cfg.max_video_duration,
+                            precision=0, minimum=10, maximum=300,
+                            info="输出视频的最大时长上限"
+                        )
+                    set_port = gr.Number(
+                        label="服务端口", value=_cfg.server_port,
+                        precision=0, minimum=1024, maximum=65535,
+                        info="Web UI 端口（修改后需重启）"
+                    )
+
+                save_status = gr.Markdown("")
+                save_btn = gr.Button("💾 保存配置到 .env", variant="primary", size="lg")
+
+                def _save_settings(api_key, base_url, model, translate_model,
+                                   tts_voice, groq_key, max_iter, max_dur, port):
+                    from python_agent.config import save_to_env
+                    updates = {}
+                    # 只保存用户实际修改的值（跳过密码框的占位符）
+                    if api_key and not api_key.endswith("..."):
+                        updates["DASHSCOPE_API_KEY"] = api_key
+                    if base_url:
+                        updates["LLM_BASE_URL"] = base_url
+                    if model:
+                        updates["LLM_MODEL"] = model
+                    if translate_model:
+                        updates["LLM_TRANSLATE_MODEL"] = translate_model
+                    if tts_voice:
+                        updates["TTS_VOICE"] = tts_voice
+                    if groq_key and not groq_key.endswith("..."):
+                        updates["GROQ_API_KEY"] = groq_key
+                    if max_iter:
+                        updates["MAX_ITERATIONS"] = str(int(max_iter))
+                    if max_dur:
+                        updates["MAX_VIDEO_DURATION"] = str(int(max_dur))
+                    if port:
+                        updates["SERVER_PORT"] = str(int(port))
+
+                    if not updates:
+                        return "⚠️ 没有需要保存的变更"
+                    return save_to_env(updates)
+
+                save_btn.click(
+                    fn=_save_settings,
+                    inputs=[set_api_key, set_base_url, set_model, set_translate_model,
+                            set_tts_voice, set_groq_key, set_max_iter, set_max_dur, set_port],
+                    outputs=[save_status]
+                )
+
+
         gr.Markdown("---")
         gr.Markdown(
             "**VideoShortsAgent** | "
@@ -727,11 +792,12 @@ def create_app():
 
 if __name__ == "__main__":
     init_agent()
+    from python_agent.config import get_config
     import gradio as gr
     app = create_app()
     app.launch(
         server_name="0.0.0.0",
-        server_port=7860,
+        server_port=get_config().server_port,
         share=False,
         theme=gr.themes.Soft(
             primary_hue="indigo",

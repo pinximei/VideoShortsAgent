@@ -16,7 +16,18 @@ AnalysisSkill - 金句抽取技能
     # result -> {"start": 12.5, "end": 28.3, "hook_text": "..."}
 """
 import json
-from openai import OpenAI
+import os
+from python_agent.llm_client import create_llm_client
+from python_agent.config import get_config
+
+PROMPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "prompts")
+
+
+def _load_prompt(filename: str) -> str:
+    """加载提示词文件"""
+    path = os.path.join(PROMPTS_DIR, filename)
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 # 发送给 Qwen 的提示词模板
@@ -76,18 +87,16 @@ class AnalysisSkill:
             - 这样就能用 openai 的 SDK 调用 Qwen 模型
     """
 
-    def __init__(self, api_key: str, model: str = "qwen3.5-flash"):
-        """初始化 Qwen 客户端
+    def __init__(self, api_key: str = None, model: str = None):
+        """初始化分析客户端
 
         Args:
-            api_key: DashScope API Key
-            model: Qwen 模型名称（qwen-max / qwen-plus / qwen-turbo）
+            api_key: API Key（可选，默认从 Config 读取）
+            model: 模型名称（可选，默认从 Config 读取 llm_analysis_model）
         """
-        self.model = model
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
+        cfg = get_config()
+        self.model = model or cfg.llm_analysis_model
+        self.client = create_llm_client(api_key=api_key)
         print(f"[AnalysisSkill] 已初始化 Qwen 客户端 (model={model}) ✓")
 
     def execute(self, transcript_path: str) -> dict:
@@ -118,9 +127,9 @@ class AnalysisSkill:
         print(f"[AnalysisSkill] 源语言: {source_lang}")
 
         # 2. 构建提示词（英文源时追加翻译要求）
-        prompt = ANALYSIS_PROMPT.replace("{transcript}", transcript_text)
+        prompt = _load_prompt("analysis.txt").replace("{transcript}", transcript_text)
         if source_lang != "zh":
-            prompt += ANALYSIS_PROMPT_EN_ADDON
+            prompt += _load_prompt("analysis_en_addon.txt")
             print(f"[AnalysisSkill] 非中文源，已追加 tts_text 翻译要求")
 
         # ========== 调试日志：LLM 输入 ==========
