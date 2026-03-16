@@ -94,50 +94,62 @@ brew install ffmpeg
 
 ## 🚀 安装步骤
 
-### 第一步：克隆项目
+### 方式一：一键安装（推荐）
 
 ```bash
 git clone https://github.com/pinximei/VideoShortsAgent.git
 cd VideoShortsAgent
 ```
 
-### 第二步：安装 Python 依赖
+| 系统 | 命令 |
+|------|------|
+| **Windows** | 双击 `install.bat` |
+| **macOS / Linux** | `chmod +x install.sh && ./install.sh` |
+
+脚本会自动完成：检测环境 → 安装 Python 依赖 → 配置 Remotion（如有 Node.js）→ 创建 `.env`
+
+安装完成后，编辑 `.env` 填入你的 API Key，然后双击 `start.bat`（Windows）或运行 `python -m python_agent.app` 启动。
+
+### 方式二：手动安装
+
+<details>
+<summary>点击展开手动安装步骤</summary>
 
 ```bash
+# 1. 克隆项目
+git clone https://github.com/pinximei/VideoShortsAgent.git
+cd VideoShortsAgent
+
+# 2. 安装 Python 依赖
 pip install -r requirements.txt
+
+# 3. 配置 API Key（复制 .env.example 并填入密钥）
+cp .env.example .env
+
+# 4.（可选）安装 Remotion 字幕特效
+cd remotion_effects && npm install && cd ..
 ```
 
-### 第三步：配置 API Key
+</details>
 
-在项目根目录创建 `.env` 文件：
+### 本地 Whisper 模型（可选）
 
-```bash
-# .env 文件内容
-DASHSCOPE_API_KEY=sk-你的阿里云API密钥
-GROQ_API_KEY=gsk_你的Groq密钥
-```
+如果你想使用**本地语音转录**（不依赖 Groq 云端），需要下载 faster-whisper 模型：
 
-> 💡 Windows 用户可以直接新建文本文件，重命名为 `.env`（注意去掉 `.txt` 后缀）
+| 模型 | 大小 | 下载链接 |
+|------|------|----------|
+| faster-whisper-large-v3 | ~3 GB | [🤗 Hugging Face](https://huggingface.co/Systran/faster-whisper-large-v3) · [🪞 国内镜像](https://hf-mirror.com/Systran/faster-whisper-large-v3) |
 
-### 第四步：安装 Remotion 特效（可选）
+下载后将模型文件夹放在项目根目录，命名为 `faster-whisper-large-v3`。
 
-```bash
-cd remotion_effects
-npm install
-cd ..
-```
+> 💡 **推荐**：配置 `GROQ_API_KEY` 使用云端转录，速度快 10 倍且无需下载模型
 
-> 跳过此步骤也能正常使用，字幕会自动降级为静态样式
+### 启动
 
-### 第五步：启动！
-
-**Windows 用户**：双击 `start.bat`
-
-**命令行启动**：
-```bash
-python -m python_agent.app
-# 浏览器自动打开 http://localhost:7860
-```
+| 系统 | 方式 |
+|------|------|
+| **Windows** | 双击 `start.bat` |
+| **macOS / Linux** | `chmod +x start.sh && ./start.sh` |
 
 ---
 
