@@ -70,16 +70,13 @@ class DubbingSkill:
         tts_clips = []
         for i, clip in enumerate(clips_with_tts):
             tts_text = clip["tts_text"]
-            print(f"\n  [片段 {i+1}] {tts_text[:60]}...")
+            print(f"  [片段 {i+1}/{len(clips_with_tts)}] {tts_text[:60]}...")
 
             # 1. 按句拆分
             sentences = self._split_sentences(tts_text)
-            print(f"    拆分为 {len(sentences)} 个句子")
 
             # 2. 并发生成所有句子的 TTS
             sentence_audios = self._generate_tts_batch(sentences, tts_dir, i)
-            for j, sa in enumerate(sentence_audios):
-                print(f"    [{j+1}] {sa['duration']:.1f}s | {sa['text']}")
 
             if not sentence_audios:
                 continue
@@ -98,7 +95,7 @@ class DubbingSkill:
             # ffprobe 校验（可能返回 0，不用作主要来源）
             probe_duration = self._get_audio_duration(clip_audio_path)
             if probe_duration > 0 and abs(probe_duration - total_duration) > 1.0:
-                print(f"    ⚠️ 时长差异: 计算={total_duration:.1f}s, ffprobe={probe_duration:.1f}s")
+                print(f"  ⚠️ 时长差异: 计算={total_duration:.1f}s, ffprobe={probe_duration:.1f}s")
 
             tts_clips.append({
                 "path": clip_audio_path,
@@ -106,7 +103,7 @@ class DubbingSkill:
                 "sentences": sentence_timeline,
                 "index": i
             })
-            print(f"    → 总时长: {total_duration:.1f}s")
+            print(f"  → {len(sentence_audios)} 句, {total_duration:.1f}s")
 
             # 5. 清理句子临时文件
             for sa in sentence_audios:
@@ -159,8 +156,7 @@ class DubbingSkill:
             total_padding = video_duration - content_duration
             lead_silence = min(total_padding / 2, MAX_LEAD_SILENCE)
             trail_silence = total_padding - lead_silence
-            print(f"    留白分配: 视频={video_duration:.1f}s, 语音={content_duration:.1f}s, "
-                  f"前={lead_silence:.1f}s, 后={trail_silence:.1f}s")
+
         else:
             lead_silence = MIN_LEAD_SILENCE
             trail_silence = 0.0

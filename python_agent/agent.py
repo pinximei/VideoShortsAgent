@@ -318,24 +318,9 @@ class VideoShortsAgent:
         # 3. ReAct 循环
         result = {"task_id": task_id, "steps": [], "status": "running", "reply": ""}
 
-        # 创建调试日志目录
-        debug_dir = os.path.join(self._task_dir, "llm_debug")
-        os.makedirs(debug_dir, exist_ok=True)
-
         max_iter = get_config().max_iterations
         for iteration in range(1, max_iter + 1):
-            print(f"\n{'='*60}")
-            print(f"  📍 [EVENT] iteration_start | iteration={iteration}/{max_iter}")
-            print(f"{'='*60}")
-
-            # 保存 LLM 输入
-            input_log = os.path.join(debug_dir, f"call_{iteration}_input.json")
-            with open(input_log, "w", encoding="utf-8") as f:
-                json.dump(messages, f, ensure_ascii=False, indent=2)
-
-            # === 生命周期事件：LLM 调用前 ===
-            print(f"  📍 [EVENT] llm_call_start | model={self.llm_model}")
-            print(f"     messages_count={len(messages)}, tools_count={len(self.tools.get_schemas())}")
+            print(f"\n--- 🔄 迭代 {iteration}/{max_iter} ---")
 
             # 调用 LLM
             response = self.llm.chat.completions.create(
@@ -346,27 +331,6 @@ class VideoShortsAgent:
             assistant_message = response.choices[0].message
             choice = response.choices[0]
 
-            # === 生命周期事件：LLM 调用后 ===
-            usage = response.usage
-            print(f"  📍 [EVENT] llm_call_end")
-            print(f"     finish_reason={choice.finish_reason}")
-            print(f"     has_tool_calls={bool(assistant_message.tool_calls)}")
-            print(f"     content_length={len(assistant_message.content) if assistant_message.content else 0}")
-            if hasattr(assistant_message, 'reasoning_content') and assistant_message.reasoning_content:
-                print(f"     reasoning_content_length={len(assistant_message.reasoning_content)}")
-            if usage:
-                print(f"     tokens: prompt={usage.prompt_tokens}, completion={usage.completion_tokens}, total={usage.total_tokens}")
-
-            # 保存 LLM 输出（含完整事件数据）
-            output_log = os.path.join(debug_dir, f"call_{iteration}_output.json")
-            try:
-                output_data = response.model_dump()
-            except Exception:
-                output_data = {"content": assistant_message.content}
-            with open(output_log, "w", encoding="utf-8") as f:
-                json.dump(output_data, f, ensure_ascii=False, indent=2)
-            print(f"     logs: {input_log} / {output_log}")
-
             # 处理响应
             if assistant_message.tool_calls:
                 messages.append(assistant_message.model_dump())
@@ -375,17 +339,9 @@ class VideoShortsAgent:
                     func_name = tool_call.function.name
                     func_args = json.loads(tool_call.function.arguments)
 
-                    # === 生命周期事件：工具执行前 ===
-                    print(f"\n  📍 [EVENT] tool_call_start | tool={func_name}")
-                    print(f"     call_id={tool_call.id}")
-                    print(f"     args={func_args}")
-
+                    print(f"  🔧 {func_name}({func_args})")
                     tool_result = self.tools.call(func_name, func_args)
-
-                    # === 生命周期事件：工具执行后 ===
-                    print(f"  📍 [EVENT] tool_call_end | tool={func_name}")
-                    print(f"     result_length={len(tool_result)}")
-                    print(f"     result_preview={tool_result[:200]}")
+                    print(f"  ✅ {func_name} → {tool_result[:100]}")
 
                     result["steps"].append({
                         "iteration": iteration,
@@ -400,23 +356,16 @@ class VideoShortsAgent:
                     })
             else:
                 final_reply = assistant_message.content
-                # === 生命周期事件：任务完成 ===
-                print(f"\n  📍 [EVENT] task_complete | status=success")
-                print(f"     reply_length={len(final_reply) if final_reply else 0}")
-                print(f"     reply_preview={final_reply[:200] if final_reply else ''}")
+                print(f"\n✅ Agent 任务完成")
 
                 result["status"] = "success"
                 result["reply"] = final_reply
                 break
         else:
-            # === 生命周期事件：超时 ===
-            print(f"\n  📍 [EVENT] task_timeout | max_iterations={MAX_ITERATIONS}")
+            print(f"\n⚠️ 达到最大迭代次数 ({max_iter})")
             result["status"] = "max_iterations"
             result["reply"] = "达到最大迭代次数，任务可能未完全完成。"
 
-        print(f"\n{'='*60}")
-        print(f"  📍 [EVENT] task_end | task_id={task_id} | status={result['status']}")
-        print(f"     total_steps={len(result['steps'])}")
-        print(f"{'='*60}")
+        print(f"\n[Agent] 任务 {task_id} 结束 | 状态={result['status']} | 步骤={len(result['steps'])}")
 
         return result

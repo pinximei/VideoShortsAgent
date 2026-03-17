@@ -132,50 +132,17 @@ class AnalysisSkill:
             prompt += _load_prompt("analysis_en_addon.txt")
             print(f"[AnalysisSkill] 非中文源，已追加 tts_text 翻译要求")
 
-        # ========== 调试日志：LLM 输入 ==========
-        print(f"\n{'='*60}")
-        print(f"  📤 LLM 调用 #1: AnalysisSkill")
-        print(f"  模型: {self.model}")
-        print(f"  API: {self.client.base_url}")
-        print(f"{'='*60}")
-        print(f"  [发送的 messages]:")
-        print(f"    role: user")
-        print(f"    content ({len(prompt)} 字符):")
-        print(f"    ---prompt 开始---")
-        print(prompt[:500])  # 打印前500字符避免太长
-        if len(prompt) > 500:
-            print(f"    ... (省略 {len(prompt)-500} 字符) ...")
-        print(f"    ---prompt 结束---")
-        print(f"  [额外参数]:")
-        print(f"    response_format: json_object")
-        print(f"{'='*60}")
-
         # 3. 调用 LLM
+        print(f"[AnalysisSkill] 调用 LLM ({self.model})...")
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
 
-        # ========== 调试日志：LLM 输出 ==========
         msg = response.choices[0].message
         result_text = msg.content or ""
         reasoning_text = getattr(msg, 'reasoning_content', None) or ""
-        usage = response.usage
-
-        print(f"\n{'='*60}")
-        print(f"  📥 LLM 响应:")
-        print(f"{'='*60}")
-        print(f"  [Token 用量]:")
-        print(f"    输入 tokens: {usage.prompt_tokens if usage else '?'}")
-        print(f"    输出 tokens: {usage.completion_tokens if usage else '?'}")
-        print(f"    总计 tokens: {usage.total_tokens if usage else '?'}")
-        print(f"  [content ({len(result_text)}字)]:")
-        print(f"    {result_text[:500]}")
-        if reasoning_text:
-            print(f"  [reasoning_content ({len(reasoning_text)}字)]:")
-            print(f"    {reasoning_text[:300]}")
-        print(f"{'='*60}\n")
 
         # 4. 从 LLM 返回中提取 JSON 对象
         #    优先从 content 提取；如果 content 为空（思考模式），从 reasoning_content 提取
@@ -212,38 +179,33 @@ class AnalysisSkill:
         import re
 
         text = text.strip()
-        print(f"[_extract_json] 原始文本({len(text)}字): {repr(text[:300])}")
 
         # 方法 1：直接解析
         try:
             obj = json.loads(text)
-            print(f"[_extract_json] 方法 1 成功: type={type(obj).__name__}")
             if isinstance(obj, dict):
                 return obj
-            print(f"[_extract_json] 方法 1 结果不是 dict: {repr(obj)[:200]}")
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"[_extract_json] 方法 1 失败: {e}")
+        except (json.JSONDecodeError, ValueError):
+            pass
 
         # 方法 2：去掉 markdown 代码块
         clean = re.sub(r'```(?:json)?\s*', '', text)
         clean = clean.strip()
         try:
             obj = json.loads(clean)
-            print(f"[_extract_json] 方法 2 成功: type={type(obj).__name__}")
             if isinstance(obj, dict):
                 return obj
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"[_extract_json] 方法 2 失败: {e}")
+        except (json.JSONDecodeError, ValueError):
+            pass
 
         # 方法 3：正则提取第一个 {...}
         match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', text)
         if match:
-            print(f"[_extract_json] 方法 3 匹配到: {repr(match.group()[:200])}")
             try:
                 obj = json.loads(match.group())
                 if isinstance(obj, dict):
                     return obj
-            except (json.JSONDecodeError, ValueError) as e:
-                print(f"[_extract_json] 方法 3 失败: {e}")
+            except (json.JSONDecodeError, ValueError):
+                pass
 
         raise ValueError(f"无法从 LLM 输出中提取 JSON 对象: {text[:300]}")

@@ -621,11 +621,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         print(f"[RenderSkill] 转场序列: {transitions} ({transition_duration}s)")
 
         # 获取每个片段的时长
-        durations = []
-        for path in video_paths:
-            dur = self._get_duration(path)
-            durations.append(dur)
-            print(f"  片段时长: {path} = {dur:.2f}s")
+        durations = [self._get_duration(path) for path in video_paths]
 
         # 构建 xfade 滤镜链
         inputs = []
@@ -685,7 +681,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 map_args = ["-map", "[vout]"]
 
         filter_complex = ";".join(filter_parts)
-        print(f"  转场滤镜: {filter_complex[:200]}...")
+
 
         cmd = ["ffmpeg", "-y"] + inputs + [
             "-filter_complex", filter_complex

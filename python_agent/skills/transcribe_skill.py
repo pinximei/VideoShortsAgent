@@ -37,24 +37,19 @@ class TranscribeSkill:
                 self.mode = "local"
                 self._load_local_model(model_path)
             else:
-                # 预检 groq 模块是否可用
                 try:
                     import groq  # noqa: F401
-                    print(f"[TranscribeSkill] 模式: Groq API（在线） ✓")
                 except ImportError:
                     print(f"[TranscribeSkill] ⚠️ groq 模块未安装，降级为本地模式")
-                    print(f"[TranscribeSkill]    请运行: pip install groq")
                     self.mode = "local"
                     self._load_local_model(model_path)
         else:
-            print(f"[TranscribeSkill] 模式: 本地 faster-whisper")
             self._load_local_model(model_path)
 
     def _load_local_model(self, model_path: str):
         from faster_whisper import WhisperModel
-        print(f"[TranscribeSkill] 正在加载模型: {model_path}...")
+        print(f"[TranscribeSkill] 加载本地模型: {model_path}...")
         self._model = WhisperModel(model_path, device="cpu", compute_type="int8")
-        print(f"[TranscribeSkill] 模型加载完成 ✓")
 
     def execute(self, video_path: str, output_dir: str):
         """执行转录
@@ -73,7 +68,7 @@ class TranscribeSkill:
 
     def _transcribe_local(self, video_path: str, output_dir: str):
         """本地 faster-whisper 转录"""
-        print(f"[TranscribeSkill] 本地转录: {video_path}")
+
         segments, info = self._model.transcribe(video_path)
 
         detected_lang = info.language
@@ -97,7 +92,7 @@ class TranscribeSkill:
 
         # 1. 提取压缩音频（16kHz mono MP3，控制在 25MB 以内）
         audio_path = os.path.join(output_dir, "audio_for_groq.mp3")
-        print(f"[TranscribeSkill] 提取压缩音频...")
+
         cmd = [
             "ffmpeg", "-y", "-i", video_path,
             "-vn", "-ar", "16000", "-ac", "1", "-b:a", "48k",
@@ -106,7 +101,7 @@ class TranscribeSkill:
         subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
         file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
-        print(f"[TranscribeSkill] 音频大小: {file_size_mb:.1f}MB")
+
 
         if file_size_mb > 25:
             print(f"[TranscribeSkill] ⚠️ 音频超过 25MB，尝试更低码率...")
@@ -114,10 +109,10 @@ class TranscribeSkill:
             cmd[cmd.index("48k")] = "24k"
             subprocess.run(cmd, capture_output=True, text=True, timeout=120)
             file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
-            print(f"[TranscribeSkill] 重压缩后: {file_size_mb:.1f}MB")
+
 
         # 2. 调用 Groq API
-        print(f"[TranscribeSkill] 上传到 Groq API...")
+
         client = Groq(api_key=self.groq_api_key)
 
         with open(audio_path, "rb") as f:
