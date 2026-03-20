@@ -104,9 +104,9 @@ cd VideoShortsAgent
 | 系统 | 命令 |
 |------|------|
 | **Windows** | 双击 `install.bat` |
-| **macOS / Linux** | `chmod +x install.sh && ./install.sh` |
+| **macOS / Linux** | `chmod +x install.sh && ./install.sh`（会尝试自动安装 FFmpeg：`brew` / `apt` / `dnf` 等；失败则警告并继续装 Python 依赖） |
 
-脚本会自动完成：检测环境 → 安装 Python 依赖 → 配置 Remotion（如有 Node.js）→ 创建 `.env`
+脚本会自动完成：检测环境 → **Windows 下若未检测到 FFmpeg 会尝试用 `winget` 安装 `Gyan.FFmpeg`** → 安装 Python 依赖 → 配置 Remotion（如有 Node.js）→ 创建 `.env`（若 `winget` 安装后当前窗口仍找不到 `ffmpeg`，请新开一个终端再运行一次 `install.bat` 或手动把 `ffmpeg\bin` 加入 PATH）
 
 安装完成后，编辑 `.env` 填入你的 API Key，然后双击 `start.bat`（Windows）或运行 `python -m python_agent.app` 启动。
 
