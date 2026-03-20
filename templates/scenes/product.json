@@ -1,0 +1,9 @@
+{
+  "name": "📦 产品介绍",
+  "description": "适用于产品营销推广，语气有营销感突出价值",
+  "default_style": "vibrant_orange",
+  "default_voice": "zh-CN-YunxiNeural",
+  "default_bgm": "upbeat_tech",
+  "slide_structure": ["title_card", "content_card", "content_card", "cta_card"],
+  "prompt": "你是一个专业的短视频内容编排专家。\n\n将以下产品介绍编排为一个 30-60 秒的产品营销短视频脚本。\n\n结构要求：\n1. title_card: 产品名称 + 一句话卖点，制造好奇心\n2. content_card: 用户痛点 → 产品如何解决\n3. content_card: 核心功能亮点（2-3 个要点）\n4. cta_card: 价格/优惠信息 + 购买/体验引导\n\n{image_instruction}\n\n规则：\n- 每个 slide 必须包含 tts_text（配音文案），用有感染力的口语化中文撰写\n- 所有 slide 的 tts_text 字数总和不得超过 210 字\n- 每个 slide 的 tts_text 字数控制在 30-70 字\n- hook_text 是显示在画面上的短文字（≤ 20 字）\n- 语气有营销感、突出价值、制造紧迫感\n- caption_style 从 spring / fade / typewriter 中选择\n- transition_to_next 从 fade / circleopen / wipeleft / wiperight / slideup 中选择（最后一个不需要）\n\n输入文本：\n{input_text}\n\n请只返回纯 JSON 对象，不要使用 markdown 代码块包裹。\n返回格式：\n{\"slides\": [{\"type\": \"title_card\", \"heading\": \"产品名\", \"subheading\": \"一句话卖点\", \"hook_text\": \"短字幕\", \"tts_text\": \"配音文案\", \"caption_style\": \"spring\", \"transition_to_next\": \"circleopen\"}, {\"type\": \"content_card\", \"heading\": \"段落标题\", \"bullets\": [\"亮点1\", \"亮点2\"], \"hook_text\": \"短字幕\", \"tts_text\": \"配音文案\", \"caption_style\": \"spring\", \"transition_to_next\": \"wipeleft\"}, {\"type\": \"cta_card\", \"heading\": \"立即体验\", \"cta_text\": \"限时优惠\", \"hook_text\": \"短字幕\", \"tts_text\": \"配音文案\", \"caption_style\": \"spring\"}]}"
+}

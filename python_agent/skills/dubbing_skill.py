@@ -171,31 +171,43 @@ class DubbingSkill:
         temp_files = [silence_path, lead_silence_path]
 
         # 构建拼接列表：前留白 + 句子（句间停顿） + 后留白
+        def _to_ffmpeg_path(p):
+            """转为 FFmpeg 兼容的绝对路径（正斜杠）"""
+            return os.path.abspath(p).replace("\\", "/")
+
         concat_list_path = os.path.join(tts_dir, f"concat_{clip_index}.txt")
         with open(concat_list_path, "w", encoding="utf-8") as f:
-            f.write(f"file '{lead_silence_path}'\n")
+            f.write("file '" + _to_ffmpeg_path(lead_silence_path) + "'\n")
             for j, sa in enumerate(sentence_audios):
-                f.write(f"file '{sa['path']}'\n")
+                f.write("file '" + _to_ffmpeg_path(sa["path"]) + "'\n")
                 if j < len(sentence_audios) - 1:
-                    f.write(f"file '{silence_path}'\n")
+                    f.write("file '" + _to_ffmpeg_path(silence_path) + "'\n")
             # 添加尾部留白
             if trail_silence > 0.05:
                 trail_silence_path = os.path.join(tts_dir, f"trail_{clip_index}.mp3")
                 self._generate_silence(trail_silence_path, trail_silence)
-                f.write(f"file '{trail_silence_path}'\n")
+                f.write("file '" + _to_ffmpeg_path(trail_silence_path) + "'\n")
                 temp_files.append(trail_silence_path)
 
         temp_files.append(concat_list_path)
 
-        # FFmpeg concat
+        # FFmpeg concat（重编码避免 silence 和 edge-tts 的 codec 不匹配）
         cmd = [
             "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-            "-i", concat_list_path, "-c", "copy", output_path
+            "-i", concat_list_path, "-c:a", "libmp3lame", "-b:a", "128k",
+            output_path
         ]
         try:
-            subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            if r.returncode != 0:
+                print(f"    ⚠️ 拼接失败 (rc={r.returncode}): {r.stderr[-200:]}")
+                # 降级：直接拷贝第一段句子音频
+                if sentence_audios and os.path.exists(sentence_audios[0]["path"]):
+                    import shutil
+                    shutil.copy2(sentence_audios[0]["path"], output_path)
+                    print("    → 降级使用第一段音频")
         except Exception as e:
-            print(f"    ⚠️ 拼接失败: {e}")
+            print(f"    ⚠️ 拼接异常: {e}")
 
         # 计算每句的精确时间轴（偏移前留白）
         timeline = []

@@ -58,6 +58,17 @@ class Config:
     def tts_voice(self) -> str:
         return os.getenv("TTS_VOICE", "zh-CN-YunxiNeural")
 
+    # ── 外部 API 配置 ──
+    @property
+    def freesound_api_key(self) -> str:
+        """Freesound API Key（在线 BGM 搜索）"""
+        return os.getenv("FREESOUND_API_KEY", "")
+
+    @property
+    def pexels_api_key(self) -> str:
+        """Pexels API Key（在线图片搜索）"""
+        return os.getenv("PEXELS_API_KEY", "")
+
     # ── Agent 配置 ──
     @property
     def max_iterations(self) -> int:

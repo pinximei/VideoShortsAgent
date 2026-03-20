@@ -676,7 +676,355 @@ def create_app():
                 )
 
 
-            # Tab 3: 设置
+            # Tab 3: 文本生视频
+            with gr.Tab("✨ 文本生视频"):
+                gr.Markdown("> 输入文本或 URL → 选择场景和风格 → 一键生成短视频（支持上传图片或 AI 自动配图）")
+
+                # 加载模板配置（从 templates/ 目录）
+                from python_agent.template_loader import load_all as _load_templates
+                _templates = _load_templates()
+
+                _scene_names = {v["name"]: k for k, v in _templates["scene_templates"].items()}
+                _style_names = {v["name"]: k for k, v in _templates["visual_styles"].items()}
+                _bgm_names = {v["name"]: k for k, v in _templates["bgm_library"].items()}
+
+                def _fetch_url_content(url):
+                    """从 URL 提取网页正文"""
+                    if not url or not url.strip():
+                        return "", "❌ 请输入 URL"
+                    url = url.strip()
+                    try:
+                        import urllib.request
+                        import re as _re
+                        req = urllib.request.Request(url, headers={
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                        })
+                        with urllib.request.urlopen(req, timeout=15) as resp:
+                            html = resp.read().decode("utf-8", errors="ignore")
+                        # 提取 title
+                        title_m = _re.search(r'<title[^>]*>(.*?)</title>', html, _re.DOTALL | _re.IGNORECASE)
+                        title = title_m.group(1).strip() if title_m else ""
+                        # 移除 script/style
+                        html = _re.sub(r'<(script|style|noscript)[^>]*>.*?</\1>', '', html, flags=_re.DOTALL | _re.IGNORECASE)
+                        # 移除 HTML 标签
+                        text = _re.sub(r'<[^>]+>', '\n', html)
+                        # 清理空白
+                        text = _re.sub(r'\n\s*\n', '\n', text)
+                        text = _re.sub(r'[ \t]+', ' ', text)
+                        lines = [l.strip() for l in text.split('\n') if l.strip() and len(l.strip()) > 2]
+                        # 取前 200 行，避免太长
+                        content = '\n'.join(lines[:200])
+                        if title:
+                            content = f"{title}\n\n{content}"
+                        if len(content) < 20:
+                            return "", f"⚠️ 网页内容太少，请直接粘贴文本"
+                        return content, f"✅ 已提取 {len(content)} 字符"
+                    except Exception as e:
+                        return "", f"❌ 提取失败: {e}"
+
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        with gr.Group():
+                            t2v_url = gr.Textbox(
+                                label="🔗 输入 URL（可选）",
+                                placeholder="粘贴招聘页面或公司官网链接...",
+                                lines=1
+                            )
+                            t2v_fetch_btn = gr.Button("📥 提取网页内容", size="sm")
+                        t2v_text = gr.Textbox(
+                            label="📝 输入文本",
+                            placeholder="粘贴招聘 JD、公司简介、功能描述...（或从 URL 提取）",
+                            lines=8
+                        )
+                        t2v_scene = gr.Radio(
+                            choices=list(_scene_names.keys()),
+                            value=list(_scene_names.keys())[0],
+                            label="📋 场景类型"
+                        )
+                        t2v_style = gr.Radio(
+                            choices=list(_style_names.keys()),
+                            value=list(_style_names.keys())[0],
+                            label="🎨 视觉风格"
+                        )
+
+                        with gr.Accordion("📷 图片设置", open=False):
+                            t2v_images = gr.File(
+                                label="上传图片（可选，LLM 按文件名匹配）",
+                                file_count="multiple", type="filepath"
+                            )
+                            t2v_ai_img = gr.Checkbox(
+                                label="🎨 AI 自动配图（Pexels 搜图 + AI 生图）",
+                                value=True
+                            )
+
+                        with gr.Accordion("🎵 BGM 和语音", open=False):
+                            t2v_bgm = gr.Dropdown(
+                                choices=list(_bgm_names.keys()),
+                                value=list(_bgm_names.keys())[0],
+                                label="📀 预置背景音乐"
+                            )
+                            gr.Markdown("--- 或 在线搜索 ---")
+                            with gr.Row():
+                                t2v_bgm_query = gr.Textbox(
+                                    label="🔍 搜索在线 BGM",
+                                    placeholder="输入英文关键词，如 upbeat technology...",
+                                    lines=1, scale=3
+                                )
+                                t2v_bgm_search_btn = gr.Button("🔍 搜索", size="sm", scale=1)
+                            t2v_bgm_results = gr.Radio(
+                                choices=[], label="🎵 搜索结果",
+                                visible=False
+                            )
+                            # 隐藏字段：存储选中的在线 BGM 信息
+                            t2v_bgm_selected_info = gr.State(value=None)
+                            t2v_voice = gr.Dropdown(
+                                choices=[
+                                    "zh-CN-YunxiNeural", "zh-CN-YunjianNeural",
+                                    "zh-CN-YunyangNeural", "zh-CN-XiaoxiaoNeural",
+                                    "zh-CN-XiaoyiNeural",
+                                ],
+                                value="zh-CN-YunxiNeural",
+                                label="🗣️ 语音角色"
+                            )
+
+                        t2v_compose_btn = gr.Button("📝 生成脚本", variant="primary", size="lg")
+
+                    with gr.Column(scale=2):
+                        # 脚本预览区
+                        t2v_script_display = gr.JSON(label="📋 脚本预览（可编辑）", visible=False)
+                        t2v_render_btn = gr.Button("🚀 确认，开始渲染", variant="primary", size="lg", visible=False)
+
+                        # 输出区
+                        t2v_output_video = gr.Video(label="📹 生成的视频")
+                        t2v_xhs_text = gr.Textbox(
+                            label="📱 小红书发布文案（一键复制）",
+                            lines=8, interactive=True, visible=False
+                        )
+                        t2v_doc_text = gr.Textbox(
+                            label="📄 功能文档（Markdown）",
+                            lines=6, interactive=True, visible=False
+                        )
+                        t2v_status = gr.Markdown("")
+
+                with gr.Accordion("📜 执行日志", open=False):
+                    t2v_logs = gr.Textbox(
+                        label="日志", lines=15, max_lines=30,
+                        interactive=False, elem_classes="log-box"
+                    )
+
+                # ── 处理函数 ──
+
+                def _step1_compose(text, scene_name, style_name, images, ai_img):
+                    """第一步：生成脚本预览"""
+                    if not text or not text.strip():
+                        return (gr.update(), gr.update(), gr.update(),
+                                "❌ 请输入文本内容", "")
+
+                    capture = LogCapture()
+                    capture.start()
+                    try:
+                        from python_agent.skills.compose_skill import ComposeSkill
+                        scene_key = _scene_names.get(scene_name, "general")
+                        # 提取图片文件名
+                        img_names = []
+                        if images:
+                            img_names = [os.path.basename(p) for p in images]
+
+                        skill = ComposeSkill()
+                        script = skill.execute(text, scene_key, img_names, ai_img)
+
+                        return (
+                            gr.update(value=script, visible=True),    # script_display
+                            gr.update(visible=True),                   # render_btn
+                            gr.update(),                               # status
+                            f"✅ 脚本生成完成，共 {len(script.get('slides', []))} 个段落。请检查内容后点击「🚀 确认，开始渲染」",
+                            capture.get_text()
+                        )
+                    except Exception as e:
+                        traceback.print_exc()
+                        return (gr.update(), gr.update(), gr.update(),
+                                f"❌ 脚本生成失败: {e}", capture.get_text())
+                    finally:
+                        capture.stop()
+
+                def _step2_render(script_json, text, scene_name, style_name,
+                                  images, ai_img, bgm_name, voice,
+                                  bgm_selected_info):
+                    """第二步：确认后渲染视频"""
+                    if not script_json:
+                        return (None, gr.update(), gr.update(), "❌ 请先生成脚本", "")
+
+                    capture = LogCapture()
+                    capture.start()
+                    try:
+                        import uuid
+                        from python_agent.skills.image_resolver_skill import ImageResolverSkill
+                        from python_agent.skills.dubbing_skill import DubbingSkill
+                        from python_agent.skills.render_slides_skill import RenderSlidesSkill
+                        from python_agent.skills.publish_skill import PublishSkill
+
+                        scene_key = _scene_names.get(scene_name, "general")
+                        style_key = _style_names.get(style_name, "tech_blue")
+                        bgm_key = _bgm_names.get(bgm_name, "none")
+                        visual_style = _templates["visual_styles"].get(style_key, {})
+                        bgm_config = _templates["bgm_library"].get(bgm_key, {})
+
+                        task_id = uuid.uuid4().hex[:8]
+                        task_dir = os.path.join("output", f"text2video_{task_id}")
+                        os.makedirs(task_dir, exist_ok=True)
+
+                        slides = script_json.get("slides", [])
+                        if not slides:
+                            return (None, gr.update(), gr.update(),
+                                    "❌ 脚本中没有 slides", capture.get_text())
+
+                        # 1. 解析图片
+                        print("[Text2Video] 步骤 1/4: 解析图片...")
+                        images_dir = None
+                        if images:
+                            images_dir = os.path.join(task_dir, "user_images")
+                            os.makedirs(images_dir, exist_ok=True)
+                            import shutil
+                            for p in images:
+                                shutil.copy2(p, os.path.join(images_dir, os.path.basename(p)))
+
+                        resolver = ImageResolverSkill()
+                        slides = resolver.execute(slides, images_dir, ai_img, task_dir)
+
+                        # 2. TTS 配音
+                        print("[Text2Video] 步骤 2/4: 生成 TTS 配音...")
+                        dubbing_skill = DubbingSkill(voice=voice)
+                        # 构建 DubbingSkill 需要的格式
+                        clips_with_tts = []
+                        for s in slides:
+                            clips_with_tts.append({
+                                "tts_text": s.get("tts_text", ""),
+                            })
+                        tts_result = dubbing_skill.execute(clips_with_tts, task_dir)
+                        # tts_result 是包含每段 TTS 信息的列表
+                        tts_clips = tts_result if isinstance(tts_result, list) else []
+
+                        # 3. 渲染视频
+                        print("[Text2Video] 步骤 3/4: 渲染视频...")
+                        bgm_path = None
+
+                        # 优先使用在线搜索的 BGM
+                        if bgm_selected_info and isinstance(bgm_selected_info, dict):
+                            from python_agent.skills.music_search_skill import MusicSearchSkill
+                            music_skill = MusicSearchSkill()
+                            online_bgm = music_skill.download(
+                                bgm_selected_info["id"],
+                                bgm_selected_info["preview_url"],
+                                task_dir
+                            )
+                            if online_bgm:
+                                bgm_path = online_bgm
+                                print(f"[Text2Video] 使用在线 BGM: {bgm_selected_info.get('name', '')}")
+
+                        # 回退到预置 BGM
+                        if not bgm_path and bgm_config.get("path"):
+                            bgm_full = os.path.join(
+                                os.path.dirname(os.path.dirname(__file__)),
+                                bgm_config["path"]
+                            )
+                            if os.path.exists(bgm_full):
+                                bgm_path = bgm_full
+
+                        renderer = RenderSlidesSkill()
+                        video_path = renderer.execute(
+                            slides, tts_clips, visual_style, task_dir, bgm_path
+                        )
+
+                        # 4. 生成发布文案
+                        print("[Text2Video] 步骤 4/4: 生成发布文案...")
+                        publish_skill = PublishSkill()
+                        publish_result = publish_skill.execute(script_json, text, scene_key)
+
+                        xhs_formatted = publish_skill.format_xiaohongshu(publish_result)
+                        doc_text = publish_result.get("doc", "")
+
+                        return (
+                            video_path,
+                            gr.update(value=xhs_formatted, visible=True),
+                            gr.update(value=doc_text, visible=True),
+                            f"✅ 视频生成完成！\n\n📁 任务目录: `{task_dir}`",
+                            capture.get_text()
+                        )
+                    except Exception as e:
+                        traceback.print_exc()
+                        return (None, gr.update(), gr.update(),
+                                f"❌ 渲染失败: {e}", capture.get_text())
+                    finally:
+                        capture.stop()
+
+                def _search_bgm(query):
+                    """在线搜索 BGM"""
+                    if not query or not query.strip():
+                        return gr.update(), gr.update(), None, "❌ 请输入搜索关键词"
+                    from python_agent.skills.music_search_skill import MusicSearchSkill
+                    skill = MusicSearchSkill()
+                    if not skill.is_available():
+                        return gr.update(), gr.update(), None, "⚠️ 未配置 FREESOUND_API_KEY，请在 .env 中配置"
+                    results = skill.search(query.strip())
+                    if not results:
+                        return gr.update(choices=[], visible=False), gr.update(), None, "未找到相关音乐，请换个关键词"
+                    # 构建选项列表
+                    choices = []
+                    results_map = {}
+                    for r in results:
+                        label = f"{r['name']} ({r['duration']:.0f}s) by {r['username']}"
+                        choices.append(label)
+                        results_map[label] = r
+                    # 用闭包存储映射
+                    _search_bgm._results_map = results_map
+                    return (
+                        gr.update(choices=choices, visible=True, value=choices[0]),
+                        gr.update(),
+                        results_map.get(choices[0]),
+                        f"✅ 找到 {len(choices)} 首相关音乐"
+                    )
+                _search_bgm._results_map = {}
+
+                def _on_bgm_select(selection):
+                    """用户选择 BGM 时更新 state"""
+                    return _search_bgm._results_map.get(selection)
+
+                t2v_bgm_search_btn.click(
+                    fn=_search_bgm,
+                    inputs=[t2v_bgm_query],
+                    outputs=[t2v_bgm_results, t2v_bgm, t2v_bgm_selected_info, t2v_status]
+                )
+
+                t2v_bgm_results.change(
+                    fn=_on_bgm_select,
+                    inputs=[t2v_bgm_results],
+                    outputs=[t2v_bgm_selected_info]
+                )
+
+                t2v_fetch_btn.click(
+                    fn=_fetch_url_content,
+                    inputs=[t2v_url],
+                    outputs=[t2v_text, t2v_status]
+                )
+
+                t2v_compose_btn.click(
+                    fn=_step1_compose,
+                    inputs=[t2v_text, t2v_scene, t2v_style, t2v_images, t2v_ai_img],
+                    outputs=[t2v_script_display, t2v_render_btn, t2v_output_video,
+                             t2v_status, t2v_logs]
+                )
+
+                t2v_render_btn.click(
+                    fn=_step2_render,
+                    inputs=[t2v_script_display, t2v_text, t2v_scene, t2v_style,
+                            t2v_images, t2v_ai_img, t2v_bgm, t2v_voice,
+                            t2v_bgm_selected_info],
+                    outputs=[t2v_output_video, t2v_xhs_text, t2v_doc_text,
+                             t2v_status, t2v_logs]
+                )
+
+
+            # Tab 4: 设置
             with gr.Tab("⚙️ 设置"):
                 gr.Markdown("> 修改配置后点击「保存」，将写入 `.env` 文件（部分设置需重启后生效）")
 
