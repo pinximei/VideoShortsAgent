@@ -1,11 +1,10 @@
 {
-  "name": "🌊 科技蓝",
+  "name": "🌊 暗夜青",
   "colors": [
-    "#0f0c29",
-    "#302b63",
-    "#24243e"
+    "#0a0a0f",
+    "#1a1a2e",
+    "#16213e"
   ],
-  "text_color": "#ffffff",
-  "accent_color": "#00d2ff",
-  "caption_style": "spring"
+  "text_color": "#f0f0f0",
+  "accent_color": "#00e5c8"
 }

@@ -44,7 +44,18 @@ def load_scenes() -> dict:
 
 def load_styles() -> dict:
     """加载所有视觉风格"""
-    return _load_dir("styles")
+    d = _load_dir("styles")
+    
+    # 强制注入 "Agent 决策" 极客选项 (让 Agent 全权代理视觉特效)
+    d["auto"] = {
+        "name": "✨ 自动匹配 (Agent 决策)",
+        "colors": [],
+        "text_color": "#ffffff",
+        "accent_color": "#ffdd57",
+        "caption_style": "spring"
+    }
+    
+    return d
 
 
 def load_bgm() -> dict:

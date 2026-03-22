@@ -4,6 +4,11 @@
   "default_style": "nature_green",
   "default_voice": "zh-CN-XiaoxiaoNeural",
   "default_bgm": "inspiring",
-  "slide_structure": ["title_card", "content_card", "content_card", "content_card"],
-  "prompt": "你是一个专业的短视频内容编排专家。\n\n将以下知识内容编排为一个 30-60 秒的科普短视频脚本。\n\n结构要求：\n1. title_card: 用一个引人好奇的问题或观点作为 Hook 开场\n2. content_card × 2-3: 逐步讲解核心知识点，每段围绕一个概念\n3. 最后一个 content_card: 总结+延伸思考\n\n{image_instruction}\n\n规则：\n- 每个 slide 必须包含 tts_text（配音文案），用通俗易懂的中文讲解\n- 所有 slide 的 tts_text 字数总和不得超过 210 字\n- 每个 slide 的 tts_text 字数控制在 30-70 字\n- hook_text 是显示在画面上的短文字（≤ 20 字）\n- 语气清晰、有节奏感、像好老师在讲课\n- 第一个 slide 要用问题或反常识观点制造好奇心\n- caption_style 从 spring / fade / typewriter 中选择\n- transition_to_next 从 fade / circleopen / wipeleft / wiperight / slideup 中选择（最后一个不需要）\n\n输入文本：\n{input_text}\n\n请只返回纯 JSON 对象，不要使用 markdown 代码块包裹。\n返回格式：\n{\"slides\": [{\"type\": \"title_card\", \"heading\": \"引人好奇的标题\", \"subheading\": \"副标题\", \"hook_text\": \"短字幕\", \"tts_text\": \"配音文案\", \"caption_style\": \"spring\", \"transition_to_next\": \"circleopen\"}, {\"type\": \"content_card\", \"heading\": \"知识点标题\", \"bullets\": [\"要点1\", \"要点2\"], \"hook_text\": \"短字幕\", \"tts_text\": \"配音文案\", \"caption_style\": \"typewriter\", \"transition_to_next\": \"fade\"}]}"
+  "slide_structure": [
+    "title_card",
+    "content_card",
+    "content_card",
+    "content_card"
+  ],
+  "prompt": "你是一个专业的短视频内容编排专家。\n\n将以下知识内容编排为一个 30-60 秒的科普短视频脚本。\n\n结构要求：\n1. title_card: [极其抓人眼球的开场 Hook] 必须使用“反常识暴击、痛点共鸣、极致诱惑、或者强烈悬念”四大短视频爆款公式之一来撰写，问题必须极其尖锐、极具颠覆性，第一秒就必须打破认知死死锁住眼球。\n2. content_card × 2-3: 逐步讲解核心知识点，每段围绕一个概念\n3. 最后一个 content_card: 总结+延伸思考\n\n{image_instruction}\n\n规则：\n- 每个 slide 必须包含 tts_text（配音文案），用通俗易懂的中文讲解\n- 所有 slide 的 tts_text 字数总和不得超过 210 字\n- 每个 slide 的 tts_text 字数控制在 30-70 字\n- hook_text 是显示在画面上的短文字（≤ 20 字），且必须充满悬念或违背常理\n- 语气清晰、有节奏感、像好老师在讲课\n- 第一个 slide 要用问题或反常识观点制造极其强烈的好奇心\n- caption_style 从 spring / fade / typewriter 中选择\n- transition_to_next 从 fade / circleopen / wipeleft / wiperight / slideup 中选择（最后一个不需要）\n\n输入文本：\n{input_text}\n\n请只返回纯 JSON 对象，不要使用 markdown 代码块包裹。\n返回格式：\n{\"slides\": [{\"type\": \"title_card\", \"heading\": \"极具颠覆性的发问或论点\", \"subheading\": \"副标题\", \"hook_text\": \"惹人好奇的短字幕\", \"tts_text\": \"配音文案\", \"caption_style\": \"spring\", \"transition_to_next\": \"circleopen\"}, {\"type\": \"content_card\", \"heading\": \"知识点标题\", \"bullets\": [\"要点1\", \"要点2\"], \"hook_text\": \"短字幕\", \"tts_text\": \"配音文案\", \"caption_style\": \"typewriter\", \"transition_to_next\": \"fade\"}]}"
 }

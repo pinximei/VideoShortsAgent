@@ -4,6 +4,10 @@
   "default_style": "minimal_white",
   "default_voice": "zh-CN-YunxiNeural",
   "default_bgm": "gentle_piano",
-  "slide_structure": ["title_card", "content_card", "content_card"],
-  "prompt": "你是一个专业的短视频内容编排专家。\n\n将以下文本编排为一个 30-60 秒的短视频脚本。\n请根据内容自动判断最佳的视频结构。\n\n{image_instruction}\n\n规则：\n- 将内容自动拆分为 2-4 个 slides\n- 第一个 slide 用 title_card 类型作为开场\n- 中间用 content_card 类型展开内容\n- 最后可以用 cta_card（如有行动号召）或 content_card 结尾\n- 每个 slide 必须包含 tts_text（配音文案），用自然流畅的中文\n- 所有 slide 的 tts_text 字数总和不得超过 210 字\n- 每个 slide 的 tts_text 字数控制在 30-70 字\n- hook_text 是显示在画面上的短文字（≤ 20 字）\n- caption_style 从 spring / fade / typewriter 中选择\n- transition_to_next 从 fade / circleopen / wipeleft / wiperight / slideup 中选择（最后一个不需要）\n\n输入文本：\n{input_text}\n\n请只返回纯 JSON 对象，不要使用 markdown 代码块包裹。\n返回格式：\n{\"slides\": [{\"type\": \"title_card|content_card|cta_card\", \"heading\": \"标题\", \"subheading\": \"副标题(可选)\", \"bullets\": [\"要点(content_card可选)\"], \"cta_text\": \"按钮文案(cta_card可选)\", \"hook_text\": \"短字幕\", \"tts_text\": \"配音文案\", \"caption_style\": \"spring\", \"transition_to_next\": \"fade\"}]}"
+  "slide_structure": [
+    "title_card",
+    "content_card",
+    "content_card"
+  ],
+  "prompt": "你是一个专业的短视频内容编排专家。\n\n将以下文本编排为一个 30-60 秒的短视频脚本。\n请根据内容自动判断最佳的视频结构。\n\n{image_instruction}\n\n规则：\n- 将内容自动拆分为 2-4 个 slides\n- 每一镜必须只负责剧情！绝不要输出物理视觉参数！\n- 第一个 slide 用 title_card 或 content_card 作为开场，必须是极具冲突感的 Hook 标题\n- 每个 slide 必须包含 tts_text（配音文案），用自然流畅的中文\n- hook_text 是显示在画面上的短文字（≤ 20 字）\n\n输入文本：\n{input_text}\n\n请只返回纯 JSON 对象，不要使用 markdown 代码块包裹。\n返回格式：\n{\"slides\": [{\"type\": \"title_card|content_card|cta_card\", \"heading\": \"极强张力的标题\", \"subheading\": \"副标题(可选)\", \"bullets\": [\"要点(content_card可选)\"], \"cta_text\": \"按钮文案(cta_card可选)\", \"hook_text\": \"具有悬念的短字幕\", \"tts_text\": \"配音文案\"}]}"
 }

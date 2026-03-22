@@ -58,7 +58,13 @@ class DubbingSkill:
         tts_dir = os.path.join(output_dir, "tts_segments")
         os.makedirs(tts_dir, exist_ok=True)
 
-        clips = analysis.get("clips", [])
+        # 兼容多种输入格式：list of slides, dict with "clips", dict with "slides"
+        if isinstance(analysis, list):
+            clips = analysis
+        elif isinstance(analysis, dict):
+            clips = analysis.get("clips", analysis.get("slides", []))
+        else:
+            clips = []
         clips_with_tts = [c for c in clips if c.get("tts_text")]
 
         if not clips_with_tts:

@@ -256,10 +256,11 @@ class RenderSkill:
         if silent:
             cmd += ["-an"]  # 去掉音轨
         else:
-            cmd += ["-c:a", "aac"]
+            cmd += ["-c:a", "aac", "-b:a", "192k"]
         cmd += [
             "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-movflags", "+faststart", "-preset", "fast",
+            "-crf", "18", "-profile:v", "high", "-level", "4.1",
+            "-movflags", "+faststart", "-preset", "medium",
             output_path
         ]
         self._run_cmd(cmd, "裁剪")
@@ -272,10 +273,11 @@ class RenderSkill:
                 "ffmpeg", "-y", "-i", output_path,
                 "-vf", vf,
                 "-c:v", "libx264", "-pix_fmt", "yuv420p",
-                "-movflags", "+faststart", "-preset", "fast",
+                "-crf", "18", "-profile:v", "high", "-level", "4.1",
+                "-movflags", "+faststart", "-preset", "medium",
             ]
             if not silent:
-                pad_cmd += ["-af", f"apad=pad_dur={pad_duration:.3f}", "-c:a", "aac"]
+                pad_cmd += ["-af", f"apad=pad_dur={pad_duration:.3f}", "-c:a", "aac", "-b:a", "192k"]
             else:
                 pad_cmd += ["-an"]
             pad_cmd.append(padded_path)
@@ -289,7 +291,7 @@ class RenderSkill:
             "ffmpeg", "-y",
             "-i", video_path,
             "-i", audio_path,
-            "-c:v", "copy", "-c:a", "aac",
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
             "-map", "0:v", "-map", "1:a",
             "-movflags", "+faststart",
             "-shortest",
@@ -317,7 +319,7 @@ class RenderSkill:
                 e_h, e_m, e_s = int(e_t // 3600), int((e_t % 3600) // 60), e_t % 60
                 dialogues.append(
                     f"Dialogue: 0,{s_h}:{s_m:02d}:{s_s:05.2f},{e_h}:{e_m:02d}:{e_s:05.2f},"
-                    f"Hook,,0,0,0,,{{\\fad(150,150)}}{s['text']}"
+                    f"Hook,,0,0,0,,{{\\fad(300,250)}}{{\\blur1}}{s['text']}"
                 )
         else:
             # 估算模式：按字数比例分配时间
@@ -354,7 +356,7 @@ class RenderSkill:
                 e_h, e_m, e_s = int(e_t // 3600), int((e_t % 3600) // 60), e_t % 60
                 dialogues.append(
                     f"Dialogue: 0,{s_h}:{s_m:02d}:{s_s:05.2f},{e_h}:{e_m:02d}:{e_s:05.2f},"
-                    f"Hook,,0,0,0,,{{\\fad(200,200)}}{s_text}"
+                    f"Hook,,0,0,0,,{{\\fad(300,250)}}{{\\blur1}}{s_text}"
                 )
                 current = e_t + pause
 
@@ -367,7 +369,7 @@ WrapStyle: 0
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Hook,Microsoft YaHei,72,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,2,0,1,4,2,2,40,40,80,1
+Style: Hook,Microsoft YaHei,64,&H00FFFFFF,&H000000FF,&H00000000,&HC0000000,-1,0,0,0,100,100,3,0,1,3,3,2,40,40,80,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -384,8 +386,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "-vf", f"subtitles=filename='{ass_escaped}'",
             "-c:v", "libx264", "-c:a", "copy",
             "-pix_fmt", "yuv420p",
+            "-crf", "18", "-profile:v", "high", "-level", "4.1",
             "-movflags", "+faststart",
-            "-preset", "ultrafast",
+            "-preset", "medium",
             output_path
         ]
         self._run_cmd(cmd, "烧录字幕", timeout=600)
@@ -566,8 +569,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "-map", "[vout]", "-map", "0:a?",
             "-c:v", "libx264", "-c:a", "copy",
             "-pix_fmt", "yuv420p",
+            "-crf", "18", "-profile:v", "high", "-level", "4.1",
             "-movflags", "+faststart",
-            "-preset", "fast",
+            "-preset", "medium",
             output_path
         ]
         self._run_cmd(cmd, "叠加覆盖层")
@@ -598,7 +602,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         # 全局默认转场
         default_transition = (effects or {}).get("transition", "fade")
-        transition_duration = float((effects or {}).get("transition_duration", 0.5))
+        transition_duration = float((effects or {}).get("transition_duration", 0.8))
 
         # 验证转场类型
         valid_transitions = [
@@ -606,7 +610,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "slideup", "slidedown", "slideleft", "slideright",
             "circleopen", "circleclose", "dissolve", "pixelize",
             "diagtl", "diagtr", "diagbl", "diagbr",
+            "smoothleft", "smoothright", "smoothup", "smoothdown",
+            "horzopen", "horzclose", "vertopen", "vertclose",
         ]
+
+        # 检测 FFmpeg 是否支持 easing 参数（FFmpeg 7.0+）
+        easing_supported = self._check_ffmpeg_easing_support()
 
         # 为每个转场点确定转场类型（从 clip 级别读取，降级到全局默认）
         transitions = []
@@ -618,7 +627,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 print(f"[RenderSkill] ⚠️ 未知转场 '{t}'，使用 fade")
                 t = "fade"
             transitions.append(t)
-        print(f"[RenderSkill] 转场序列: {transitions} ({transition_duration}s)")
+        print(f"[RenderSkill] 转场序列: {transitions} ({transition_duration}s, easing={'on' if easing_supported else 'off'})")
 
         # 获取每个片段的时长
         durations = [self._get_duration(path) for path in video_paths]
@@ -649,9 +658,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             pass
 
         # 视频/音频滤镜链（每段用独立转场）
+        easing_param = ":easing=easeInOutCubic" if easing_supported else ""
         if len(video_paths) == 2:
             filter_parts.append(
-                f"[0:v][1:v]xfade=transition={transitions[0]}:duration={transition_duration}:offset={offsets[0]:.3f}[vout]"
+                f"[0:v][1:v]xfade=transition={transitions[0]}:duration={transition_duration}:offset={offsets[0]:.3f}{easing_param}[vout]"
             )
             if has_audio:
                 filter_parts.append(
@@ -667,7 +677,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 v_out = "[vout]" if i == len(video_paths) - 2 else f"[v{i}]"
                 a_out = "[aout]" if i == len(video_paths) - 2 else f"[a{i}]"
                 filter_parts.append(
-                    f"{v_prev}[{i+1}:v]xfade=transition={transitions[i]}:duration={transition_duration}:offset={offsets[i]:.3f}{v_out}"
+                    f"{v_prev}[{i+1}:v]xfade=transition={transitions[i]}:duration={transition_duration}:offset={offsets[i]:.3f}{easing_param}{v_out}"
                 )
                 if has_audio:
                     filter_parts.append(
@@ -686,10 +696,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         cmd = ["ffmpeg", "-y"] + inputs + [
             "-filter_complex", filter_complex
         ] + map_args + [
-            "-c:v", "libx264", "-c:a", "aac",
+            "-c:v", "libx264", "-c:a", "aac", "-b:a", "192k",
+            "-crf", "18", "-profile:v", "high", "-level", "4.1",
             "-pix_fmt", "yuv420p",
             "-movflags", "+faststart",
-            "-preset", "fast",
+            "-preset", "medium",
             output_path
         ]
         self._run_cmd(cmd, "转场拼接")
@@ -705,6 +716,21 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             return float(result.stdout.strip())
         except Exception:
             return 5.0  # 默认 5 秒
+
+    def _check_ffmpeg_easing_support(self) -> bool:
+        """检测 FFmpeg 是否支持 xfade easing 参数（FFmpeg 7.0+）"""
+        try:
+            result = subprocess.run(
+                ["ffmpeg", "-version"], capture_output=True, text=True, timeout=5
+            )
+            import re
+            m = re.search(r"ffmpeg version (\d+)\.(\d+)", result.stdout)
+            if m:
+                major = int(m.group(1))
+                return major >= 7
+        except Exception:
+            pass
+        return False
 
     # ========== 工具方法 ==========
 
