@@ -83,7 +83,8 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
     themes = parse_themes(themes_raw if isinstance(themes_raw, list) else None)
     sites = parse_sites(sites_raw if isinstance(sites_raw, list) else None, themes)
     channel_accounts = parse_channel_accounts(accounts_raw if isinstance(accounts_raw, list) else None)
-    if not channel_accounts:
+    # 仅当 yaml 未声明 channel_accounts 时从 themes 迁移；显式 [] 表示尚未配置卡片
+    if accounts_raw is None and not channel_accounts:
         channel_accounts = migrate_accounts_from_themes(themes, sites)
     feed_kinds_cfg = filt.get("feed_kinds")
     if feed_kinds_cfg is not None:

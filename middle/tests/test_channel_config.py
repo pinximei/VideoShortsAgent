@@ -79,3 +79,22 @@ def test_replace_accounts_for_slot(tmp_path: Path) -> None:
     cards = overview["accounts_by_site_channel"]["ai-trends-news"]["xhs"]
     assert len(cards) == 1
     assert cards[0]["label"] == "资讯小红书"
+
+
+def test_explicit_empty_channel_accounts_not_migrated(tmp_path: Path) -> None:
+    """channel_accounts: [] 表示尚未配置，不应从 themes 自动灌入 8 条。"""
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(
+        (Path(__file__).resolve().parents[1] / "config.example.yaml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    cfg = load_config(cfg_path)
+    assert cfg.channel_accounts == []
+
+    cfg = replace_accounts_for_slot(
+        cfg,
+        site_code="ai-trends-apps",
+        channel_id="toutiao",
+        cards=[{"label": "头条号", "handle": "@tt1", "is_primary": True}],
+    )
+    assert len(cfg.channel_accounts) == 1
