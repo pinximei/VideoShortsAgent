@@ -8,6 +8,39 @@ export type Theme = {
   accounts?: Record<string, { label?: string; handle?: string; note?: string }>;
 };
 
+export type Site = {
+  code: string;
+  label: string;
+  description?: string;
+  theme_id?: string;
+  base_url?: string;
+};
+
+export type PlatformChannel = {
+  id: string;
+  label: string;
+  kind: string;
+};
+
+export type ChannelAccount = {
+  id: string;
+  site_code: string;
+  channel_id: string;
+  label: string;
+  handle: string;
+  profile_url: string;
+  login_hint: string;
+  note: string;
+  enabled: boolean;
+  is_primary: boolean;
+};
+
+export type ChannelConfigOverview = {
+  sites: Site[];
+  channels: PlatformChannel[];
+  accounts_by_site_channel: Record<string, Record<string, ChannelAccount[]>>;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(path, {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
@@ -53,4 +86,14 @@ export const api = {
     }),
   publishingStats: (days = 30, theme?: string) =>
     request<Record<string, unknown>>(`/api/v1/publishing/stats${q({ days, theme })}`),
+  channelConfig: () => request<ChannelConfigOverview>("/api/v1/channel-config"),
+  saveChannelAccounts: (site_code: string, channel_id: string, accounts: ChannelAccount[]) =>
+    request<{ saved: number; accounts: ChannelAccount[] }>("/api/v1/channel-config/accounts", {
+      method: "PUT",
+      body: JSON.stringify({ site_code, channel_id, accounts }),
+    }),
+  deleteChannelAccount: (account_id: string) =>
+    request<{ deleted: string }>(`/api/v1/channel-config/accounts/${account_id}`, {
+      method: "DELETE",
+    }),
 };

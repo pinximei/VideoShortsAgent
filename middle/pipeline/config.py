@@ -6,6 +6,13 @@ from typing import Any
 
 import yaml
 
+from .channel_registry import (
+    Site,
+    ChannelAccount,
+    migrate_accounts_from_themes,
+    parse_channel_accounts,
+    parse_sites,
+)
 from .themes import Theme, all_feed_kinds, parse_themes
 
 
@@ -40,6 +47,9 @@ class PipelineConfig:
     llm_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_model: str = "qwen-plus"
     themes: list[Theme] = field(default_factory=lambda: parse_themes(None))
+    sites: list[Site] = field(default_factory=list)
+    channel_accounts: list[ChannelAccount] = field(default_factory=list)
+    config_path: Path | None = None
 
     @property
     def db_path(self) -> Path:
@@ -63,12 +73,18 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
     render = raw.get("render") or {}
     llm = raw.get("llm") or {}
     themes_raw = raw.get("themes")
+    sites_raw = raw.get("sites")
+    accounts_raw = raw.get("channel_accounts")
 
     data_dir = Path(paths.get("data_dir") or "./data")
     vsa_raw = (paths.get("vsa_root") or "").strip()
     vsa_root = Path(vsa_raw) if vsa_raw else repo_root()
 
     themes = parse_themes(themes_raw if isinstance(themes_raw, list) else None)
+    sites = parse_sites(sites_raw if isinstance(sites_raw, list) else None, themes)
+    channel_accounts = parse_channel_accounts(accounts_raw if isinstance(accounts_raw, list) else None)
+    if not channel_accounts:
+        channel_accounts = migrate_accounts_from_themes(themes, sites)
     feed_kinds_cfg = filt.get("feed_kinds")
     if feed_kinds_cfg is not None:
         feed_kinds = list(feed_kinds_cfg)
@@ -100,4 +116,7 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         llm_base_url=str(llm.get("base_url") or "https://dashscope.aliyuncs.com/compatible-mode/v1"),
         llm_model=str(llm.get("model") or "qwen-plus"),
         themes=themes,
+        sites=sites,
+        channel_accounts=channel_accounts,
+        config_path=p if p.is_file() else None,
     )

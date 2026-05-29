@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_DIST = ROOT / "frontend" / "dist"
 
 _cfg: PipelineConfig | None = None
+_cfg_lock = threading.Lock()
 
 
 def get_cfg() -> PipelineConfig:
@@ -37,6 +38,20 @@ def get_cfg() -> PipelineConfig:
             path = ROOT / "config.yaml"
         _cfg = load_config(path if path.is_file() else ROOT / "config.example.yaml")
     return _cfg
+
+
+def reload_cfg() -> PipelineConfig:
+    global _cfg
+    with _cfg_lock:
+        import os
+
+        env_path = os.environ.get("PIPELINE_CONFIG", "").strip()
+        if env_path:
+            path = Path(env_path)
+        else:
+            path = ROOT / "config.yaml"
+        _cfg = load_config(path if path.is_file() else ROOT / "config.example.yaml")
+        return _cfg
 
 
 def get_store() -> JobStore:
@@ -89,6 +104,98 @@ class PublishBody(BaseModel):
 
 class ThemePatchBody(BaseModel):
     theme_id: str = Field(..., min_length=1, max_length=64)
+
+
+class ChannelAccountBody(BaseModel):
+    id: str = ""
+    site_code: str = Field(..., min_length=1, max_length=64)
+    channel_id: str = Field(..., pattern="^(douyin|xhs|toutiao|douban)$")
+    label: str = ""
+    handle: str = ""
+    profile_url: str = ""
+    login_hint: str = ""
+    note: str = ""
+    enabled: bool = True
+    is_primary: bool = False
+
+
+class ChannelAccountCardBody(BaseModel):
+    id: str = ""
+    label: str = ""
+    handle: str = ""
+    profile_url: str = ""
+    login_hint: str = ""
+    note: str = ""
+    enabled: bool = True
+    is_primary: bool = False
+
+
+class ChannelAccountsBatchBody(BaseModel):
+    site_code: str = Field(..., min_length=1, max_length=64)
+    channel_id: str = Field(..., pattern="^(douyin|xhs|toutiao|douban)$")
+    accounts: list[ChannelAccountCardBody] = Field(default_factory=list)
+
+
+@app.get("/api/v1/channel-config")
+def channel_config_overview_api():
+    from pipeline.channel_config import get_overview
+
+    return _envelope(get_overview(get_cfg()))
+
+
+@app.get("/api/v1/channel-config/accounts")
+def channel_config_accounts(site_code: str = Query(...), channel_id: str = Query(...)):
+    from pipeline.channel_registry import accounts_for
+
+    cfg = get_cfg()
+    if not any(s.code == site_code for s in cfg.sites):
+        raise HTTPException(400, "unknown site_code")
+    rows = accounts_for(cfg.channel_accounts, site_code=site_code, channel_id=channel_id)
+    return _envelope([a.to_dict() for a in rows])
+
+
+@app.put("/api/v1/channel-config/accounts")
+def channel_config_save_accounts(body: ChannelAccountsBatchBody):
+    from pipeline.channel_config import replace_accounts_for_slot
+
+    try:
+        cfg = replace_accounts_for_slot(
+            get_cfg(),
+            site_code=body.site_code,
+            channel_id=body.channel_id,
+            cards=[c.model_dump() for c in body.accounts],
+        )
+        global _cfg
+        _cfg = cfg
+        from pipeline.channel_registry import accounts_for
+
+        rows = accounts_for(cfg.channel_accounts, site_code=body.site_code, channel_id=body.channel_id)
+        return _envelope({"saved": len(rows), "accounts": [a.to_dict() for a in rows]})
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.post("/api/v1/channel-config/accounts")
+def channel_config_upsert_account(body: ChannelAccountBody):
+    from pipeline.channel_config import upsert_account
+
+    try:
+        cfg, acc = upsert_account(get_cfg(), body.model_dump())
+        global _cfg
+        _cfg = cfg
+        return _envelope(acc.to_dict())
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.delete("/api/v1/channel-config/accounts/{account_id}")
+def channel_config_delete_account(account_id: str):
+    from pipeline.channel_config import delete_account
+
+    cfg = delete_account(get_cfg(), account_id)
+    global _cfg
+    _cfg = cfg
+    return _envelope({"deleted": account_id})
 
 
 @app.get("/api/v1/themes")
@@ -191,17 +298,31 @@ def get_job(article_id: int):
             if p.is_file():
                 rel = p.relative_to(out_dir).as_posix()
                 artifacts.append({"path": rel, "url": f"/api/v1/files/{article_id}/{rel}"})
+    from pipeline.channel_registry import accounts_for, primary_account_label, site_for_theme
+
     data = _parse_job(job)
     data["artifacts"] = artifacts
     data["events"] = store.list_events(ck)
     tid = job.get("theme_id") or ""
     theme_obj = next((t.to_dict() for t in cfg.themes if t.id == tid), None)
     data["theme"] = theme_obj
+    site = site_for_theme(cfg.sites, tid)
+    data["site"] = site.to_dict() if site else None
     channels = ["douyin", "xhs", "toutiao", "douban"]
     data["published"] = {ch: store.is_published(ck, ch) for ch in channels}
-    if theme_obj:
-        data["account_labels"] = {
-            ch: (theme_obj.get("accounts") or {}).get(ch, {}).get("label") or ch
+    data["account_labels"] = {
+        ch: primary_account_label(
+            cfg.channel_accounts,
+            cfg.sites,
+            theme_id=tid,
+            channel_id=ch,
+            fallback=(theme_obj or {}).get("accounts", {}).get(ch, {}).get("label") or ch,
+        )
+        for ch in channels
+    }
+    if site:
+        data["channel_accounts"] = {
+            ch: [a.to_dict() for a in accounts_for(cfg.channel_accounts, site_code=site.code, channel_id=ch)]
             for ch in channels
         }
     return _envelope(data)

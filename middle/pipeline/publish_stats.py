@@ -6,6 +6,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from .channel_registry import primary_account_label
 from .config import PipelineConfig
 from .db import JobStore
 from .job_flow import PUBLISH_CHANNELS
@@ -156,8 +157,15 @@ def publishing_overview(
                 {
                     "theme_id": t.id,
                     "theme_label": t.label,
+                    "site_code": next((s.code for s in cfg.sites if s.theme_id == t.id), ""),
                     "channel": ch,
-                    "label": t.account_label(ch),
+                    "label": primary_account_label(
+                        cfg.channel_accounts,
+                        cfg.sites,
+                        theme_id=t.id,
+                        channel_id=ch,
+                        fallback=t.account_label(ch),
+                    ),
                     "last_published_at": last_at,
                     "pending": pending_n,
                 }

@@ -331,6 +331,130 @@ select.btn-ghost {
   border-bottom: 1px solid var(--border);
 }
 
+.site-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.site-card {
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.site-card--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(79, 140, 255, 0.35);
+}
+
+.site-card__code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  color: #8ec5ff;
+}
+
+.site-card__label {
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.site-card__meta {
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+
+.channel-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.channel-tab {
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: #c8d0dc;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.channel-tab--active {
+  border-color: var(--accent);
+  background: #243352;
+  color: #fff;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.account-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.account-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.account-card__title {
+  font-weight: 700;
+}
+
+.account-card__primary {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.account-card__del {
+  margin-top: 0.5rem;
+  color: #fca5a5;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.82rem;
+}
+
+.field span {
+  color: var(--text-muted);
+}
+
+.field input,
+.field textarea {
+  background: #0f131a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: #e8eaed;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+}
+
+.field--row {
+  flex-direction: row;
+  align-items: center;
+}
+
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;

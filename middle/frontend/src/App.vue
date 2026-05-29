@@ -11,6 +11,7 @@ const pageTitle = computed(() => {
     "/": "总览",
     "/jobs": "任务列表",
     "/publishing": "发布运营",
+    "/settings/channels": "渠道账号",
   };
   if (route.path.startsWith("/jobs/")) return `任务 #${route.params.id}`;
   if (route.path.startsWith("/pending/")) return "待发布";
@@ -44,6 +45,7 @@ onMounted(async () => {
         <RouterLink to="/">📊 总览</RouterLink>
         <RouterLink to="/publishing">📈 发布运营</RouterLink>
         <RouterLink to="/jobs">📋 任务列表</RouterLink>
+        <RouterLink to="/settings/channels">⚙️ 渠道账号</RouterLink>
       </nav>
 
       <template v-for="t in themes" :key="t.id">

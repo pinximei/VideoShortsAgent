@@ -7,6 +7,7 @@ import JobsView from "./views/JobsView.vue";
 import JobDetailView from "./views/JobDetailView.vue";
 import PendingView from "./views/PendingView.vue";
 import PublishingView from "./views/PublishingView.vue";
+import ChannelConfigView from "./views/ChannelConfigView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,6 +17,7 @@ const router = createRouter({
     { path: "/jobs/:id", component: JobDetailView, props: true },
     { path: "/pending/:channel", component: PendingView, props: true },
     { path: "/publishing", component: PublishingView },
+    { path: "/settings/channels", component: ChannelConfigView },
   ],
 });
 

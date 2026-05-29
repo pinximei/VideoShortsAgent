@@ -23,6 +23,14 @@ py -3.12 scripts\start_server.py
 - 待发布列表支持 `?theme=ai_news` 按赛道筛选
 - 任务详情可手动调整赛道
 
+## 渠道账号（站点 code × 发布渠道）
+
+`config.yaml` 中 `sites` 绑定 Soul 站点 code 与赛道；`channel_accounts` 为账号卡片列表。
+
+- 控制台 **⚙️ 渠道账号**（`/settings/channels`）：选站点 code → 选渠道 → 编辑账号卡片 → 保存写回 `config.yaml`
+- `GET /api/v1/channel-config` — 站点、渠道目录、账号矩阵
+- `PUT /api/v1/channel-config/accounts` — 保存某站点+渠道下的全部卡片
+
 ## 配置
 
 - `paths.vsa_root` 默认同仓库根，一般无需改

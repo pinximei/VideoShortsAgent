@@ -33,6 +33,22 @@ themes:
       toutiao: { label: "头条 · AI资讯号" }
       douban: { label: "豆瓣 · AI资讯号" }
 
+# 站点 code（Soul 网站）与赛道绑定；账号卡片在控制台「渠道账号」维护
+sites:
+  - code: ai-trends-apps
+    label: AI 变现站
+    description: Soul 应用/变现向内容
+    theme_id: ai_monetize
+    base_url: "https://ai-trends.news"
+  - code: ai-trends-news
+    label: AI 资讯站
+    description: Soul 资讯/快讯内容
+    theme_id: ai_news
+    base_url: "https://ai-trends.news"
+
+# 渠道账号卡片（也可在 Web 控制台编辑后写回此文件）
+channel_accounts: []
+
 paths:
   data_dir: "./data"
   # 默认同仓库根目录（VideoShortsAgent），一般留空
