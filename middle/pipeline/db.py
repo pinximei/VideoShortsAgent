@@ -305,7 +305,7 @@ class JobStore:
     def pending_publish(self, channel: str, *, theme_id: str | None = None) -> list[dict[str, Any]]:
         with self._conn() as conn:
             theme_clause = ""
-            params: list[Any] = [channel, STATUS_READY, STATUS_PROCESSING]
+            params: list[Any] = [channel, STATUS_READY]
             if theme_id:
                 theme_clause = " AND j.theme_id = ?"
                 params.append(theme_id)
@@ -313,7 +313,7 @@ class JobStore:
                 f"""
                 SELECT j.* FROM jobs j
                 LEFT JOIN publish_log p ON p.content_key = j.content_key AND p.channel = ?
-                WHERE j.status IN (?, ?, 'packed', 'rendered')
+                WHERE j.status IN (?, 'packed', 'rendered')
                   AND p.content_key IS NULL
                   {theme_clause}
                 ORDER BY j.updated_at DESC
