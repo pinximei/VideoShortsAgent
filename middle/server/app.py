@@ -359,6 +359,7 @@ def get_job(article_id: int):
                 rel = p.relative_to(out_dir).as_posix()
                 artifacts.append({"path": rel, "url": f"/api/v1/files/{article_id}/{rel}"})
     from pipeline.channel_registry import accounts_for, primary_account_label, site_for_theme
+    from pipeline.publish_guard import bindings_from_job
 
     data = _parse_job(job)
     data["artifacts"] = artifacts
@@ -370,16 +371,24 @@ def get_job(article_id: int):
     data["site"] = site.to_dict() if site else None
     channels = ["douyin", "xhs", "toutiao", "douban"]
     data["published"] = {ch: store.is_published(ck, ch) for ch in channels}
-    data["account_labels"] = {
-        ch: primary_account_label(
-            cfg.channel_accounts,
-            cfg.sites,
-            theme_id=tid,
-            channel_id=ch,
-            fallback=(theme_obj or {}).get("accounts", {}).get(ch, {}).get("label") or ch,
-        )
-        for ch in channels
-    }
+    bindings = bindings_from_job(job)
+    data["publish_bindings"] = bindings
+    if bindings:
+        data["account_labels"] = {
+            ch: (bindings.get("channels") or {}).get(ch, {}).get("label") or ch
+            for ch in channels
+        }
+    else:
+        data["account_labels"] = {
+            ch: primary_account_label(
+                cfg.channel_accounts,
+                cfg.sites,
+                theme_id=tid,
+                channel_id=ch,
+                fallback=(theme_obj or {}).get("accounts", {}).get(ch, {}).get("label") or ch,
+            )
+            for ch in channels
+        }
     if site:
         data["channel_accounts"] = {
             ch: [a.to_dict() for a in accounts_for(cfg.channel_accounts, site_code=site.code, channel_id=ch)]
@@ -405,8 +414,35 @@ def mark_publish(body: PublishBody):
     job = store.get_job(ck)
     if job and job.get("status") not in ("ready_to_publish", "completed", "packed", "rendered", "processing"):
         raise HTTPException(400, f"任务状态 {job.get('status')} 不可标记发布")
-    created = store.mark_published(ck, body.channel, body.note, body.account_id)
-    return _envelope({"created": created, "content_key": ck, "channel": body.channel})
+
+    from pipeline.publish_guard import PublishGuardError, validate_publish_target
+
+    cfg = get_cfg()
+    try:
+        ch_bind, acc, _bindings = validate_publish_target(
+            cfg, job, body.channel, body.account_id or None
+        )
+        account_id = acc.id
+    except PublishGuardError as e:
+        raise HTTPException(409, detail={"code": e.code, "message": e.message}) from e
+
+    created = store.mark_published(ck, body.channel, body.note, account_id)
+    if created:
+        store.log_event(
+            ck,
+            status=job.get("status") or "ready_to_publish",
+            step="publish_mark",
+            message=f"已标记发布: {body.channel} @ {ch_bind.get('label')} ({account_id})",
+        )
+    return _envelope(
+        {
+            "created": created,
+            "content_key": ck,
+            "channel": body.channel,
+            "account_id": account_id,
+            "account_label": ch_bind.get("label"),
+        }
+    )
 
 
 @app.patch("/api/v1/jobs/{article_id}/theme")
@@ -419,9 +455,27 @@ def patch_job_theme(article_id: int, body: ThemePatchBody):
     job = store.get_job(ck)
     if not job:
         raise HTTPException(404, "job not found")
-    store.update_job(ck, theme_id=body.theme_id)
-    store.log_event(ck, status=job.get("status") or "", step="theme", message=f"赛道改为 {body.theme_id}")
-    return _envelope({"content_key": ck, "theme_id": body.theme_id})
+    if store.published_channels(ck):
+        raise HTTPException(400, "已标记发布，不可更改赛道（防止发串号）")
+
+    from pipeline.publish_guard import refresh_job_bindings
+
+    raw_brief = job.get("brief_json")
+    brief: dict = {}
+    if isinstance(raw_brief, str) and raw_brief:
+        import json
+
+        try:
+            brief = json.loads(raw_brief)
+        except json.JSONDecodeError:
+            brief = {}
+    elif isinstance(raw_brief, dict):
+        brief = dict(raw_brief)
+
+    new_brief = refresh_job_bindings(cfg, body.theme_id, brief)
+    store.update_job(ck, theme_id=body.theme_id, brief_json=new_brief)
+    store.log_event(ck, status=job.get("status") or "", step="theme", message=f"赛道改为 {body.theme_id}，已重建发布绑定")
+    return _envelope({"content_key": ck, "theme_id": body.theme_id, "publish_bindings": new_brief.get("publish_bindings")})
 
 
 @app.post("/api/v1/run")

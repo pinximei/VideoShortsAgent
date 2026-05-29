@@ -74,10 +74,10 @@ export const api = {
     request<Record<string, unknown>[]>(`/api/v1/pending/${channel}${q({ theme })}`),
   run: () => request<{ started: boolean }>("/api/v1/run", { method: "POST" }),
   runStatus: () => request<Record<string, unknown>>("/api/v1/run/status"),
-  publish: (article_id: number, channel: string, note = "") =>
+  publish: (article_id: number, channel: string, note = "", account_id = "") =>
     request<Record<string, unknown>>("/api/v1/publish", {
       method: "POST",
-      body: JSON.stringify({ article_id, channel, note }),
+      body: JSON.stringify({ article_id, channel, note, account_id }),
     }),
   patchTheme: (article_id: number, theme_id: string) =>
     request<Record<string, unknown>>(`/api/v1/jobs/${article_id}/theme`, {

@@ -36,9 +36,21 @@ async function load() {
 }
 
 async function mark(ch: string) {
+  const bindings = job.value?.publish_bindings as
+    | { channels?: Record<string, { account_id: string; label: string }> }
+    | undefined;
+  const bind = bindings?.channels?.[ch];
+  if (!bind?.account_id) {
+    msg.value = `渠道 ${ch} 无冻结绑定账号，无法标记（防止发串号）`;
+    return;
+  }
+  const okConfirm = window.confirm(
+    `确认用账号「${bind.label}」发布到 ${ch}？\n账号ID: ${bind.account_id}\n发错号将无法自动撤销。`
+  );
+  if (!okConfirm) return;
   try {
-    await api.publish(id.value, ch);
-    msg.value = `已标记发布：${ch}`;
+    await api.publish(id.value, ch, "", bind.account_id);
+    msg.value = `已标记发布：${ch} · ${bind.label}`;
     await load();
   } catch (e) {
     msg.value = e instanceof Error ? e.message : String(e);
@@ -55,7 +67,16 @@ async function changeTheme(themeId: string) {
   }
 }
 
+function bindingFor(ch: string) {
+  const bindings = job.value?.publish_bindings as
+    | { channels?: Record<string, { account_id: string; label: string; batch_id?: string }> }
+    | undefined;
+  return bindings?.channels?.[ch];
+}
+
 function accountLabel(ch: string) {
+  const b = bindingFor(ch);
+  if (b?.label) return `${b.label}`;
   const labels = job.value?.account_labels as Record<string, string> | undefined;
   return labels?.[ch] || channels.find((c) => c.id === ch)?.label || ch;
 }
@@ -119,13 +140,31 @@ onMounted(async () => {
     </div>
   </div>
 
+  <div v-if="job?.publish_bindings" class="panel" style="border-color: #4f8cff">
+    <div class="panel-title">发布绑定（防串号）</div>
+    <p class="muted">
+      批次 <strong>{{ (job.publish_bindings as Record<string, string>).batch_id }}</strong>
+      · 站点 {{ (job.publish_bindings as Record<string, string>).site_code }}
+      · 打包时已冻结，只能发到下列账号
+    </p>
+    <ul class="file-list">
+      <li v-for="c in channels" :key="c.id">
+        {{ c.label }} →
+        <template v-if="bindingFor(c.id)">
+          {{ bindingFor(c.id)!.label }} <span class="muted">({{ bindingFor(c.id)!.account_id }})</span>
+        </template>
+        <span v-else class="muted">未绑定</span>
+      </li>
+    </ul>
+  </div>
+
   <div v-if="job" class="panel">
     <div class="panel-title">发布状态（按赛道账号）</div>
     <div class="row-actions">
       <template v-for="c in channels" :key="c.id">
         <button
           class="btn btn-ghost btn-sm"
-          :disabled="(job.published as Record<string, boolean>)?.[c.id]"
+          :disabled="(job.published as Record<string, boolean>)?.[c.id] || !bindingFor(c.id)"
           @click="mark(c.id)"
         >
           {{

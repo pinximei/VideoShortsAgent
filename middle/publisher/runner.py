@@ -45,41 +45,22 @@ class PublishResult:
 
 
 def _resolve_account(cfg: PipelineConfig, req: PublishRequest) -> tuple[str, ChannelAccount]:
-    job_theme = ""
     from pipeline.db import JobStore
+    from pipeline.publish_guard import PublishGuardError, validate_publish_target
 
     store = JobStore(cfg.db_path)
     job = store.get_job(content_key_for_article(req.article_id))
-    if job:
-        job_theme = job.get("theme_id") or ""
+    if not job:
+        raise ValueError(f"job not found: {req.article_id}")
 
-    batch = cfg.publisher.batch_for_theme(job_theme) if job_theme else None
-    if not batch:
-        raise ValueError(f"no publisher batch for theme={job_theme or '?'}")
-
-    site = site_for_theme(cfg.sites, batch.theme_id)
-    if not site:
-        raise ValueError(f"no site for theme={batch.theme_id}")
-
-    if req.account_id:
-        acc = next((a for a in cfg.channel_accounts if a.id == req.account_id), None)
-        if not acc:
-            raise ValueError(f"unknown account_id={req.account_id}")
-    else:
-        rows = accounts_for(
-            cfg.channel_accounts,
-            site_code=site.code,
-            channel_id=req.channel_id,
-            enabled_only=True,
+    try:
+        _ch_bind, acc, bindings = validate_publish_target(
+            cfg, job, req.channel_id, req.account_id
         )
-        if not rows:
-            raise ValueError(f"no account for {site.code}/{req.channel_id}")
-        acc = rows[0]
+    except PublishGuardError as e:
+        raise ValueError(e.message) from e
 
-    if acc.batch_id and acc.batch_id != batch.batch_id:
-        raise ValueError(f"account {acc.id} batch mismatch")
-
-    return batch.batch_id, acc
+    return str(bindings["batch_id"]), acc
 
 
 def _load_publish_pack(cfg: PipelineConfig, article_id: int, channel_id: str) -> PublishPack:

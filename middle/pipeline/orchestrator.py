@@ -23,6 +23,7 @@ from .job_flow import (
 from .media_probe import probe_video_duration
 from .models import RunStats
 from .platform_llm import write_publish_pack
+from .publish_guard import PublishGuardError, build_publish_bindings
 from .soul_client import SoulClient
 from .vsa import render_task_videos
 
@@ -97,11 +98,22 @@ def process_jobs(
                 if not result or not result.get("primary_video"):
                     raise RuntimeError("VSA 未产出视频")
 
+            brief_dict = brief.to_dict()
+            try:
+                brief_dict["publish_bindings"] = build_publish_bindings(cfg, theme_id)
+            except PublishGuardError as e:
+                brief_dict["publish_bindings"] = {
+                    "theme_id": theme_id,
+                    "channels": {},
+                    "warning": e.message,
+                }
+
             store.advance(
                 ck,
                 status=STATUS_READY,
                 step=STEP_READY,
                 message="内容就绪，请在各平台发布后标记",
+                brief_json=brief_dict,
             )
             stats.packed += 1
             if cfg.render_enabled:
