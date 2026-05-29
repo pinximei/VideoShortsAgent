@@ -1,0 +1,37 @@
+# 复制为 middle/config.yaml
+
+soul:
+  base_url: "https://ai-trends.news"
+  feed: "apps"
+  replication_high_value: true
+  published_within_days: 3
+  page_size: 20
+
+filter:
+  min_worth_score: 7
+  feed_kinds: ["apps"]
+
+paths:
+  data_dir: "./data"
+  # 默认同仓库根目录（VideoShortsAgent），一般留空
+  vsa_root: ""
+  broll_template: ""
+
+site:
+  public_base_url: "https://ai-trends.news"
+
+render:
+  enabled: false
+  platforms: ["douyin", "xhs"]
+  use_remotion: false
+  skip_tts: false
+  allow_template_fallback: false
+
+llm:
+  enabled: true
+  api_key_env: DASHSCOPE_API_KEY
+  model: "qwen-plus"
+
+server:
+  host: "127.0.0.1"
+  port: 8780

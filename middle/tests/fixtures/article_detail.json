@@ -1,0 +1,23 @@
+{
+  "id": 870,
+  "slug": "demo-app",
+  "title": "DemoApp：AI 短视频工具",
+  "summary": "一个帮助创作者自动生成短视频的开源项目。",
+  "feed_kind": "apps",
+  "admin_source_key": "github",
+  "source_original_url": "https://github.com/org/demo",
+  "categories": ["高价值复刻"],
+  "value_assessed": true,
+  "tabs": [
+    {"label": "描述", "summary": "面向自媒体创作者的本地视频工具，节省剪辑时间。"},
+    {"label": "变现评估", "summary": "SaaS 订阅 9.9-29.9 美元/月，企业部署按项目收费。"},
+    {"label": "数据支撑", "summary": "GitHub star 1200+，MIT 协议。"}
+  ],
+  "replication_analysis": {
+    "worth_score": 8,
+    "value_summary": "自媒体愿意为省时间的视频工具按月付费",
+    "market_position": {
+      "monetization_hypothesis": "中小创作者愿为无技能出片付订阅费"
+    }
+  }
+}

@@ -31,6 +31,9 @@ tasks/
 
 # Runtime output
 output/
+middle/data/
+middle/frontend/node_modules/
+middle/frontend/dist/
 
 # Test audio (auto-generated)
 test_audio.wav
