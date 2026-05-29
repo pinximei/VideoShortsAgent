@@ -65,12 +65,14 @@ class ChannelAccount:
     note: str = ""
     enabled: bool = True
     is_primary: bool = False
+    batch_id: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "site_code": self.site_code,
             "channel_id": self.channel_id,
+            "batch_id": self.batch_id,
             "label": self.label,
             "handle": self.handle,
             "profile_url": self.profile_url,
@@ -114,7 +116,12 @@ def parse_sites(raw: list[Any] | None, themes: list[Theme] | None = None) -> lis
     return out
 
 
-def parse_channel_accounts(raw: list[Any] | None) -> list[ChannelAccount]:
+def parse_channel_accounts(
+    raw: list[Any] | None,
+    *,
+    sites: list[Site] | None = None,
+    batches: list[Any] | None = None,
+) -> list[ChannelAccount]:
     if not raw:
         return []
     accounts: list[ChannelAccount] = []
@@ -126,11 +133,22 @@ def parse_channel_accounts(raw: list[Any] | None) -> list[ChannelAccount]:
         channel_id = str(item.get("channel_id") or "").strip()
         if not site_code or channel_id not in PUBLISH_CHANNEL_IDS:
             continue
+        batch_id = str(item.get("batch_id") or "").strip()
+        if not batch_id and batches:
+            site = site_by_code(sites or [], site_code)
+            if site:
+                for b in batches:
+                    bid = getattr(b, "batch_id", None) or (b.get("batch_id") if isinstance(b, dict) else None)
+                    sc = getattr(b, "site_code", None) or (b.get("site_code") if isinstance(b, dict) else None)
+                    if bid and sc == site_code:
+                        batch_id = str(bid)
+                        break
         accounts.append(
             ChannelAccount(
                 id=aid,
                 site_code=site_code,
                 channel_id=channel_id,
+                batch_id=batch_id,
                 label=str(item.get("label") or ""),
                 handle=str(item.get("handle") or ""),
                 profile_url=str(item.get("profile_url") or ""),
@@ -253,6 +271,7 @@ def validate_account_payload(data: dict[str, Any], sites: list[Site]) -> Channel
         note=str(data.get("note") or "").strip(),
         enabled=bool(data.get("enabled", True)),
         is_primary=bool(data.get("is_primary", False)),
+        batch_id=str(data.get("batch_id") or "").strip(),
     )
 
 

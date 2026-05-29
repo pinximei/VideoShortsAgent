@@ -49,6 +49,26 @@ sites:
 # 渠道账号卡片（也可在 Web 控制台编辑后写回此文件）
 channel_accounts: []
 
+# 固定双批次 × 双无头浏览器槽位（网页操作为 Playwright 固定脚本，不用大模型）
+publisher:
+  headless: true
+  slots:
+    - slot_id: 1
+      batch_id: batch_a
+      label: 主体A · AI变现
+    - slot_id: 2
+      batch_id: batch_b
+      label: 主体B · AI资讯
+  batches:
+    - batch_id: batch_a
+      site_code: ai-trends-apps
+      theme_id: ai_monetize
+      label: AI 变现主体
+    - batch_id: batch_b
+      site_code: ai-trends-news
+      theme_id: ai_news
+      label: AI 资讯主体
+
 paths:
   data_dir: "./data"
   # 默认同仓库根目录（VideoShortsAgent），一般留空

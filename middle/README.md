@@ -31,6 +31,20 @@ py -3.12 scripts\start_server.py
 - `GET /api/v1/channel-config` — 站点、渠道目录、账号矩阵
 - `PUT /api/v1/channel-config/accounts` — 保存某站点+渠道下的全部卡片
 
+## 发布批次（双无头浏览器 + 固定脚本）
+
+`publisher` 模块：**不使用大模型操作网页**，全部由 Playwright 固定脚本点击。
+
+- 固定 **2 个槽位** ↔ **2 个批次 ID**（`batch_a` / `batch_b`）↔ 两个主体
+- 每账号 Profile：`data/browser/{batch_id}/{account_id}/`（复用目录保留登录）
+- 控制台 **🖥️ 发布批次**（`/settings/publisher`）
+- `POST /api/v1/publisher/publish` — 固定脚本发布（`dry_run: true` 只跑路由）
+- `POST /api/v1/publisher/login-check` — 固定脚本检查登录
+
+首次登录需在本机对某账号执行登录（扫码）；之后同一 Profile 目录自动带登录态。
+
+安装：`pip install playwright && playwright install chromium`
+
 ## 配置
 
 - `paths.vsa_root` 默认同仓库根，一般无需改

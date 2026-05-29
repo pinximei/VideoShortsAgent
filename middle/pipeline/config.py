@@ -49,7 +49,14 @@ class PipelineConfig:
     themes: list[Theme] = field(default_factory=lambda: parse_themes(None))
     sites: list[Site] = field(default_factory=list)
     channel_accounts: list[ChannelAccount] = field(default_factory=list)
+    publisher: Any = field(default=None)
     config_path: Path | None = None
+
+    def __post_init__(self) -> None:
+        if self.publisher is None:
+            from publisher.batches import parse_publisher_config
+
+            self.publisher = parse_publisher_config(None)
 
     @property
     def db_path(self) -> Path:
@@ -82,10 +89,23 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
 
     themes = parse_themes(themes_raw if isinstance(themes_raw, list) else None)
     sites = parse_sites(sites_raw if isinstance(sites_raw, list) else None, themes)
-    channel_accounts = parse_channel_accounts(accounts_raw if isinstance(accounts_raw, list) else None)
+
+    from publisher.batches import parse_publisher_config
+
+    publisher = parse_publisher_config(raw.get("publisher"))
+    channel_accounts = parse_channel_accounts(
+        accounts_raw if isinstance(accounts_raw, list) else None,
+        sites=sites,
+        batches=publisher.batches,
+    )
     # 仅当 yaml 未声明 channel_accounts 时从 themes 迁移；显式 [] 表示尚未配置卡片
     if accounts_raw is None and not channel_accounts:
         channel_accounts = migrate_accounts_from_themes(themes, sites)
+    for acc in channel_accounts:
+        if not acc.batch_id:
+            b = publisher.batch_for_site(acc.site_code)
+            if b:
+                acc.batch_id = b.batch_id
     feed_kinds_cfg = filt.get("feed_kinds")
     if feed_kinds_cfg is not None:
         feed_kinds = list(feed_kinds_cfg)
@@ -119,5 +139,6 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         themes=themes,
         sites=sites,
         channel_accounts=channel_accounts,
+        publisher=publisher,
         config_path=p if p.is_file() else None,
     )

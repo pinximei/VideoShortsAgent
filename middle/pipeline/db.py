@@ -93,6 +93,9 @@ class JobStore:
             if "theme_id" not in cols:
                 conn.execute("ALTER TABLE jobs ADD COLUMN theme_id TEXT NOT NULL DEFAULT ''")
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_theme ON jobs(theme_id)")
+            pub_cols = {r[1] for r in conn.execute("PRAGMA table_info(publish_log)").fetchall()}
+            if "account_id" not in pub_cols:
+                conn.execute("ALTER TABLE publish_log ADD COLUMN account_id TEXT NOT NULL DEFAULT ''")
 
     def log_event(
         self,
@@ -263,16 +266,16 @@ class JobStore:
             return False
         return (job.get("brief_hash") or "") == new_hash
 
-    def mark_published(self, content_key: str, channel: str, note: str = "") -> bool:
+    def mark_published(self, content_key: str, channel: str, note: str = "", account_id: str = "") -> bool:
         now = _utc_now()
         with self._conn() as conn:
             cur = conn.execute(
                 """
-                INSERT INTO publish_log (content_key, channel, published_at, note)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO publish_log (content_key, channel, published_at, note, account_id)
+                VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(content_key, channel) DO NOTHING
                 """,
-                (content_key, channel, now, note),
+                (content_key, channel, now, note, account_id),
             )
             created = cur.rowcount > 0
         if created:

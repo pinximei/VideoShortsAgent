@@ -96,4 +96,15 @@ export const api = {
     request<{ deleted: string }>(`/api/v1/channel-config/accounts/${account_id}`, {
       method: "DELETE",
     }),
+  publisherOverview: () => request<Record<string, unknown>>("/api/v1/publisher/overview"),
+  publisherPublish: (article_id: number, channel_id: string, account_id = "", dry_run = false) =>
+    request<Record<string, unknown>>("/api/v1/publisher/publish", {
+      method: "POST",
+      body: JSON.stringify({ article_id, channel_id, account_id, dry_run }),
+    }),
+  publisherLoginCheck: (account_id: string) =>
+    request<Record<string, unknown>>("/api/v1/publisher/login-check", {
+      method: "POST",
+      body: JSON.stringify({ account_id }),
+    }),
 };

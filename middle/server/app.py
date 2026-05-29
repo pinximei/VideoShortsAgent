@@ -100,6 +100,7 @@ class PublishBody(BaseModel):
     article_id: int
     channel: str = Field(..., pattern="^(douyin|xhs|toutiao|douban)$")
     note: str = ""
+    account_id: str = ""
 
 
 class ThemePatchBody(BaseModel):
@@ -117,6 +118,7 @@ class ChannelAccountBody(BaseModel):
     note: str = ""
     enabled: bool = True
     is_primary: bool = False
+    batch_id: str = ""
 
 
 class ChannelAccountCardBody(BaseModel):
@@ -128,6 +130,7 @@ class ChannelAccountCardBody(BaseModel):
     note: str = ""
     enabled: bool = True
     is_primary: bool = False
+    batch_id: str = ""
 
 
 class ChannelAccountsBatchBody(BaseModel):
@@ -196,6 +199,63 @@ def channel_config_delete_account(account_id: str):
     global _cfg
     _cfg = cfg
     return _envelope({"deleted": account_id})
+
+
+class PublisherPublishBody(BaseModel):
+    article_id: int
+    channel_id: str = Field(..., pattern="^(douyin|xhs|toutiao|douban)$")
+    account_id: str = ""
+    dry_run: bool = False
+
+
+class PublisherLoginCheckBody(BaseModel):
+    account_id: str = Field(..., min_length=1, max_length=64)
+
+
+@app.get("/api/v1/publisher/overview")
+def publisher_overview_api():
+    from publisher.runner import publisher_overview
+
+    return _envelope(publisher_overview(get_cfg()))
+
+
+@app.post("/api/v1/publisher/publish")
+def publisher_publish_api(body: PublisherPublishBody):
+    from publisher.runner import PublishRequest, publish_content
+
+    try:
+        result = publish_content(
+            get_cfg(),
+            PublishRequest(
+                article_id=body.article_id,
+                channel_id=body.channel_id,
+                account_id=body.account_id or None,
+                dry_run=body.dry_run,
+            ),
+        )
+        return _envelope(result.__dict__)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    except Exception as e:
+        raise HTTPException(500, f"{type(e).__name__}: {e}") from e
+
+
+@app.post("/api/v1/publisher/login-check")
+def publisher_login_check_api(body: PublisherLoginCheckBody):
+    from publisher.runner import check_login
+
+    cfg = get_cfg()
+    acc = next((a for a in cfg.channel_accounts if a.id == body.account_id), None)
+    if not acc:
+        raise HTTPException(404, "account not found")
+    batch = cfg.publisher.batch_for_site(acc.site_code) if acc.site_code else None
+    batch_id = acc.batch_id or (batch.batch_id if batch else "")
+    if not batch_id:
+        raise HTTPException(400, "account has no batch_id")
+    try:
+        return _envelope(check_login(cfg, batch_id, acc))
+    except Exception as e:
+        raise HTTPException(500, f"{type(e).__name__}: {e}") from e
 
 
 @app.get("/api/v1/themes")
@@ -345,7 +405,7 @@ def mark_publish(body: PublishBody):
     job = store.get_job(ck)
     if job and job.get("status") not in ("ready_to_publish", "completed", "packed", "rendered", "processing"):
         raise HTTPException(400, f"任务状态 {job.get('status')} 不可标记发布")
-    created = store.mark_published(ck, body.channel, body.note)
+    created = store.mark_published(ck, body.channel, body.note, body.account_id)
     return _envelope({"created": created, "content_key": ck, "channel": body.channel})
 
 
