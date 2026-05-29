@@ -18,6 +18,7 @@ def test_publishing_overview_merges_local_publish(tmp_path: Path) -> None:
     store.update_job(
         ck,
         status="packed",
+        theme_id="ai_monetize",
         brief_json={"tags": ["AI工具", "副业"]},
     )
     store.mark_published(ck, "douyin", "test")
@@ -25,5 +26,9 @@ def test_publishing_overview_merges_local_publish(tmp_path: Path) -> None:
     out = publishing_overview(cfg, store, days=7)
     assert out["summary"]["today_videos"] >= 1
     assert out["channel_maintenance"]
-    ch = next(c for c in out["channel_maintenance"] if c["channel"] == "douyin")
+    ch = next(
+        c
+        for c in out["channel_maintenance"]
+        if c["channel"] == "douyin" and c.get("theme_id") == "ai_monetize"
+    )
     assert ch["last_published_at"]

@@ -148,8 +148,11 @@ cd remotion_effects && npm install && cd ..
 
 | 系统 | 方式 |
 |------|------|
-| **Windows** | 双击 `start.bat` |
+| **Windows 桌面版（推荐）** | 双击 `start_pc.bat`（独立窗口，见 [变现说明](docs/PC_MONETIZATION.md)） |
+| **Windows 浏览器版** | 双击 `start.bat` |
 | **macOS / Linux** | `chmod +x start.sh && ./start.sh` |
+
+**桌面版要点**：「✂️ 本地裁剪」**不需要 API Key**；AI 功能仍用你自己的通义/Groq。免费版 AI 每月 2 次导出（带水印），专业版激活码用 `tools/generate_license.py` 生成。
 
 ---
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .brief import passes_filter
+from .themes import resolve_theme_from_snapshot
 from .config import PipelineConfig
 from .db import JobStore
 from .models import RunStats, content_key_for_article
@@ -30,7 +30,12 @@ def discover_from_soul(
             "feed_kind": card.get("feed_kind"),
             "admin_source_key": card.get("admin_source_key"),
         }
-        if store.upsert_discovered(content_key=ck, article_id=int(article_id), snapshot=snapshot):
+        if store.upsert_discovered(
+            content_key=ck,
+            article_id=int(article_id),
+            snapshot=snapshot,
+            theme_id=resolve_theme_from_snapshot(snapshot, cfg.themes),
+        ):
             stats.discovered += 1
         else:
             existing = store.get_job(ck)

@@ -37,7 +37,7 @@ def _tab_summary(article: dict[str, Any], label: str) -> str:
     return ""
 
 
-def build_brief(article: dict[str, Any], *, public_base_url: str) -> VideoBrief:
+def build_brief(article: dict[str, Any], *, public_base_url: str, theme_id: str = "") -> VideoBrief:
     article_id = int(article["id"])
     title = _plain(str(article.get("title") or ""), max_len=120)
     slug = (article.get("slug") or "").strip()
@@ -88,6 +88,7 @@ def build_brief(article: dict[str, Any], *, public_base_url: str) -> VideoBrief:
         worth_score=_worth_score(article),
         feed_kind=str(article.get("feed_kind") or "apps"),
         source_key=str(article.get("admin_source_key") or ""),
+        theme_id=theme_id,
         detail_url=detail_url,
         source_url=str(article.get("source_original_url") or ""),
     )

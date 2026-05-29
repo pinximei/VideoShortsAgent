@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .brief import build_brief, passes_filter
+from .themes import resolve_theme
 from .config import PipelineConfig
 from .db import JobStore
 from .discover import discover_from_soul
@@ -59,8 +60,14 @@ def process_jobs(
                 stats.skipped += 1
                 continue
 
-            store.advance(ck, status=STATUS_PROCESSING, step=STEP_BRIEF)
-            brief = build_brief(article, public_base_url=cfg.public_base_url)
+            theme_id = resolve_theme(article, cfg.themes)
+            if not theme_id:
+                store.advance(ck, status=STATUS_SKIPPED, step=STEP_FILTER, message="no matching theme")
+                stats.skipped += 1
+                continue
+
+            store.advance(ck, status=STATUS_PROCESSING, step=STEP_BRIEF, theme_id=theme_id)
+            brief = build_brief(article, public_base_url=cfg.public_base_url, theme_id=theme_id)
             bh = brief.hash()
 
             if store.should_skip_render(ck, bh):

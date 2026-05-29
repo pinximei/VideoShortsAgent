@@ -87,6 +87,16 @@ class PublishBody(BaseModel):
     note: str = ""
 
 
+class ThemePatchBody(BaseModel):
+    theme_id: str = Field(..., min_length=1, max_length=64)
+
+
+@app.get("/api/v1/themes")
+def list_themes():
+    cfg = get_cfg()
+    return _envelope([t.to_dict() for t in cfg.themes])
+
+
 @app.get("/api/v1/capabilities")
 def vsa_capabilities():
     """VSA 特效/样式/转场能力目录（供连接器与 LLM 对齐）。"""
@@ -119,40 +129,50 @@ def health():
 
 
 @app.get("/api/v1/publishing/stats")
-def publishing_stats_api(days: int = Query(30, ge=1, le=90)):
+def publishing_stats_api(days: int = Query(30, ge=1, le=90), theme: str | None = Query(None)):
     from pipeline.publish_stats import publishing_overview
 
-    return _envelope(publishing_overview(get_cfg(), get_store(), days=days))
+    return _envelope(publishing_overview(get_cfg(), get_store(), days=days, theme_id=theme or None))
 
 
 @app.get("/api/v1/dashboard")
-def dashboard():
+def dashboard(theme: str | None = Query(None)):
     store = get_store()
-    jobs = store.list_jobs()
+    cfg = get_cfg()
+    jobs = store.list_jobs(theme_id=theme or None)
     by_status: dict[str, int] = {}
     for j in jobs:
         st = j.get("status") or "unknown"
         by_status[st] = by_status.get(st, 0) + 1
+    theme_ids = [t.id for t in cfg.themes]
+    pending_matrix = store.count_pending_by_theme_channel(theme_ids, ("douyin", "xhs", "toutiao", "douban"))
     pending = {
-        ch: len(store.pending_publish(ch)) for ch in ("douyin", "xhs", "toutiao", "douban")
+        ch: len(store.pending_publish(ch, theme_id=theme or None))
+        for ch in ("douyin", "xhs", "toutiao", "douban")
     }
     return _envelope(
         {
+            "themes": [t.to_dict() for t in cfg.themes],
+            "theme_id": theme,
             "job_counts": by_status,
             "total_jobs": len(jobs),
             "pending_publish": pending,
+            "pending_by_theme_channel": pending_matrix,
             "run": run_status(),
         }
     )
 
 
 @app.get("/api/v1/jobs")
-def list_jobs(status: str | None = Query(None)):
+def list_jobs(status: str | None = Query(None), theme: str | None = Query(None)):
     store = get_store()
     if status:
-        rows = store.list_jobs(tuple(s.strip() for s in status.split(",") if s.strip()))
+        rows = store.list_jobs(
+            tuple(s.strip() for s in status.split(",") if s.strip()),
+            theme_id=theme or None,
+        )
     else:
-        rows = store.list_jobs()
+        rows = store.list_jobs(theme_id=theme or None)
     return _envelope([_parse_job(j) for j in rows])
 
 
@@ -174,17 +194,25 @@ def get_job(article_id: int):
     data = _parse_job(job)
     data["artifacts"] = artifacts
     data["events"] = store.list_events(ck)
+    tid = job.get("theme_id") or ""
+    theme_obj = next((t.to_dict() for t in cfg.themes if t.id == tid), None)
+    data["theme"] = theme_obj
     channels = ["douyin", "xhs", "toutiao", "douban"]
     data["published"] = {ch: store.is_published(ck, ch) for ch in channels}
+    if theme_obj:
+        data["account_labels"] = {
+            ch: (theme_obj.get("accounts") or {}).get(ch, {}).get("label") or ch
+            for ch in channels
+        }
     return _envelope(data)
 
 
 @app.get("/api/v1/pending/{channel}")
-def pending(channel: str):
+def pending(channel: str, theme: str | None = Query(None)):
     if channel not in ("douyin", "xhs", "toutiao", "douban"):
         raise HTTPException(400, "invalid channel")
     store = get_store()
-    return _envelope([_parse_job(j) for j in store.pending_publish(channel)])
+    return _envelope([_parse_job(j) for j in store.pending_publish(channel, theme_id=theme or None)])
 
 
 @app.post("/api/v1/publish")
@@ -198,6 +226,21 @@ def mark_publish(body: PublishBody):
         raise HTTPException(400, f"任务状态 {job.get('status')} 不可标记发布")
     created = store.mark_published(ck, body.channel, body.note)
     return _envelope({"created": created, "content_key": ck, "channel": body.channel})
+
+
+@app.patch("/api/v1/jobs/{article_id}/theme")
+def patch_job_theme(article_id: int, body: ThemePatchBody):
+    cfg = get_cfg()
+    if not any(t.id == body.theme_id for t in cfg.themes):
+        raise HTTPException(400, "unknown theme_id")
+    store = get_store()
+    ck = content_key_for_article(article_id)
+    job = store.get_job(ck)
+    if not job:
+        raise HTTPException(404, "job not found")
+    store.update_job(ck, theme_id=body.theme_id)
+    store.log_event(ck, status=job.get("status") or "", step="theme", message=f"赛道改为 {body.theme_id}")
+    return _envelope({"content_key": ck, "theme_id": body.theme_id})
 
 
 @app.post("/api/v1/run")

@@ -20,7 +20,7 @@ def create_llm_client(api_key: str = None, base_url: str = None) -> OpenAI:
     """
     cfg = get_config()
     return OpenAI(
-        api_key=api_key or cfg.llm_api_key,
+        api_key=api_key or cfg.require_llm_api_key(),
         base_url=base_url or cfg.llm_base_url,
         timeout=120,
     )

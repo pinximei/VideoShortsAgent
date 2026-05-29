@@ -1,5 +1,13 @@
 export type Envelope<T> = { code: number; message: string; data: T };
 
+export type Theme = {
+  id: string;
+  label: string;
+  description?: string;
+  feed_kinds?: string[];
+  accounts?: Record<string, { label?: string; handle?: string; note?: string }>;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(path, {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
@@ -14,12 +22,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body.data;
 }
 
+function q(params: Record<string, string | number | undefined>) {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== "") sp.set(k, String(v));
+  }
+  const s = sp.toString();
+  return s ? `?${s}` : "";
+}
+
 export const api = {
-  dashboard: () => request<Record<string, unknown>>("/api/v1/dashboard"),
-  jobs: (status?: string) =>
-    request<Record<string, unknown>[]>(`/api/v1/jobs${status ? `?status=${encodeURIComponent(status)}` : ""}`),
+  themes: () => request<Theme[]>("/api/v1/themes"),
+  dashboard: (theme?: string) => request<Record<string, unknown>>(`/api/v1/dashboard${q({ theme })}`),
+  jobs: (status?: string, theme?: string) =>
+    request<Record<string, unknown>[]>(`/api/v1/jobs${q({ status, theme })}`),
   job: (id: number) => request<Record<string, unknown>>(`/api/v1/jobs/${id}`),
-  pending: (channel: string) => request<Record<string, unknown>[]>(`/api/v1/pending/${channel}`),
+  pending: (channel: string, theme?: string) =>
+    request<Record<string, unknown>[]>(`/api/v1/pending/${channel}${q({ theme })}`),
   run: () => request<{ started: boolean }>("/api/v1/run", { method: "POST" }),
   runStatus: () => request<Record<string, unknown>>("/api/v1/run/status"),
   publish: (article_id: number, channel: string, note = "") =>
@@ -27,6 +46,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ article_id, channel, note }),
     }),
-  publishingStats: (days = 30) =>
-    request<Record<string, unknown>>(`/api/v1/publishing/stats?days=${days}`),
+  patchTheme: (article_id: number, theme_id: string) =>
+    request<Record<string, unknown>>(`/api/v1/jobs/${article_id}/theme`, {
+      method: "PATCH",
+      body: JSON.stringify({ theme_id }),
+    }),
+  publishingStats: (days = 30, theme?: string) =>
+    request<Record<string, unknown>>(`/api/v1/publishing/stats${q({ days, theme })}`),
 };

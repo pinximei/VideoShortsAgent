@@ -9,7 +9,29 @@ soul:
 
 filter:
   min_worth_score: 7
-  feed_kinds: ["apps"]
+  # 未指定时自动取各赛道 feed_kinds 的并集
+  # feed_kinds: ["apps", "news"]
+
+# 内容赛道：同一平台不同账号维护不同垂直（一账号一类型）
+themes:
+  - id: ai_monetize
+    label: AI 变现
+    description: 工具、副业、高价值复刻等变现向内容
+    feed_kinds: ["apps"]
+    accounts:
+      douyin: { label: "抖音 · AI变现号" }
+      xhs: { label: "小红书 · AI变现号" }
+      toutiao: { label: "头条 · AI变现号" }
+      douban: { label: "豆瓣 · AI变现号" }
+  - id: ai_news
+    label: AI 资讯
+    description: AI 行业新闻、快讯与趋势解读
+    feed_kinds: ["news"]
+    accounts:
+      douyin: { label: "抖音 · AI资讯号" }
+      xhs: { label: "小红书 · AI资讯号" }
+      toutiao: { label: "头条 · AI资讯号" }
+      douban: { label: "豆瓣 · AI资讯号" }
 
 paths:
   data_dir: "./data"

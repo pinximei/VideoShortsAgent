@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import { api } from "../api";
+import { api, type Theme } from "../api";
 
 const route = useRoute();
 const id = computed(() => Number(route.params.id));
 const job = ref<Record<string, unknown> | null>(null);
+const themes = ref<Theme[]>([]);
 const scriptText = ref("");
 const err = ref("");
 const msg = ref("");
@@ -44,6 +45,21 @@ async function mark(ch: string) {
   }
 }
 
+async function changeTheme(themeId: string) {
+  try {
+    await api.patchTheme(id.value, themeId);
+    msg.value = "赛道已更新";
+    await load();
+  } catch (e) {
+    msg.value = e instanceof Error ? e.message : String(e);
+  }
+}
+
+function accountLabel(ch: string) {
+  const labels = job.value?.account_labels as Record<string, string> | undefined;
+  return labels?.[ch] || channels.find((c) => c.id === ch)?.label || ch;
+}
+
 function publishFile(ch: string) {
   const map: Record<string, string> = {
     douyin: "publish/douyin_title.txt",
@@ -55,13 +71,21 @@ function publishFile(ch: string) {
   return arts.find((a) => a.path === map[ch]);
 }
 
-onMounted(load);
+onMounted(async () => {
+  try {
+    themes.value = await api.themes();
+  } catch {
+    themes.value = [];
+  }
+  await load();
+});
 </script>
 
 <template>
   <h1>任务 #{{ id }}</h1>
   <p v-if="job" class="lead">
     状态 <span class="badge" :class="'badge-' + job.status">{{ job.status }}</span>
+    <span v-if="job.theme" class="badge">赛道 · {{ (job.theme as Theme).label }}</span>
     <span v-if="job.step" class="muted"> · 步骤 {{ job.step }}</span>
     <span v-if="(job.brief_json as Record<string, unknown>)?.worth_score" class="muted">
       · worth {{ (job.brief_json as Record<string, unknown>).worth_score }}
@@ -81,8 +105,22 @@ onMounted(load);
   <p v-if="err" class="muted" style="color: #fca5a5">{{ err }}</p>
   <p v-if="msg" class="muted" style="color: #86efac">{{ msg }}</p>
 
+  <div v-if="job && themes.length" class="panel">
+    <div class="panel-title">内容赛道</div>
+    <div class="row-actions">
+      <select
+        class="btn btn-ghost"
+        :value="String(job.theme_id || '')"
+        @change="changeTheme(($event.target as HTMLSelectElement).value)"
+      >
+        <option v-for="t in themes" :key="t.id" :value="t.id">{{ t.label }}</option>
+      </select>
+      <span class="muted">一账号一类型，发错赛道请在此调整</span>
+    </div>
+  </div>
+
   <div v-if="job" class="panel">
-    <div class="panel-title">发布状态</div>
+    <div class="panel-title">发布状态（按赛道账号）</div>
     <div class="row-actions">
       <template v-for="c in channels" :key="c.id">
         <button
@@ -90,7 +128,11 @@ onMounted(load);
           :disabled="(job.published as Record<string, boolean>)?.[c.id]"
           @click="mark(c.id)"
         >
-          {{ (job.published as Record<string, boolean>)?.[c.id] ? `✓ ${c.label}` : `标记 ${c.label}` }}
+          {{
+            (job.published as Record<string, boolean>)?.[c.id]
+              ? `✓ ${accountLabel(c.id)}`
+              : `标记 ${accountLabel(c.id)}`
+          }}
         </button>
         <a
           v-if="publishFile(c.id)"

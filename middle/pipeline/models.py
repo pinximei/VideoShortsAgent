@@ -34,6 +34,7 @@ class VideoBrief:
     worth_score: int | None = None
     feed_kind: str = "apps"
     source_key: str = ""
+    theme_id: str = ""
     detail_url: str = ""
     source_url: str = ""
 

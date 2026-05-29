@@ -98,14 +98,14 @@ onMounted(load);
     <table>
       <thead>
         <tr>
-          <th>渠道</th>
+          <th>赛道 · 账号</th>
           <th>待发布</th>
           <th>最近发布</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="r in data.channel_maintenance as Record<string, unknown>[]" :key="String(r.channel)">
-          <td>{{ r.label }}</td>
+        <tr v-for="r in data.channel_maintenance as Record<string, unknown>[]" :key="String(r.theme_id) + String(r.channel)">
+          <td>{{ r.theme_label }} · {{ r.label }}</td>
           <td>{{ r.pending }}</td>
           <td class="muted">{{ r.last_published_at || "—" }}</td>
         </tr>

@@ -68,8 +68,41 @@ onUnmounted(() => {
     </div>
   </div>
 
+  <div v-if="dash?.pending_by_theme_channel" class="panel">
+    <div class="panel-title">各赛道 · 渠道待发布</div>
+    <table>
+      <thead>
+        <tr>
+          <th>赛道</th>
+          <th>抖音</th>
+          <th>小红书</th>
+          <th>头条</th>
+          <th>豆瓣</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="(cols, tid) in (dash.pending_by_theme_channel as Record<string, Record<string, number>>)"
+          :key="tid"
+        >
+          <td>{{ (dash.themes as { id: string; label: string }[])?.find((t) => t.id === tid)?.label || tid }}</td>
+          <td v-for="ch in ['douyin', 'xhs', 'toutiao', 'douban']" :key="ch">
+            <RouterLink
+              v-if="cols[ch]"
+              :to="{ path: `/pending/${ch}`, query: { theme: tid } }"
+              class="btn btn-ghost btn-sm"
+            >
+              {{ cols[ch] }}
+            </RouterLink>
+            <span v-else class="muted">0</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
   <div v-if="dash?.pending_publish" class="panel">
-    <div class="panel-title">各渠道待发布</div>
+    <div class="panel-title">全渠道待发布合计</div>
     <div class="cards" style="margin-bottom: 0">
       <RouterLink
         v-for="(n, ch) in (dash.pending_publish as Record<string, number>)"

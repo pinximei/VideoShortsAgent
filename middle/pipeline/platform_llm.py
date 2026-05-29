@@ -32,6 +32,7 @@ USER_TEMPLATE = """## 原文信息
 标签：{tags}
 详情链接：{detail_url}
 feed：{feed_kind}
+内容赛道：{theme_label}（{theme_id}）
 {broll_section}
 
 ## 输出 JSON（严格遵守字段名）
@@ -93,6 +94,9 @@ def generate_platform_copy(
     if broll_seconds and broll_seconds > 0:
         broll_section = BROLL_SECTION.format(broll_seconds=broll_seconds)
 
+    theme = next((t for t in cfg.themes if t.id == brief.theme_id), None)
+    theme_label = theme.label if theme else (brief.theme_id or "未分类")
+
     user = USER_TEMPLATE.format(
         title=brief.title,
         hook=brief.hook,
@@ -101,6 +105,8 @@ def generate_platform_copy(
         tags=", ".join(brief.tags),
         detail_url=brief.detail_url,
         feed_kind=brief.feed_kind,
+        theme_id=brief.theme_id or "default",
+        theme_label=theme_label,
         broll_section=broll_section,
         capabilities_section=llm_capabilities_section(),
     )

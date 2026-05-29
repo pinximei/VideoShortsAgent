@@ -8,6 +8,7 @@ from typing import Any
 
 from .config import PipelineConfig
 from .db import JobStore
+from .job_flow import PUBLISH_CHANNELS
 from .soul_client import SoulClient
 
 CHANNEL_LABELS: dict[str, str] = {
@@ -42,20 +43,42 @@ def _fetch_soul_daily(cfg: PipelineConfig, days: int) -> dict[str, Any]:
         return {"daily": [], "categories": []}
 
 
-def publishing_overview(cfg: PipelineConfig, store: JobStore, *, days: int = 30) -> dict[str, Any]:
+def publishing_overview(
+    cfg: PipelineConfig,
+    store: JobStore,
+    *,
+    days: int = 30,
+    theme_id: str | None = None,
+) -> dict[str, Any]:
     days = max(1, min(int(days), 90))
     soul = _fetch_soul_daily(cfg, days)
 
-    # 本地已标记发布
+    # 本地已标记发布（可按赛道过滤）
     with store._conn() as conn:
-        rows = conn.execute("SELECT content_key, channel, published_at, note FROM publish_log").fetchall()
+        if theme_id:
+            rows = conn.execute(
+                """
+                SELECT p.content_key, p.channel, p.published_at, p.note, j.theme_id
+                FROM publish_log p
+                JOIN jobs j ON j.content_key = p.content_key
+                WHERE j.theme_id = ?
+                """,
+                (theme_id,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """
+                SELECT p.content_key, p.channel, p.published_at, p.note, j.theme_id
+                FROM publish_log p
+                LEFT JOIN jobs j ON j.content_key = p.content_key
+                """
+            ).fetchall()
     pub_rows = [dict(r) for r in rows]
 
     daily: dict[str, dict[str, dict[str, int]]] = defaultdict(
         lambda: defaultdict(lambda: {"articles": 0, "videos": 0})
     )
     category_counts: dict[str, int] = defaultdict(int)
-    channel_last: dict[str, str | None] = {k: None for k in CHANNEL_LABELS}
 
     for r in pub_rows:
         ch = r["channel"]
@@ -67,9 +90,6 @@ def publishing_overview(cfg: PipelineConfig, store: JobStore, *, days: int = 30)
             daily[day][ch]["videos"] += 1
         else:
             daily[day][ch]["articles"] += 1
-        ts = r["published_at"]
-        if ts and (not channel_last.get(ch) or ts > (channel_last.get(ch) or "")):
-            channel_last[ch] = ts
 
     # 合并 Soul 站内
     for row in soul.get("daily") or []:
@@ -88,10 +108,18 @@ def publishing_overview(cfg: PipelineConfig, store: JobStore, *, days: int = 30)
 
     # 已打包未发布、待发
     jobs = store.list_jobs()
-    packed = [j for j in jobs if j.get("status") in ("packed", "rendered")]
+    packed = [
+        j
+        for j in jobs
+        if j.get("status") in ("packed", "rendered", "ready_to_publish")
+        and (not theme_id or j.get("theme_id") == theme_id)
+    ]
     pending_by_channel: dict[str, int] = {}
-    for ch in ("douyin", "xhs", "toutiao", "douban"):
-        pending_by_channel[ch] = len(store.pending_publish(ch))
+    for ch in PUBLISH_CHANNELS:
+        pending_by_channel[ch] = len(store.pending_publish(ch, theme_id=theme_id))
+
+    theme_ids = [t.id for t in cfg.themes]
+    pending_by_theme_channel = store.count_pending_by_theme_channel(theme_ids, PUBLISH_CHANNELS)
 
     # 发布任务的分类（brief tags）
     pipeline_categories: dict[str, int] = defaultdict(int)
@@ -105,10 +133,35 @@ def publishing_overview(cfg: PipelineConfig, store: JobStore, *, days: int = 30)
         except json.JSONDecodeError:
             continue
         ck = j.get("content_key")
-        for ch in ("douyin", "xhs", "toutiao", "douban"):
+        for ch in PUBLISH_CHANNELS:
             if (ck, ch) in published_keys:
                 for tag in brief.get("tags") or []:
                     pipeline_categories[str(tag)] += 1
+
+    themes_out = [t.to_dict() for t in cfg.themes]
+    channel_maintenance: list[dict[str, Any]] = []
+    for t in cfg.themes:
+        if theme_id and t.id != theme_id:
+            continue
+        for ch in PUBLISH_CHANNELS:
+            last_at = None
+            pending_n = pending_by_theme_channel.get(t.id, {}).get(ch, 0)
+            for r in pub_rows:
+                if r.get("theme_id") != t.id or r["channel"] != ch:
+                    continue
+                ts = r["published_at"]
+                if ts and (not last_at or ts > last_at):
+                    last_at = ts
+            channel_maintenance.append(
+                {
+                    "theme_id": t.id,
+                    "theme_label": t.label,
+                    "channel": ch,
+                    "label": t.account_label(ch),
+                    "last_published_at": last_at,
+                    "pending": pending_n,
+                }
+            )
 
     site_keys = list(CHANNEL_LABELS.keys())
     daily_series: list[dict[str, Any]] = []
@@ -133,11 +186,14 @@ def publishing_overview(cfg: PipelineConfig, store: JobStore, *, days: int = 30)
 
     return {
         "days": days,
+        "theme_id": theme_id,
+        "themes": themes_out,
         "summary": {
             "today_articles": today_sum["articles"],
             "today_videos": today_sum["videos"],
             "packed_ready": len(packed),
             "pending_publish": pending_by_channel,
+            "pending_by_theme_channel": pending_by_theme_channel,
         },
         "daily": daily_series,
         "categories": [
@@ -146,15 +202,7 @@ def publishing_overview(cfg: PipelineConfig, store: JobStore, *, days: int = 30)
         "pipeline_categories": [
             {"category": k, "count": v} for k, v in sorted(pipeline_categories.items(), key=lambda kv: -kv[1])
         ],
-        "channel_maintenance": [
-            {
-                "channel": ch,
-                "label": CHANNEL_LABELS[ch],
-                "last_published_at": channel_last.get(ch),
-                "pending": pending_by_channel.get(ch, 0),
-            }
-            for ch in ("douyin", "xhs", "toutiao", "douban")
-        ],
+        "channel_maintenance": channel_maintenance,
         "site_maintenance": soul.get("site_last_published")
         or [
             {"site_key": sk, "site_label": CHANNEL_LABELS[sk], "last_published_at": None}

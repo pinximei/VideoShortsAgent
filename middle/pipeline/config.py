@@ -6,6 +6,8 @@ from typing import Any
 
 import yaml
 
+from .themes import Theme, all_feed_kinds, parse_themes
+
 
 def repo_root() -> Path:
     """VideoShortsAgent 仓库根（middle 的上级）。"""
@@ -37,6 +39,7 @@ class PipelineConfig:
     llm_api_key_env: str = "DASHSCOPE_API_KEY"
     llm_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_model: str = "qwen-plus"
+    themes: list[Theme] = field(default_factory=lambda: parse_themes(None))
 
     @property
     def db_path(self) -> Path:
@@ -59,10 +62,18 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
     site = raw.get("site") or {}
     render = raw.get("render") or {}
     llm = raw.get("llm") or {}
+    themes_raw = raw.get("themes")
 
     data_dir = Path(paths.get("data_dir") or "./data")
     vsa_raw = (paths.get("vsa_root") or "").strip()
     vsa_root = Path(vsa_raw) if vsa_raw else repo_root()
+
+    themes = parse_themes(themes_raw if isinstance(themes_raw, list) else None)
+    feed_kinds_cfg = filt.get("feed_kinds")
+    if feed_kinds_cfg is not None:
+        feed_kinds = list(feed_kinds_cfg)
+    else:
+        feed_kinds = all_feed_kinds(themes)
 
     return PipelineConfig(
         soul_base_url=str(soul.get("base_url") or "https://ai-trends.news").rstrip("/"),
@@ -71,7 +82,7 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         soul_published_within_days=int(soul.get("published_within_days") or 3),
         soul_page_size=int(soul.get("page_size") or 20),
         min_worth_score=int(filt.get("min_worth_score") or 7),
-        feed_kinds=list(filt.get("feed_kinds") or ["apps"]),
+        feed_kinds=feed_kinds,
         data_dir=data_dir,
         vsa_root=vsa_root,
         broll_template=str(paths.get("broll_template") or render.get("broll_template") or ""),
@@ -88,4 +99,5 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         llm_api_key_env=str(llm.get("api_key_env") or "DASHSCOPE_API_KEY"),
         llm_base_url=str(llm.get("base_url") or "https://dashscope.aliyuncs.com/compatible-mode/v1"),
         llm_model=str(llm.get("model") or "qwen-plus"),
+        themes=themes,
     )
