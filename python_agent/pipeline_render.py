@@ -48,6 +48,19 @@ def _probe_duration(video_path: str) -> float:
         return 60.0
 
 
+def clips_need_broll_retiming(clips: list[dict[str, Any]]) -> bool:
+    """brief_to_clips 占位 start=0/end=5 等也需按 TTS 重算 B-roll 时间轴。"""
+    if not clips or not all("start" in c and "end" in c for c in clips):
+        return True
+    starts = [float(c.get("start") or 0) for c in clips]
+    ends = [float(c.get("end") or 0) for c in clips]
+    if len(set(round(s, 2) for s in starts)) <= 1:
+        return True
+    if max(ends or [0]) <= 10.0:
+        return True
+    return False
+
+
 def allocate_broll_timings(
     clips: list[dict[str, Any]],
     tts_clips: list[dict[str, Any]],
@@ -176,8 +189,6 @@ def render_platform_video(
         allow_template_fallback=allow_template_fallback,
     )
     clips = analysis.get("clips") or []
-    has_pipeline_timings = all("start" in c and "end" in c for c in clips)
-
     tts_info: dict[str, Any] = {"tts_clips": []}
     if not skip_tts:
         dubber = DubbingSkill(voice=preset.voice)
@@ -185,7 +196,7 @@ def render_platform_video(
         clips, tts_list = trim_to_max_duration(clips, tts_info.get("tts_clips") or [], preset.max_seconds)
         analysis["clips"] = clips
         tts_info["tts_clips"] = tts_list
-        if not has_pipeline_timings:
+        if tts_list and clips_need_broll_retiming(clips):
             allocate_broll_timings(clips, tts_list, broll_duration)
     else:
         fake_tts = [
@@ -199,7 +210,7 @@ def render_platform_video(
         ]
         clips, fake_tts = trim_to_max_duration(clips, fake_tts, preset.max_seconds)
         analysis["clips"] = clips
-        if not has_pipeline_timings and allow_template_fallback:
+        if allow_template_fallback and clips_need_broll_retiming(clips):
             allocate_broll_timings(clips, fake_tts, broll_duration)
 
     effects = dict(preset.effects)
