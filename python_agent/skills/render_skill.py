@@ -232,8 +232,59 @@ class RenderSkill:
             if os.path.exists(clip_path):
                 os.remove(clip_path)
 
-        print(f"\n[RenderSkill] 拼接 {len(segment_paths)} 个片段...")
-        self._concat_videos(segment_paths, output_path, output_dir, effects, clips=clips)
+        width, height = self._get_video_resolution(video_path)
+        bookend_prefix: list[str] = []
+        bookend_suffix: list[str] = []
+        remotion_on = (effects or {}).get("use_remotion", True) and self._remotion_available
+        if remotion_on:
+            colors = (effects or {}).get("gradient_colors") or ["#667eea", "#764ba2"]
+            if not isinstance(colors, list) or len(colors) < 2:
+                colors = ["#0f0c29", "#302b63"]
+            cap = (effects or {}).get("caption_style", "spring")
+            if (effects or {}).get("intro_card"):
+                intro_path = os.path.join(output_dir, "segment_intro.mp4")
+                self._render_remotion_composition_mp4(
+                    "TitleCard",
+                    {
+                        "heading": str((effects or {}).get("intro_heading") or "")[:80],
+                        "subheading": "",
+                        "captionStyle": cap,
+                        "colors": colors,
+                        "accentColor": colors[0],
+                    },
+                    intro_path,
+                    output_dir,
+                    tag="intro",
+                    duration_sec=2.2,
+                    width=width,
+                    height=height,
+                )
+                if os.path.isfile(intro_path):
+                    bookend_prefix.append(intro_path)
+            if (effects or {}).get("outro_card"):
+                outro_path = os.path.join(output_dir, "segment_outro.mp4")
+                self._render_remotion_composition_mp4(
+                    "CTACard",
+                    {
+                        "heading": "",
+                        "ctaText": str((effects or {}).get("outro_cta") or "关注我")[:60],
+                        "captionStyle": cap,
+                        "colors": list(reversed(colors)),
+                        "accentColor": colors[1] if len(colors) > 1 else colors[0],
+                    },
+                    outro_path,
+                    output_dir,
+                    tag="outro",
+                    duration_sec=2.0,
+                    width=width,
+                    height=height,
+                )
+                if os.path.isfile(outro_path):
+                    bookend_suffix.append(outro_path)
+
+        all_segments = bookend_prefix + segment_paths + bookend_suffix
+        print(f"\n[RenderSkill] 拼接 {len(all_segments)} 个片段（含片头/片尾 {len(bookend_prefix)+len(bookend_suffix)}）...")
+        self._concat_videos(all_segments, output_path, output_dir, effects, clips=clips)
 
         for path in segment_paths:
             if os.path.exists(path):
@@ -472,6 +523,36 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             if p and os.path.exists(p):
                 os.remove(p)
 
+    def _render_remotion_composition_mp4(
+        self,
+        composition: str,
+        props: dict,
+        output_path: str,
+        output_dir: str,
+        *,
+        tag: str = "card",
+        duration_sec: float = 2.5,
+        width: int = 1080,
+        height: int = 1920,
+        fps: int = 30,
+    ) -> None:
+        """渲染 TitleCard / CTACard 等为独立 MP4（片头片尾）。"""
+        frames = max(1, int(duration_sec * fps))
+        props_path = os.path.abspath(os.path.join(output_dir, f"remotion_props_{tag}.json"))
+        with open(props_path, "w", encoding="utf-8") as f:
+            json.dump(props, f, ensure_ascii=False)
+        props_path_fwd = props_path.replace("\\", "/")
+        out_fwd = os.path.abspath(output_path).replace("\\", "/")
+        cmd = [
+            "npx", "remotion", "render", "src/index.tsx", composition,
+            f"--output={out_fwd}",
+            f"--props={props_path_fwd}",
+            f"--width={width}", f"--height={height}",
+            f"--frames=0-{frames - 1}",
+        ]
+        print(f"[RenderSkill] Remotion 卡片: {composition} ({duration_sec:.1f}s)")
+        self._run_cmd(cmd, f"Remotion:{composition}", cwd=REMOTION_DIR, timeout=900)
+
     def _render_remotion_overlay(self, composition: str, props: dict, output_path: str,
                                  width: int, height: int, fps: int, frames: int,
                                  output_dir: str, tag: str = "overlay"):
@@ -608,15 +689,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         default_transition = (effects or {}).get("transition", "fade")
         transition_duration = float((effects or {}).get("transition_duration", 0.25))
 
-        # 验证转场类型
-        valid_transitions = [
-            "fade", "wipeleft", "wiperight", "wipeup", "wipedown",
-            "slideup", "slidedown", "slideleft", "slideright",
-            "circleopen", "circleclose", "dissolve", "pixelize",
-            "diagtl", "diagtr", "diagbl", "diagbr",
-            "smoothleft", "smoothright", "smoothup", "smoothdown",
-            "horzopen", "horzclose", "vertopen", "vertclose",
-        ]
+        from python_agent.capabilities.registry import VALID_TRANSITIONS, resolve_transition
+
+        valid_transitions = list(VALID_TRANSITIONS)
 
         # 检测 FFmpeg 是否支持 easing 参数（FFmpeg 7.0+）
         easing_supported = self._check_ffmpeg_easing_support()
@@ -627,8 +702,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             t = default_transition
             if clips and i < len(clips):
                 t = clips[i].get("transition_to_next", "") or default_transition
+            t = resolve_transition(t, default="fade")
             if t not in valid_transitions:
-                print(f"[RenderSkill] ⚠️ 未知转场 '{t}'，使用 fade")
                 t = "fade"
             transitions.append(t)
         print(f"[RenderSkill] 转场序列: {transitions} ({transition_duration}s, easing={'on' if easing_supported else 'off'})")

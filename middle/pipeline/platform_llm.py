@@ -44,8 +44,9 @@ feed：{feed_kind}
     "script": "60秒内口播稿",
     "effects": {{
       "preset": "活力",
-      "use_remotion": true,
       "gradient": false,
+      "intro_card": true,
+      "outro_card": true,
       "transition_duration": 0.22
     }},
     "clips": [
@@ -63,7 +64,7 @@ feed：{feed_kind}
     "title": "40字内标题",
     "body": "900字内笔记",
     "video_script": "60秒口播稿",
-    "effects": {{ "preset": "情感", "use_remotion": true, "gradient": true }},
+    "effects": {{ "preset": "情感", "gradient": false, "intro_card": false, "outro_card": true }},
     "clips": [{{"start": 0, "end": 10, "hook_text": "...", "tts_text": "...", "caption_style": "fade", "transition_to_next": "dissolve"}}]
   }},
   "toutiao": {{ "title": "...", "body": "微头条短文" }},
@@ -71,6 +72,7 @@ feed：{feed_kind}
 }}
 
 视频 clips：2~4 段；口播总字数≤220；段间转场 0.2~0.3 秒；start/end 在 B-roll 时长内且各段 start 应错开。
+**effects.preset 必填**；按 feed_kind 选 preset（见能力目录）。
 
 {capabilities_section}"""
 
@@ -109,7 +111,7 @@ def generate_platform_copy(
         theme_id=brief.theme_id or "default",
         theme_label=theme_label,
         broll_section=broll_section,
-        capabilities_section=llm_capabilities_section(),
+        capabilities_section=llm_capabilities_section(feed_kind=brief.feed_kind),
     )
     if article:
         excerpt = collect_article_text(article, max_chars=4500)
@@ -171,7 +173,13 @@ def write_fallback_video_plans(brief: VideoBrief, output_dir: Path, cfg: Pipelin
             continue
         preset = get_platform_preset(platform)
         clips = brief_to_clips(brief_dict, preset)
-        effects = merge_render_effects(platform, clips, preset.effects, use_remotion=cfg.render_use_remotion)
+        effects = merge_render_effects(
+            platform,
+            clips,
+            preset.effects,
+            use_remotion=cfg.render_use_remotion,
+            feed_kind=brief.feed_kind,
+        )
         save_video_clips_plan(
             output_dir,
             platform,
@@ -192,7 +200,7 @@ def write_publish_pack(
     broll_seconds: float | None = None,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    save_catalog_snapshot(output_dir)
+    save_catalog_snapshot(output_dir, feed_kind=brief.feed_kind)
 
     meta: dict[str, Any] = {"source": "template", "llm_error": None}
     copy = platform_copy

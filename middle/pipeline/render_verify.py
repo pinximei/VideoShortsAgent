@@ -48,6 +48,17 @@ def run_post_render_verify(task_dir: Path, platforms: list[str] | None = None) -
         if r.returncode != 0:
             report["ok"] = False
 
+    try:
+        from .effects_audit import audit_task_effects
+
+        fx = audit_task_effects(task_dir, platforms=plat)
+        report["effects_audit"] = fx
+        if not fx.get("ok", True):
+            report["ok"] = False
+    except Exception as exc:
+        report["effects_audit"] = {"ok": False, "error": str(exc)[:200]}
+        report["ok"] = False
+
     manifest = task_dir / "videos" / "manifest.json"
     if manifest.is_file():
         data = json.loads(manifest.read_text(encoding="utf-8"))

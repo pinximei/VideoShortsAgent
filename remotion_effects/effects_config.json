@@ -1,28 +1,90 @@
 {
   "caption_styles": {
-    "spring": "弹性弹出动画，活力感强，适合科技/产品/欢快内容",
-    "fade": "淡入淡出，优雅沉稳，适合纪录片/情感/教育内容",
-    "typewriter": "打字机逐字显现，适合悬疑/叙事/科技解说内容"
+    "spring": "弹性弹出，适合科技/产品/促销钩子",
+    "fade": "淡入淡出，适合情感/科普/小红书口吻",
+    "typewriter": "打字机逐字，适合悬疑/叙事/步骤讲解"
   },
   "overlays": {
     "gradient": {
-      "description": "渐变背景氛围层，增加视觉层次感和画面质感",
+      "description": "全画幅渐变氛围层（渲染较慢，资讯类默认关闭）",
       "default_colors": ["#FF6B6B", "#4ECDC4"]
     }
   },
   "transitions": {
-    "fade": "淡入淡出，通用百搭",
-    "circleopen": "圆形展开，适合揭示/惊喜内容",
-    "wipeleft": "左划切换，适合叙事推进/时间线",
-    "wiperight": "右划切换，适合回顾/倒叙",
-    "slideup": "上滑切换，适合递进/升华",
-    "slidedown": "下滑切换，适合总结/收尾"
+    "fade": "淡入淡出，通用；收尾段首选",
+    "dissolve": "溶解，柔和；小红书常用",
+    "circleopen": "圆形展开，适合开场揭示/惊喜",
+    "circleclose": "圆形收缩，适合段落收束",
+    "wipeleft": "左划，叙事推进",
+    "wiperight": "右划，回顾对比",
+    "wipeup": "上划",
+    "wipedown": "下划",
+    "slideup": "上滑递进",
+    "slidedown": "下滑总结",
+    "slideleft": "左滑",
+    "slideright": "右滑",
+    "smoothleft": "平滑左移，动感适中",
+    "smoothright": "平滑右移",
+    "smoothup": "平滑上移",
+    "smoothdown": "平滑下移",
+    "pixelize": "像素化，适合科技转场（慎用连段）",
+    "diagtl": "对角线（实验，单段可用）",
+    "diagtr": "对角线（实验）",
+    "diagbl": "对角线（实验）",
+    "diagbr": "对角线（实验）",
+    "horzopen": "水平展开",
+    "horzclose": "水平收缩",
+    "vertopen": "垂直展开",
+    "vertclose": "垂直收缩"
   },
   "presets": {
-    "科技": {"caption_style": "spring", "transition": "circleopen", "gradient": true, "gradient_colors": ["#667eea", "#764ba2"]},
-    "情感": {"caption_style": "fade", "transition": "fade", "gradient": true, "gradient_colors": ["#f093fb", "#f5576c"]},
-    "叙事": {"caption_style": "typewriter", "transition": "wipeleft", "gradient": false},
-    "活力": {"caption_style": "spring", "transition": "slideup", "gradient": true, "gradient_colors": ["#43e97b", "#38f9d7"]},
-    "严肃": {"caption_style": "fade", "transition": "fade", "gradient": false}
+    "科技": {
+      "caption_style": "spring",
+      "transition": "circleopen",
+      "gradient": false,
+      "gradient_colors": ["#667eea", "#764ba2"],
+      "intro_card": true,
+      "outro_card": false
+    },
+    "情感": {
+      "caption_style": "fade",
+      "transition": "dissolve",
+      "gradient": false,
+      "gradient_colors": ["#f093fb", "#f5576c"],
+      "intro_card": false,
+      "outro_card": true
+    },
+    "叙事": {
+      "caption_style": "typewriter",
+      "transition": "wipeleft",
+      "gradient": false,
+      "intro_card": false,
+      "outro_card": false
+    },
+    "活力": {
+      "caption_style": "spring",
+      "transition": "slideup",
+      "gradient": false,
+      "gradient_colors": ["#43e97b", "#38f9d7"],
+      "intro_card": true,
+      "outro_card": true
+    },
+    "严肃": {
+      "caption_style": "fade",
+      "transition": "fade",
+      "gradient": false,
+      "intro_card": false,
+      "outro_card": false
+    }
+  },
+  "feed_kind_hints": {
+    "news": {
+      "preset": "严肃",
+      "note": "资讯：少用 circleopen/pixelize；末段 transition_to_next 用 fade"
+    },
+    "apps": {
+      "preset": "科技",
+      "note": "应用/产品：钩子段 spring + circleopen；可开 intro_card"
+    }
   }
 }

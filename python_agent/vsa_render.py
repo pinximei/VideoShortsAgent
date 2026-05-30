@@ -85,7 +85,18 @@ def render_from_plan(
     tmp = Path(work_dir or out.parent / "_vsa_work" / platform)
     tmp.mkdir(parents=True, exist_ok=True)
 
-    render_effects = merge_render_effects(platform, clips, effects, use_remotion=use_remotion)
+    feed_kind = "news"
+    if task_dir and Path(task_dir).is_dir():
+        brief_p = Path(task_dir) / "brief.json"
+        if brief_p.is_file():
+            try:
+                feed_kind = str(json.loads(brief_p.read_text(encoding="utf-8-sig")).get("feed_kind") or "news")
+            except Exception:
+                pass
+    plan_effects = dict(effects or {})
+    render_effects = merge_render_effects(
+        platform, clips, plan_effects, use_remotion=use_remotion, feed_kind=feed_kind
+    )
     analysis = {"clips": clips}
     tts_info: dict[str, Any] = {"tts_clips": []}
 
@@ -127,6 +138,18 @@ def render_from_plan(
         raise RuntimeError("RenderSkill 未产出文件")
 
     _format_video(raw, str(out), width, height, platform)
+
+    if task_dir and Path(task_dir).is_dir():
+        from python_agent.capabilities.registry import write_render_effects_audit
+
+        write_render_effects_audit(
+            Path(task_dir),
+            platform,
+            plan_effects=plan_effects,
+            applied_effects=render_effects,
+            clips=clips,
+        )
+
     return {
         "ok": True,
         "path": str(out.resolve()),
