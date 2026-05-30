@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .render_verify import MIN_VIDEO_BYTES
+
 
 def audit_task_effects(task_dir: Path, platforms: list[str] | None = None) -> dict[str, Any]:
     task_dir = task_dir.resolve()
@@ -28,6 +30,12 @@ def audit_task_effects(task_dir: Path, platforms: list[str] | None = None) -> di
         elif plan_path.is_file() and not applied_path.is_file():
             entry["warn"] = "render_effects file missing (render not run?)"
             report["ok"] = False
+        mp4 = task_dir / "videos" / f"{pid}.mp4"
+        if mp4.is_file():
+            entry["video_bytes"] = mp4.stat().st_size
+            if entry["video_bytes"] < MIN_VIDEO_BYTES:
+                entry["warn"] = f"video_too_small<{MIN_VIDEO_BYTES}"
+                report["ok"] = False
         report["platforms"][pid] = entry
 
     audit_path = task_dir / "effects_audit.json"

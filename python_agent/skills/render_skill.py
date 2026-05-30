@@ -17,6 +17,25 @@ import subprocess
 
 
 REMOTION_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "remotion_effects")
+_VALID_X264_PRESETS = frozenset(
+    {"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow"},
+)
+
+
+def _clip_bullets(clip: dict) -> list[str]:
+    raw = clip.get("bullets")
+    if isinstance(raw, list):
+        out = [str(b).strip() for b in raw if str(b).strip()]
+        return out[:4]
+    hook = str(clip.get("hook_text") or "").strip()
+    if not hook:
+        return []
+    import re
+
+    if re.search(r"[·、\n]", hook):
+        parts = re.split(r"[·、\n]+", hook)
+        return [p.strip() for p in parts if p.strip()][:4]
+    return []
 
 
 class RenderSkill:
@@ -35,6 +54,36 @@ class RenderSkill:
             print(f"[RenderSkill] Remotion: {REMOTION_DIR} ✓")
         else:
             print(f"[RenderSkill] Remotion: 未安装（将使用 ASS 字幕模式）")
+
+    def _x264_preset(self, effects: dict | None) -> str:
+        p = str((effects or {}).get("ffmpeg_preset") or "medium")
+        return p if p in _VALID_X264_PRESETS else "medium"
+
+    def _apply_bullet_overlay(
+        self,
+        segment_path: str,
+        clip: dict,
+        duration: float,
+        output_dir: str,
+        clip_index: int,
+        *,
+        effects: dict | None = None,
+    ) -> None:
+        if not (effects or {}).get("content_highlight"):
+            return
+        bullets = _clip_bullets(clip)
+        if not bullets:
+            return
+        ass_path = os.path.join(output_dir, f"bullets_{clip_index}.ass")
+        self._generate_ass("", duration, ass_path, bullets=bullets)
+        tmp = segment_path + ".bul.mp4"
+        self._burn_subtitle(
+            segment_path, ass_path, tmp, x264_preset=self._x264_preset(effects)
+        )
+        if os.path.isfile(tmp) and os.path.getsize(tmp) > 1024:
+            os.replace(tmp, segment_path)
+        if os.path.isfile(ass_path):
+            os.remove(ass_path)
 
     def execute(self, video_path: str, analysis: dict, output_dir: str,
                 effects: dict = None, tts_info: dict = None) -> str:
@@ -107,7 +156,10 @@ class RenderSkill:
         print(f"[RenderSkill] 片段: {start:.1f}s - {end:.1f}s ({target_duration:.1f}s)")
 
         clip_path = os.path.join(output_dir, "clip_raw.mp4")
-        self._clip_video(video_path, start, end, clip_path, silent=silent)
+        self._clip_video(
+            video_path, start, end, clip_path, silent=silent,
+            x264_preset=self._x264_preset(effects),
+        )
 
         # 附加 TTS 音频
         if tts_path:
@@ -130,7 +182,13 @@ class RenderSkill:
             # ASS 字幕烧录
             ass_path = os.path.join(output_dir, "subtitle.ass")
             self._generate_ass(subtitle_text, target_duration, ass_path, sentences=sentences)
-            self._burn_subtitle(clip_path, ass_path, output_path)
+            self._burn_subtitle(
+                clip_path, ass_path, output_path, x264_preset=self._x264_preset(effects)
+            )
+
+        self._apply_bullet_overlay(
+            output_path, clip, target_duration, output_dir, 0, effects=effects
+        )
 
         if os.path.exists(clip_path):
             os.remove(clip_path)
@@ -194,7 +252,10 @@ class RenderSkill:
             segment_path = os.path.join(output_dir, f"segment_{i}.mp4")
 
             # 裁剪（静音）
-            self._clip_video(video_path, start, end, clip_path, silent=silent)
+            self._clip_video(
+                video_path, start, end, clip_path, silent=silent,
+                x264_preset=self._x264_preset(effects),
+            )
 
             # 裁剪结果检查
             if not os.path.exists(clip_path) or os.path.getsize(clip_path) < 1024:
@@ -225,9 +286,18 @@ class RenderSkill:
             else:
                 ass_path = os.path.join(output_dir, f"subtitle_{i}.ass")
                 self._generate_ass(subtitle_text, target_duration, ass_path, sentences=sentences)
-                self._burn_subtitle(clip_path, ass_path, segment_path)
+                self._burn_subtitle(
+                    clip_path, ass_path, segment_path, x264_preset=self._x264_preset(effects)
+                )
 
-            segment_paths.append(segment_path)
+            self._apply_bullet_overlay(
+                segment_path, clip, target_duration, output_dir, i, effects=effects
+            )
+
+            if os.path.isfile(segment_path) and os.path.getsize(segment_path) > 1024:
+                segment_paths.append(segment_path)
+            else:
+                print(f"  ⚠️ 片段 {i+1} 输出无效，跳过")
 
             if os.path.exists(clip_path):
                 os.remove(clip_path)
@@ -282,6 +352,9 @@ class RenderSkill:
                 if os.path.isfile(outro_path):
                     bookend_suffix.append(outro_path)
 
+        if not segment_paths:
+            raise RuntimeError("所有片段渲染失败，请检查 B-roll 时长与分镜 start/end")
+
         all_segments = bookend_prefix + segment_paths + bookend_suffix
         print(f"\n[RenderSkill] 拼接 {len(all_segments)} 个片段（含片头/片尾 {len(bookend_prefix)+len(bookend_suffix)}）...")
         self._concat_videos(all_segments, output_path, output_dir, effects, clips=clips)
@@ -293,7 +366,8 @@ class RenderSkill:
     # ========== FFmpeg 操作 ==========
 
     def _clip_video(self, input_path: str, start: float, end: float,
-                    output_path: str, silent: bool = False, pad_duration: float = 0):
+                    output_path: str, silent: bool = False, pad_duration: float = 0,
+                    *, x264_preset: str = "medium"):
         """FFmpeg 裁剪视频
 
         Args:
@@ -311,7 +385,7 @@ class RenderSkill:
         cmd += [
             "-c:v", "libx264", "-pix_fmt", "yuv420p",
             "-crf", "18", "-profile:v", "high", "-level", "4.1",
-            "-movflags", "+faststart", "-preset", "medium",
+            "-movflags", "+faststart", "-preset", x264_preset,
             output_path
         ]
         self._run_cmd(cmd, "裁剪")
@@ -325,7 +399,7 @@ class RenderSkill:
                 "-vf", vf,
                 "-c:v", "libx264", "-pix_fmt", "yuv420p",
                 "-crf", "18", "-profile:v", "high", "-level", "4.1",
-                "-movflags", "+faststart", "-preset", "medium",
+                "-movflags", "+faststart", "-preset", x264_preset,
             ]
             if not silent:
                 pad_cmd += ["-af", f"apad=pad_dur={pad_duration:.3f}", "-c:a", "aac", "-b:a", "192k"]
@@ -351,7 +425,7 @@ class RenderSkill:
         self._run_cmd(cmd, "附加音频")
 
     def _generate_ass(self, text: str, duration: float, output_path: str,
-                      sentences: list = None):
+                      sentences: list = None, bullets: list | None = None):
         """生成 ASS 字幕文件
 
         Args:
@@ -360,9 +434,8 @@ class RenderSkill:
         """
         import re
 
+        dialogues: list[str] = []
         if sentences:
-            # 精确模式：使用 TTS 返回的实际时间轴
-            dialogues = []
             for s in sentences:
                 s_t = s["start"]
                 e_t = s["end"]
@@ -372,8 +445,7 @@ class RenderSkill:
                     f"Dialogue: 0,{s_h}:{s_m:02d}:{s_s:05.2f},{e_h}:{e_m:02d}:{e_s:05.2f},"
                     f"Hook,,0,0,0,,{{\\fad(300,250)}}{{\\blur1}}{s['text']}"
                 )
-        else:
-            # 估算模式：按字数比例分配时间
+        elif (text or "").strip():
             sents = re.split(r'[。！？；\n]+', text)
             sents = [s.strip() for s in sents if s.strip()]
             final = []
@@ -397,7 +469,6 @@ class RenderSkill:
             total_chars = sum(char_counts) or 1
             time_per = [(c / total_chars) * available for c in char_counts]
 
-            dialogues = []
             current = 0.0
             for s_text, seg_dur in zip(final, time_per):
                 seg_dur = max(seg_dur, 0.5)
@@ -411,6 +482,19 @@ class RenderSkill:
                 )
                 current = e_t + pause
 
+        if bullets:
+            n = len(bullets)
+            slot = max(0.9, (duration - 0.5) / max(n, 1))
+            for i, b_text in enumerate(bullets):
+                s_t = 0.35 + i * slot
+                e_t = min(s_t + slot * 0.85, max(duration - 0.15, s_t + 0.5))
+                s_h, s_m, s_s = int(s_t // 3600), int((s_t % 3600) // 60), s_t % 60
+                e_h, e_m, e_s = int(e_t // 3600), int((e_t % 3600) // 60), e_t % 60
+                dialogues.append(
+                    f"Dialogue: 0,{s_h}:{s_m:02d}:{s_s:05.2f},{e_h}:{e_m:02d}:{e_s:05.2f},"
+                    f"Bullet,,0,0,0,,{{\\fad(200,150)}}{b_text}"
+                )
+
         ass_content = f"""[Script Info]
 Title: VideoShortsAgent Subtitle
 ScriptType: v4.00+
@@ -421,6 +505,7 @@ WrapStyle: 0
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Hook,Microsoft YaHei,64,&H00FFFFFF,&H000000FF,&H00000000,&HC0000000,-1,0,0,0,100,100,3,0,1,3,3,2,40,40,80,1
+Style: Bullet,Microsoft YaHei,42,&H00FFFFFF,&H000000FF,&H00000000,&HA0000000,-1,0,0,0,100,100,0,0,1,2,2,2,60,60,200,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -429,7 +514,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(ass_content)
 
-    def _burn_subtitle(self, video_path: str, ass_path: str, output_path: str):
+    def _burn_subtitle(self, video_path: str, ass_path: str, output_path: str,
+                       *, x264_preset: str = "medium"):
         # Windows 路径处理：反斜杠→正斜杠，冒号用 \: 转义（FFmpeg filtergraph 语法）
         ass_escaped = ass_path.replace("\\", "/").replace(":", "\\:")
         cmd = [
@@ -439,7 +525,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "-pix_fmt", "yuv420p",
             "-crf", "18", "-profile:v", "high", "-level", "4.1",
             "-movflags", "+faststart",
-            "-preset", "medium",
+            "-preset", x264_preset,
             output_path
         ]
         self._run_cmd(cmd, "烧录字幕", timeout=600)

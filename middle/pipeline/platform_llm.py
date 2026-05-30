@@ -54,6 +54,7 @@ feed：{feed_kind}
         "start": 0.0,
         "end": 10.0,
         "hook_text": "屏上字幕",
+        "bullets": ["要点一", "要点二"],
         "tts_text": "配音词",
         "caption_style": "spring",
         "transition_to_next": "circleopen"
@@ -137,7 +138,8 @@ def generate_platform_copy(
 
     user_base = user
     last_err = ""
-    for attempt in range(2):
+    max_attempts = max(1, int(getattr(cfg, "llm_plan_retries", 2)) + 1) if cfg else 2
+    for attempt in range(max_attempts):
         u = user_base + (repair_prompt_note(last_err) if attempt else "")
         copy = llm.chat_json(SYSTEM_PROMPT, u)
         ok, msg = validate_platform_copy(copy, broll_seconds=broll_seconds)

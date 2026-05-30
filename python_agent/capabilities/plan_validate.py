@@ -54,6 +54,15 @@ def validate_platform_video_block(
             return False, f"clip_{i}_exceeds_broll={broll_seconds:.0f}s"
         if not str(c.get("hook_text") or "").strip() and not str(c.get("tts_text") or "").strip():
             return False, f"clip_{i}_no_text"
+        hook = str(c.get("hook_text") or "").strip()
+        if len(hook) > 28:
+            return False, f"clip_{i}_hook_text_too_long={len(hook)}"
+        bullets = c.get("bullets")
+        if bullets is not None:
+            if not isinstance(bullets, list) or len(bullets) > 4:
+                return False, f"clip_{i}_bad_bullets"
+            if any(len(str(b).strip()) > 32 for b in bullets):
+                return False, f"clip_{i}_bullet_item_too_long"
         cs = str(c.get("caption_style") or "").strip()
         if cs and cs not in VALID_CAPTION_STYLES and cs not in STYLE_PRESETS:
             return False, f"clip_{i}_bad_caption_style={cs!r}"

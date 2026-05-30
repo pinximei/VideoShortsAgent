@@ -49,6 +49,8 @@ class PipelineConfig:
     render_verify_required: bool = True
     render_full_verify: bool = False
     render_bookends: str = "douyin"
+    render_ffmpeg_preset: str = "fast"
+    llm_plan_retries: int = 2
     llm_enabled: bool = True
     llm_api_key: str = ""
     llm_api_key_env: str = "DEEPSEEK_API_KEY"
@@ -146,6 +148,8 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         render_verify_required=bool(render.get("verify_required", True)),
         render_full_verify=bool(render.get("full_verify", False)),
         render_bookends=str(render.get("bookends") or "douyin"),
+        render_ffmpeg_preset=str(render.get("ffmpeg_preset") or "fast"),
+        llm_plan_retries=max(0, int(llm.get("plan_retries") or 2)),
         llm_enabled=bool(llm.get("enabled", True)),
         llm_api_key=str(
             llm.get("api_key")

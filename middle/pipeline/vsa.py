@@ -48,6 +48,7 @@ def render_from_llm_plan(
         task_dir=str(task_dir),
         feed_kind=str(brief.get("feed_kind") or "news"),
         bookends=cfg.render_bookends,
+        ffmpeg_preset=cfg.render_ffmpeg_preset,
     )
     return out
 

@@ -93,9 +93,11 @@ render:
   verify_required: true
   full_verify: false
   bookends: douyin
+  ffmpeg_preset: fast
 
 llm:
   enabled: true
+  plan_retries: 2
   # 推荐：仓库根目录 .env → DEEPSEEK_API_KEY=sk-xxx（勿提交 git）
   api_key_env: DEEPSEEK_API_KEY
   base_url: "https://api.deepseek.com/v1"

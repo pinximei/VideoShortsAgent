@@ -27,7 +27,9 @@ def _trim_clips(clips: list[dict], tts_clips: list[dict], max_seconds: float):
     return kept_c or clips[:1], kept_t or tts_clips[:1]
 
 
-def _format_video(src: str, dst: str, width: int, height: int, platform: str) -> None:
+def _format_video(
+    src: str, dst: str, width: int, height: int, platform: str, *, preset: str = "fast"
+) -> None:
     import os
     import subprocess
 
@@ -37,7 +39,7 @@ def _format_video(src: str, dst: str, width: int, height: int, platform: str) ->
     cmd = [
         "ffmpeg", "-y", "-i", src, "-vf", vf,
         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
-        "-movflags", "+faststart", "-preset", "fast", dst,
+        "-movflags", "+faststart", "-preset", preset, dst,
     ]
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     if r.returncode != 0 or not os.path.isfile(dst):
@@ -61,6 +63,7 @@ def render_from_plan(
     task_dir: str | None = None,
     feed_kind: str = "news",
     bookends: str = "douyin",
+    ffmpeg_preset: str = "fast",
 ) -> dict[str, Any]:
     import os
 
@@ -107,6 +110,9 @@ def render_from_plan(
         feed_kind=feed_kind,
         bookends=bookends,
     )
+    render_effects["ffmpeg_preset"] = str(
+        plan_effects.get("ffmpeg_preset") or ffmpeg_preset or "fast"
+    )
     analysis = {"clips": clips}
     tts_info: dict[str, Any] = {"tts_clips": []}
 
@@ -147,7 +153,10 @@ def render_from_plan(
     if not raw or not os.path.isfile(raw):
         raise RuntimeError("RenderSkill 未产出文件")
 
-    _format_video(raw, str(out), width, height, platform)
+    _format_video(
+        raw, str(out), width, height, platform,
+        preset=str(render_effects.get("ffmpeg_preset") or ffmpeg_preset or "fast"),
+    )
 
     if task_dir and Path(task_dir).is_dir():
         from python_agent.capabilities.registry import write_render_effects_audit
