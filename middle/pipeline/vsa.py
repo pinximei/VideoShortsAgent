@@ -34,11 +34,20 @@ def render_from_llm_plan(
 
     from .media_probe import probe_video_duration
     from python_agent.capabilities.plan_validate import validate_platform_video_block
+    from python_agent.capabilities.registry import merge_render_effects
 
     broll_sec = probe_video_duration(broll) if broll else None
+    merged_effects = merge_render_effects(
+        platform_id,
+        plan.get("clips") or [],
+        plan.get("effects"),
+        use_remotion=cfg.render_use_remotion,
+        feed_kind=str(brief.get("feed_kind") or "news"),
+        bookends=cfg.render_bookends,
+    )
     block: dict[str, Any] = {
         "clips": plan.get("clips") or [],
-        "effects": plan.get("effects") or {},
+        "effects": merged_effects,
         "title": str(brief.get("title") or brief.get("hook") or ""),
     }
     if platform_id == "xhs":

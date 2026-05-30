@@ -650,7 +650,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             f"--frames=0-{frames - 1}",
         ]
         print(f"[RenderSkill] Remotion 卡片: {composition} ({duration_sec:.1f}s)")
-        self._run_cmd(cmd, f"Remotion:{composition}", cwd=REMOTION_DIR, timeout=900)
+        self._run_cmd(cmd, f"Remotion:{composition}", cwd=REMOTION_DIR, timeout=900, shell=True)
 
     def _render_remotion_overlay(self, composition: str, props: dict, output_path: str,
                                  width: int, height: int, fps: int, frames: int,
@@ -938,8 +938,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     def _run_cmd(self, cmd: list, step_name: str, cwd: str = None,
                  timeout: int = 120, shell: bool = False):
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True,
-                                    timeout=timeout, cwd=cwd, shell=shell)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=cwd,
+                shell=shell,
+                encoding="utf-8",
+                errors="replace",
+            )
             if result.returncode != 0:
                 stderr = result.stderr[-500:] if result.stderr else ""
                 print(f"[RenderSkill] ⚠️ {step_name}警告: {stderr}")

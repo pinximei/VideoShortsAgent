@@ -28,7 +28,7 @@ class DubbingSkill:
 
     def __init__(self, voice: str = DEFAULT_VOICE):
         self.voice = voice
-        print(f"[DubbingSkill] 语音: {self.voice} ✓")
+        print(f"[DubbingSkill] 语音: {self.voice} OK")
 
     def execute(self, analysis: dict, output_dir: str, voice: str = "") -> dict:
         """执行 TTS 生成（按句分段，精确计时）
