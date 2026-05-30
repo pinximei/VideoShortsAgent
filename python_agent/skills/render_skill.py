@@ -967,6 +967,83 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             transitions.append(t)
         return transitions
 
+    @staticmethod
+    def _concat_filter_complex(num_segments: int) -> str:
+        """filter_complex：多段 v/a 分别 concat，避免 demuxer 视音错位。"""
+        v_in = "".join(f"[{i}:v]" for i in range(num_segments))
+        a_in = "".join(f"[{i}:a]" for i in range(num_segments))
+        return f"{v_in}concat=n={num_segments}:v=1:a=0[vout];{a_in}concat=n={num_segments}:v=0:a=1[aout]"
+
+    def _normalize_segment_for_concat(
+        self,
+        input_path: str,
+        output_path: str,
+        *,
+        width: int,
+        height: int,
+        fps: int = 30,
+        x264_preset: str = "medium",
+    ) -> bool:
+        """统一分辨率、帧率、像素格式与音轨，供 xfade/concat 使用。"""
+        dur = max(0.1, self._get_duration(input_path))
+        vf = (
+            f"fps={fps},scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height},setsar=1,format=yuv420p"
+        )
+        if self._probe_has_audio(input_path):
+            cmd = [
+                "ffmpeg", "-y", "-i", input_path,
+                "-vf", vf,
+                "-c:v", "libx264", "-preset", x264_preset, "-crf", "18",
+                "-profile:v", "high", "-level", "4.1", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-ar", "44100", "-ac", "2", "-b:a", "192k",
+                "-movflags", "+faststart",
+                output_path,
+            ]
+        else:
+            cmd = [
+                "ffmpeg", "-y", "-i", input_path,
+                "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+                "-vf", vf,
+                "-map", "0:v", "-map", "1:a",
+                "-c:v", "libx264", "-preset", x264_preset, "-crf", "18",
+                "-profile:v", "high", "-level", "4.1", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-ar", "44100", "-ac", "2", "-b:a", "192k",
+                "-shortest", "-t", f"{dur:.3f}",
+                "-movflags", "+faststart",
+                output_path,
+            ]
+        return self._run_cmd_returns_ok(cmd, "归一化片段", timeout=300)
+
+    def _prepare_concat_inputs(
+        self,
+        video_paths: list[str],
+        output_dir: str,
+        *,
+        x264_preset: str = "medium",
+        target_fps: int = 30,
+    ) -> list[str]:
+        """补静音轨并归一化，避免片头 Remotion 与 ASS 段参数不一致导致拼接失败。"""
+        if not video_paths:
+            return []
+        width, height = self._get_video_resolution(video_paths[0])
+        prepared: list[str] = []
+        for i, p in enumerate(video_paths):
+            src = p
+            if not self._probe_has_audio(src):
+                src = self._ensure_has_audio(
+                    src, self._get_duration(src), output_dir, f"pre_{i}",
+                )
+            norm = os.path.join(output_dir, f"norm_concat_{i}.mp4")
+            if self._normalize_segment_for_concat(
+                src, norm, width=width, height=height, fps=target_fps,
+                x264_preset=x264_preset,
+            ) and os.path.isfile(norm) and os.path.getsize(norm) > 1024:
+                prepared.append(norm)
+            else:
+                prepared.append(src)
+        return prepared
+
     def _simple_concat(
         self,
         video_paths: list,
@@ -975,20 +1052,30 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         *,
         x264_preset: str = "medium",
     ) -> bool:
-        concat_list = os.path.join(output_dir, "concat_list.txt")
-        with open(concat_list, "w", encoding="utf-8") as f:
-            for p in video_paths:
-                f.write(f"file '{os.path.abspath(p).replace(chr(92), '/')}'\n")
+        n = len(video_paths)
+        if n < 1:
+            return False
+        if n == 1:
+            import shutil
+            shutil.copy2(video_paths[0], output_path)
+            return os.path.isfile(output_path) and os.path.getsize(output_path) > 48 * 1024
+
+        inputs: list[str] = []
+        for p in video_paths:
+            inputs.extend(["-i", p])
+        fc = self._concat_filter_complex(n)
         cmd = [
-            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
-            "-c:v", "libx264", "-c:a", "aac", "-b:a", "192k",
-            "-crf", "18", "-profile:v", "high", "-level", "4.1",
-            "-pix_fmt", "yuv420p", "-movflags", "+faststart",
-            "-preset", x264_preset, output_path,
+            "ffmpeg", "-y",
+        ] + inputs + [
+            "-filter_complex", fc,
+            "-map", "[vout]", "-map", "[aout]",
+            "-c:v", "libx264", "-preset", x264_preset, "-crf", "18",
+            "-profile:v", "high", "-level", "4.1", "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-ar", "44100", "-ac", "2", "-b:a", "192k",
+            "-movflags", "+faststart", "-vsync", "cfr",
+            output_path,
         ]
-        ok = self._run_cmd_returns_ok(cmd, "简单拼接", timeout=600)
-        if os.path.exists(concat_list):
-            os.remove(concat_list)
+        ok = self._run_cmd_returns_ok(cmd, "滤镜拼接", timeout=600)
         return ok and os.path.isfile(output_path) and os.path.getsize(output_path) > 48 * 1024
 
     def _concat_videos(self, video_paths: list, output_path: str, output_dir: str,
@@ -1000,18 +1087,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             shutil.copy2(video_paths[0], output_path)
             return
 
-        if any(self._probe_has_audio(p) for p in video_paths):
-            fixed: list[str] = []
-            for i, p in enumerate(video_paths):
-                if self._probe_has_audio(p):
-                    fixed.append(p)
-                else:
-                    fixed.append(
-                        self._ensure_has_audio(
-                            p, self._get_duration(p), output_dir, f"seg_{i}",
-                        )
-                    )
-            video_paths = fixed
+        video_paths = self._prepare_concat_inputs(
+            video_paths, output_dir, x264_preset=x264_preset,
+        )
 
         default_transition = (effects or {}).get("transition", "fade")
         transition_duration = float((effects or {}).get("transition_duration", 0.25))
@@ -1103,12 +1181,57 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         ]
         xfade_ok = self._run_cmd_returns_ok(cmd, "转场拼接", timeout=900)
         valid_out = os.path.isfile(output_path) and os.path.getsize(output_path) > 48 * 1024
+        if xfade_ok and valid_out and not self._streams_in_sync(output_path):
+            print("[RenderSkill] xfade 成片视音不同步，改滤镜拼接")
+            xfade_ok = False
+            if os.path.isfile(output_path):
+                os.remove(output_path)
         if not xfade_ok or not valid_out:
-            print("[RenderSkill] xfade 失败或输出过小，降级简单拼接")
+            print("[RenderSkill] xfade 失败或输出过小，降级滤镜拼接")
             if os.path.isfile(output_path):
                 os.remove(output_path)
             if not self._simple_concat(video_paths, output_path, output_dir, x264_preset=x264_preset):
-                raise RuntimeError("视频拼接失败（xfade 与 concat 均失败）")
+                raise RuntimeError("视频拼接失败（xfade 与滤镜 concat 均失败）")
+            if not self._streams_in_sync(output_path):
+                print("[RenderSkill] 警告: 成片视音时长仍不一致")
+
+        import glob
+        for old in glob.glob(os.path.join(output_dir, "norm_concat_*.mp4")):
+            try:
+                os.remove(old)
+            except OSError:
+                pass
+
+    def _streams_in_sync(self, video_path: str, *, tolerance: float = 0.6) -> bool:
+        """检查视频轨与音频轨时长是否接近（避免 concat 后画面提前结束）。"""
+        cmd = [
+            "ffprobe", "-v", "quiet", "-print_format", "json",
+            "-show_entries", "stream=codec_type,duration",
+            "-of", "json", video_path,
+        ]
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=15,
+                encoding="utf-8", errors="replace",
+            )
+            data = json.loads(result.stdout or "{}")
+            vd = ad = None
+            for st in data.get("streams") or []:
+                if not isinstance(st, dict):
+                    continue
+                dur = st.get("duration")
+                if dur is None:
+                    continue
+                d = float(dur)
+                if st.get("codec_type") == "video" and vd is None:
+                    vd = d
+                elif st.get("codec_type") == "audio" and ad is None:
+                    ad = d
+            if vd is None or ad is None:
+                return True
+            return abs(vd - ad) <= tolerance
+        except Exception:
+            return True
 
     def _get_duration(self, video_path: str) -> float:
         """获取视频时长"""

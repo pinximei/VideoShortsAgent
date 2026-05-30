@@ -149,10 +149,12 @@ def check_video(name: str, path: Path, sample_times: list[float]) -> dict:
 
 
 def main() -> int:
-    task = ROOT / "data/output/838/videos"
+    task_arg = (sys.argv[1] if len(sys.argv) > 1 else "").strip()
+    base = Path(task_arg).resolve() if task_arg else ROOT / "data/output/838"
+    videos_dir = base / "videos" if (base / "videos").is_dir() else base
     files = {
-        "xhs": task / "xhs.mp4",
-        "douyin": task / "douyin.mp4",
+        "xhs": videos_dir / "xhs.mp4",
+        "douyin": videos_dir / "douyin.mp4",
     }
     reports = []
     for name, p in files.items():

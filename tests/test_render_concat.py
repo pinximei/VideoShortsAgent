@@ -17,6 +17,13 @@ def test_build_transition_intro_uses_fade() -> None:
     assert tr[1] == "circleopen"
 
 
+def test_concat_filter_complex_three_segments() -> None:
+    fc = RenderSkill._concat_filter_complex(3)
+    assert "concat=n=3:v=1:a=0[vout]" in fc
+    assert "concat=n=3:v=0:a=1[aout]" in fc
+    assert "[0:v][1:v][2:v]" in fc
+
+
 def test_merge_apps_caption_remotion_off() -> None:
     clips = [{"start": 0, "end": 10, "hook_text": "x", "transition_to_next": "fade"}]
     fx = merge_render_effects("douyin", clips, {"preset": "科技"}, feed_kind="apps", use_remotion=True)

@@ -15,6 +15,36 @@ def _repo_root() -> Path:
 MIN_VIDEO_BYTES = 48 * 1024
 
 
+def _streams_in_sync(video_path: Path, *, tolerance: float = 0.6) -> bool:
+    import subprocess
+
+    cmd = [
+        "ffprobe", "-v", "quiet", "-print_format", "json",
+        "-show_entries", "stream=codec_type,duration",
+        "-of", "json", str(video_path),
+    ]
+    try:
+        r = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=15,
+            encoding="utf-8", errors="replace",
+        )
+        data = json.loads(r.stdout or "{}")
+        vd = ad = None
+        for st in data.get("streams") or []:
+            if not isinstance(st, dict) or st.get("duration") is None:
+                continue
+            d = float(st["duration"])
+            if st.get("codec_type") == "video" and vd is None:
+                vd = d
+            elif st.get("codec_type") == "audio" and ad is None:
+                ad = d
+        if vd is None or ad is None:
+            return True
+        return abs(vd - ad) <= tolerance
+    except Exception:
+        return True
+
+
 def _quick_video_checks(task_dir: Path, platforms: list[str]) -> dict[str, Any]:
     """轻量验收：文件存在 + 体积 + 时长 > 3s。"""
     from .media_probe import probe_video_duration
@@ -31,13 +61,20 @@ def _quick_video_checks(task_dir: Path, platforms: list[str]) -> dict[str, Any]:
             entry["size_bytes"] = size
             dur = probe_video_duration(str(p))
             entry["duration_sec"] = dur
+            stream_sync = True
+            if entry["exists"] and dur and dur >= 3.0:
+                stream_sync = _streams_in_sync(p)
+                entry["stream_sync"] = stream_sync
             entry["ok"] = (
                 size >= MIN_VIDEO_BYTES
                 and dur is not None
                 and dur >= 3.0
+                and stream_sync
             )
             if size < MIN_VIDEO_BYTES:
                 entry["warn"] = f"file_too_small<{MIN_VIDEO_BYTES}"
+            if not stream_sync:
+                entry["warn"] = (entry.get("warn") or "") + " stream_duration_mismatch"
             if not entry["ok"]:
                 out["ok"] = False
         out["platforms"][pid] = entry
@@ -85,7 +122,7 @@ def run_post_render_verify(
             if not script.is_file():
                 continue
             r = subprocess.run(
-                [py, str(script)],
+                [py, str(script), str(task_dir.resolve())],
                 cwd=str(middle),
                 capture_output=True,
                 text=True,

@@ -36,7 +36,8 @@ def probe_duration(path: Path) -> float:
 
 
 def main() -> int:
-    task = ROOT / "data/output/838"
+    task_arg = (sys.argv[1] if len(sys.argv) > 1 else "").strip()
+    task = Path(task_arg).resolve() if task_arg else ROOT / "data/output/838"
     broll = ROOT / "data/assets/broll_template.mp4"
     if not task.is_dir():
         print(f"任务目录不存在: {task}", file=sys.stderr)
