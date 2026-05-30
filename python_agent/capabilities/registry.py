@@ -141,6 +141,17 @@ def merge_render_effects(
     remotion_on = DEFAULT_USE_REMOTION if use_remotion is None else bool(use_remotion)
 
     cap_default = defaults.get("default_caption_style") or "spring"
+    try:
+        from python_agent.platform_presets import get_platform_preset
+
+        preset_td = float(get_platform_preset(platform_id).effects.get("transition_duration", 0.25))
+    except Exception:
+        preset_td = 0.25
+    plan_td = pe.get("transition_duration")
+    transition_duration = float(plan_td) if plan_td is not None else preset_td
+    if transition_duration > preset_td + 0.08:
+        transition_duration = preset_td
+
     effects: dict[str, Any] = {
         "use_remotion": remotion_on,
         "caption_style": resolve_caption_style(
@@ -149,7 +160,7 @@ def merge_render_effects(
             default=cap_default,
         ),
         "transition": pe.get("transition") or preset_spec.get("transition") or defaults["default_transition"],
-        "transition_duration": float(pe.get("transition_duration", 0.45)),
+        "transition_duration": transition_duration,
         "gradient": bool(pe.get("gradient", preset_spec.get("gradient", False))),
         "gradient_colors": pe.get("gradient_colors") or preset_spec.get("gradient_colors"),
     }

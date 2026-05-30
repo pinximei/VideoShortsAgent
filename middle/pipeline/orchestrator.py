@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .brief import build_brief, passes_filter
+from .brief import build_brief, brief_is_renderable, passes_filter
 from .article_content import article_has_substantive_content, collect_article_text, content_quality_report
 from .themes import resolve_theme
 from .config import PipelineConfig
@@ -76,6 +76,11 @@ def process_jobs(
 
             store.advance(ck, status=STATUS_PROCESSING, step=STEP_BRIEF, theme_id=theme_id)
             brief = build_brief(article, public_base_url=cfg.public_base_url, theme_id=theme_id)
+            brief_ok, brief_reason = brief_is_renderable(brief)
+            if not brief_ok:
+                store.advance(ck, status=STATUS_SKIPPED, step=STEP_BRIEF, message=brief_reason)
+                stats.skipped += 1
+                continue
             bh = brief.hash()
 
             if store.should_skip_render(ck, bh):
@@ -105,7 +110,7 @@ def process_jobs(
             )
 
             store.advance(ck, status=STATUS_PROCESSING, step=STEP_LLM, message="大模型生成各平台文案与分镜")
-            write_publish_pack(brief, out_dir, cfg=cfg, article=article, broll_seconds=broll_sec)
+            pack_meta = write_publish_pack(brief, out_dir, cfg=cfg, article=article, broll_seconds=broll_sec)
             store.advance(ck, status=STATUS_PROCESSING, step=STEP_PACK, message="发布包已写入")
 
             if cfg.render_enabled:
@@ -113,6 +118,12 @@ def process_jobs(
                 result = render_task_videos(cfg, out_dir)
                 if not result or not result.get("primary_video"):
                     raise RuntimeError("VSA 未产出视频")
+                try:
+                    from .render_verify import run_post_render_verify
+
+                    run_post_render_verify(out_dir, platforms=cfg.render_platforms)
+                except Exception as ve:
+                    store.advance(ck, status=STATUS_PROCESSING, step=STEP_VSA, message=f"验收警告: {ve}")
 
             brief_dict = brief.to_dict()
             try:

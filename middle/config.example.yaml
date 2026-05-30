@@ -84,6 +84,7 @@ render:
   # 默认 Remotion 句级字幕 + 渐变（需 cd remotion_effects && npm install）
   use_remotion: true
   skip_tts: false
+  # 生产 false；LLM 欠费/失败时仅调试可开 true
   allow_template_fallback: false
 
 llm:

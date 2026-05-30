@@ -42,6 +42,7 @@ def render_from_llm_plan(
         work_dir=str(task_dir / "videos" / f"_work_{platform_id}"),
         effects=plan.get("effects"),
         use_remotion=cfg.render_use_remotion,
+        task_dir=str(task_dir),
     )
     return out
 
@@ -77,6 +78,13 @@ def render_task_videos(
     manifest_path = task_dir / "videos" / "manifest.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    try:
+        from .render_verify import run_post_render_verify
+
+        run_post_render_verify(task_dir, platforms=cfg.render_platforms)
+    except Exception:
+        pass
 
     primary = task_dir / "videos" / "douyin.mp4"
     legacy = task_dir / "video.mp4"

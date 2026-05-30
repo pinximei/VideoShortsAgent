@@ -606,7 +606,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         # 全局默认转场
         default_transition = (effects or {}).get("transition", "fade")
-        transition_duration = float((effects or {}).get("transition_duration", 0.8))
+        transition_duration = float((effects or {}).get("transition_duration", 0.25))
 
         # 验证转场类型
         valid_transitions = [
@@ -722,19 +722,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             return 5.0  # 默认 5 秒
 
     def _check_ffmpeg_easing_support(self) -> bool:
-        """检测 FFmpeg 是否支持 xfade easing 参数（FFmpeg 7.0+）"""
+        """检测 FFmpeg xfade 是否支持 easing=（gyan 等常见构建通常不支持）。"""
         try:
             result = subprocess.run(
-                ["ffmpeg", "-version"], capture_output=True, text=True, timeout=5
+                ["ffmpeg", "-h", "filter=xfade"],
+                capture_output=True,
+                text=True,
+                timeout=8,
             )
-            import re
-            m = re.search(r"ffmpeg version (\d+)\.(\d+)", result.stdout)
-            if m:
-                major = int(m.group(1))
-                return major >= 7
+            text = (result.stdout or "") + (result.stderr or "")
+            return "easing" in text.lower()
         except Exception:
-            pass
-        return False
+            return False
 
     # ========== 工具方法 ==========
 

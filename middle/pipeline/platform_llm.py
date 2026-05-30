@@ -46,7 +46,7 @@ feed：{feed_kind}
       "preset": "活力",
       "use_remotion": true,
       "gradient": false,
-      "transition_duration": 0.35
+      "transition_duration": 0.22
     }},
     "clips": [
       {{
@@ -70,7 +70,7 @@ feed：{feed_kind}
   "douban": {{ "title": "...", "body": "豆瓣笔记" }}
 }}
 
-视频 clips：2~4 段；口播总字数≤220；start/end 在 B-roll 时长内。
+视频 clips：2~4 段；口播总字数≤220；段间转场 0.2~0.3 秒；start/end 在 B-roll 时长内且各段 start 应错开。
 
 {capabilities_section}"""
 
@@ -152,6 +152,36 @@ def _save_video_clip_files(output_dir: Path, copy: dict[str, Any]) -> None:
         )
 
 
+def write_fallback_video_plans(brief: VideoBrief, output_dir: Path, cfg: PipelineConfig) -> None:
+    """LLM 不可用时：规则分镜 + 平台特效（需 render.allow_template_fallback）。"""
+    import sys
+
+    root = repo_root()
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from python_agent.capabilities.registry import merge_render_effects
+    from python_agent.pipeline_input import brief_to_clips, save_video_clips_plan
+    from python_agent.platform_presets import get_platform_preset
+
+    llm_dir = output_dir / "llm"
+    llm_dir.mkdir(parents=True, exist_ok=True)
+    brief_dict = brief.to_dict()
+    for platform in ("douyin", "xhs"):
+        if platform not in (cfg.render_platforms or []):
+            continue
+        preset = get_platform_preset(platform)
+        clips = brief_to_clips(brief_dict, preset)
+        effects = merge_render_effects(platform, clips, preset.effects, use_remotion=cfg.render_use_remotion)
+        save_video_clips_plan(
+            output_dir,
+            platform,
+            clips,
+            effects=effects,
+            source="brief_to_clips_fallback",
+            render_status="degraded",
+        )
+
+
 def write_publish_pack(
     brief: VideoBrief,
     output_dir: Path,
@@ -160,27 +190,48 @@ def write_publish_pack(
     cfg: PipelineConfig | None = None,
     article: dict[str, Any] | None = None,
     broll_seconds: float | None = None,
-) -> Path:
+) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     save_catalog_snapshot(output_dir)
 
+    meta: dict[str, Any] = {"source": "template", "llm_error": None}
     copy = platform_copy
     if copy is None:
         if cfg and cfg.llm_enabled:
-            copy = generate_platform_copy(brief, article, cfg, broll_seconds=broll_seconds)
-            llm_dir = output_dir / "llm"
-            llm_dir.mkdir(parents=True, exist_ok=True)
-            (llm_dir / "platform_copy.json").write_text(
-                json.dumps(copy, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-            _save_video_clip_files(output_dir, copy)
+            try:
+                copy = generate_platform_copy(brief, article, cfg, broll_seconds=broll_seconds)
+                meta["source"] = "pipeline_llm"
+                llm_dir = output_dir / "llm"
+                llm_dir.mkdir(parents=True, exist_ok=True)
+                (llm_dir / "platform_copy.json").write_text(
+                    json.dumps(copy, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                _save_video_clip_files(output_dir, copy)
+            except Exception as e:
+                meta["llm_error"] = f"{type(e).__name__}: {str(e)[:200]}"
+                copy = {}
+                if cfg.render_allow_template_fallback:
+                    write_fallback_video_plans(brief, output_dir, cfg)
+                    meta["source"] = "brief_to_clips_fallback"
         else:
             copy = {}
 
     if copy:
-        return _write_from_llm(brief, output_dir, copy)
-    return write_publish_pack_templates(brief, output_dir)
+        _write_from_llm(brief, output_dir, copy)
+    else:
+        write_publish_pack_templates(brief, output_dir)
+        if cfg and cfg.render_allow_template_fallback:
+            write_fallback_video_plans(brief, output_dir, cfg)
+            meta["source"] = "brief_to_clips_fallback"
+
+    meta_path = output_dir / "publish_meta.json"
+    if meta_path.is_file():
+        existing = json.loads(meta_path.read_text(encoding="utf-8"))
+        existing.update(meta)
+        meta_path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    return meta
 
 
 def _write_from_llm(brief: VideoBrief, output_dir: Path, copy: dict[str, Any]) -> Path:

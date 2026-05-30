@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from python_agent.capabilities.registry import merge_render_effects, platform_video_defaults
+from python_agent.pipeline_input import save_video_clips_plan
+from python_agent.pipeline_quality import effective_max_seconds
 from python_agent.pipeline_render import allocate_broll_timings, clips_need_broll_retiming, _probe_duration
 from python_agent.skills.dubbing_skill import DubbingSkill
 from python_agent.skills.render_skill import RenderSkill
@@ -56,6 +58,7 @@ def render_from_plan(
     work_dir: str | None = None,
     effects: dict[str, Any] | None = None,
     use_remotion: bool = True,
+    task_dir: str | None = None,
 ) -> dict[str, Any]:
     import os
 
@@ -66,7 +69,14 @@ def render_from_plan(
 
     defaults = platform_video_defaults(platform)
     voice = voice or defaults["voice"]
-    max_seconds = max_seconds if max_seconds is not None else defaults["max_seconds"]
+    from python_agent.platform_presets import get_platform_preset
+
+    preset = get_platform_preset(platform)
+    max_seconds = (
+        effective_max_seconds(preset)
+        if max_seconds is None
+        else min(float(max_seconds), effective_max_seconds(preset))
+    )
     width = width or defaults["width"]
     height = height or defaults["height"]
 
@@ -87,6 +97,23 @@ def render_from_plan(
         tts_info["tts_clips"] = tts_list
         if tts_list and clips_need_broll_retiming(clips):
             allocate_broll_timings(clips, tts_list, _probe_duration(broll_path))
+        if task_dir and Path(task_dir).is_dir():
+            plan_path = Path(task_dir) / "llm" / f"video_clips_{platform}.json"
+            prev_source = "pipeline_llm"
+            if plan_path.is_file():
+                try:
+                    prev_source = str(json.loads(plan_path.read_text(encoding="utf-8-sig")).get("source") or prev_source)
+                except Exception:
+                    pass
+            save_video_clips_plan(
+                task_dir,
+                platform,
+                clips,
+                effects=render_effects,
+                source=prev_source,
+                render_status="degraded" if "fallback" in prev_source else "ok",
+                extra={"tts_durations": [float(t.get("duration") or 0) for t in tts_list]},
+            )
 
     renderer = RenderSkill()
     raw = renderer.execute(

@@ -11,6 +11,24 @@ from .article_content import (
     plain_without_urls,
 )
 
+# 与 VSA python_agent.pipeline_quality 对齐的口播可渲染判断
+MIN_BRIEF_RENDER_CHARS = 40
+
+
+def brief_is_renderable(brief: VideoBrief | dict[str, Any]) -> tuple[bool, str]:
+    data = brief.to_dict() if hasattr(brief, "to_dict") else dict(brief)
+    parts = [
+        data.get("hook") or "",
+        *(data.get("talking_points") or []),
+        data.get("cta") or "",
+    ]
+    plain = plain_without_urls(" ".join(str(p) for p in parts if p))
+    if len(plain) < MIN_BRIEF_RENDER_CHARS:
+        return False, f"口播实质字数 {len(plain)} < {MIN_BRIEF_RENDER_CHARS}，跳过渲染"
+    if len(plain_without_urls(str(data.get("hook") or ""))) < 4:
+        return False, "钩子过短"
+    return True, ""
+
 
 def _plain(text: str, *, max_len: int = 400) -> str:
     s = re.sub(r"\s+", " ", (text or "").strip())

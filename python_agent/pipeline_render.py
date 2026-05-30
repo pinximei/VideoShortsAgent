@@ -24,7 +24,9 @@ from python_agent.pipeline_input import (
     load_pipeline_pack,
     load_video_clips,
     resolve_video_platforms,
+    save_video_clips_plan,
 )
+from python_agent.pipeline_quality import brief_is_renderable, effective_max_seconds
 from python_agent.platform_presets import PlatformPreset, is_video_platform
 from python_agent.skills.dubbing_skill import DubbingSkill
 from python_agent.skills.render_skill import RenderSkill
@@ -149,7 +151,10 @@ def _build_analysis(
     """优先读中间层 llm/video_clips_{platform}.json；仅调试时回退模板。"""
     planned = load_video_clips(task_dir, preset.id)
     if planned and planned.get("clips"):
-        return {"clips": planned["clips"]}
+        return {
+            "clips": planned["clips"],
+            "source": str(planned.get("source") or "pipeline_llm"),
+        }
 
     if not allow_template_fallback:
         raise FileNotFoundError(
@@ -157,8 +162,11 @@ def _build_analysis(
             "请先在 Pipeline 开启 llm.enabled 并重新跑任务。"
         )
 
-    clips = brief_to_clips(brief, preset)
-    return {"clips": clips}
+    plat_brief = brief
+    from python_agent.pipeline_quality import brief_for_platform
+
+    clips = brief_to_clips(brief_for_platform(brief, preset), preset)
+    return {"clips": clips, "source": "brief_to_clips_fallback"}
 
 
 def render_platform_video(
@@ -178,6 +186,10 @@ def render_platform_video(
     if not os.path.isfile(source_video):
         raise FileNotFoundError(f"B-roll 不存在: {source_video}")
 
+    ok, reason = brief_is_renderable(brief)
+    if not ok:
+        raise ValueError(f"口播不可渲染: {reason}")
+
     os.makedirs(output_dir, exist_ok=True)
     broll_duration = _probe_duration(source_video)
     script_body = (script or "").strip() or str(brief.get("hook") or "")
@@ -189,15 +201,29 @@ def render_platform_video(
         allow_template_fallback=allow_template_fallback,
     )
     clips = analysis.get("clips") or []
+    plan_source = str(analysis.get("source") or "pipeline_llm")
+    max_sec = effective_max_seconds(preset)
+    render_status = "degraded" if "fallback" in plan_source else "ok"
     tts_info: dict[str, Any] = {"tts_clips": []}
     if not skip_tts:
         dubber = DubbingSkill(voice=preset.voice)
         tts_info = dubber.execute(analysis, output_dir, voice=preset.voice)
-        clips, tts_list = trim_to_max_duration(clips, tts_info.get("tts_clips") or [], preset.max_seconds)
+        clips, tts_list = trim_to_max_duration(clips, tts_info.get("tts_clips") or [], max_sec)
         analysis["clips"] = clips
         tts_info["tts_clips"] = tts_list
         if tts_list and clips_need_broll_retiming(clips):
             allocate_broll_timings(clips, tts_list, broll_duration)
+        if "fallback" in plan_source:
+            render_status = "degraded"
+        save_video_clips_plan(
+            task_dir,
+            preset.id,
+            clips,
+            effects=effects,
+            source=plan_source,
+            render_status=render_status,
+            extra={"tts_durations": [float(t.get("duration") or 0) for t in tts_list]},
+        )
     else:
         fake_tts = [
             {
@@ -208,7 +234,7 @@ def render_platform_video(
             }
             for clip in clips
         ]
-        clips, fake_tts = trim_to_max_duration(clips, fake_tts, preset.max_seconds)
+        clips, fake_tts = trim_to_max_duration(clips, fake_tts, max_sec)
         analysis["clips"] = clips
         if allow_template_fallback and clips_need_broll_retiming(clips):
             allocate_broll_timings(clips, fake_tts, broll_duration)
@@ -249,6 +275,8 @@ def render_platform_video(
         "width": preset.width,
         "height": preset.height,
         "content_kind": preset.content_kind,
+        "render_status": render_status if not skip_tts else "preview",
+        "plan_source": plan_source,
     }
 
 
