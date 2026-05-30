@@ -113,6 +113,19 @@ def render_from_plan(
     render_effects["ffmpeg_preset"] = str(
         plan_effects.get("ffmpeg_preset") or ffmpeg_preset or "fast"
     )
+    if task_dir and Path(task_dir).is_dir():
+        from python_agent.pipeline_media import apply_intro_cover_from_brief
+
+        brief_data: dict[str, Any] = {}
+        brief_p = Path(task_dir) / "brief.json"
+        if brief_p.is_file():
+            try:
+                brief_data = json.loads(brief_p.read_text(encoding="utf-8-sig"))
+            except Exception:
+                pass
+        render_effects = apply_intro_cover_from_brief(
+            render_effects, Path(task_dir), brief_data
+        )
     analysis = {"clips": clips}
     tts_info: dict[str, Any] = {"tts_clips": []}
 

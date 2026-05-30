@@ -73,48 +73,50 @@ class DubbingSkill:
 
         print(f"[DubbingSkill] 开始生成 TTS: {len(clips_with_tts)} 个片段")
 
-        tts_clips = []
-        for i, clip in enumerate(clips_with_tts):
+        def _one_clip(job: tuple[int, dict]) -> dict | None:
+            i, clip = job
             tts_text = clip["tts_text"]
             print(f"  [片段 {i+1}/{len(clips_with_tts)}] {tts_text[:60]}...")
-
-            # 1. 按句拆分
             sentences = self._split_sentences(tts_text)
-
-            # 2. 并发生成所有句子的 TTS
             sentence_audios = self._generate_tts_batch(sentences, tts_dir, i)
-
             if not sentence_audios:
-                continue
-
-            # 3. 拼接所有句子为一个完整音频（居中对齐，前后留白）
+                return None
             clip_audio_path = os.path.join(tts_dir, f"tts_clip_{i}.mp3")
             video_duration = float(clip.get("end", 0)) - float(clip.get("start", 0))
             sentence_timeline, total_duration = self._concat_sentence_audios(
                 sentence_audios, clip_audio_path, tts_dir, i, video_duration
             )
-
-            # 4. 总时长兜底（拼接计算失败时用 ffprobe）
             if total_duration <= 0:
                 total_duration = self._get_audio_duration(clip_audio_path)
-
-            # ffprobe 校验（可能返回 0，不用作主要来源）
-            probe_duration = self._get_audio_duration(clip_audio_path)
-            if probe_duration > 0 and abs(probe_duration - total_duration) > 1.0:
-                print(f"  ⚠️ 时长差异: 计算={total_duration:.1f}s, ffprobe={probe_duration:.1f}s")
-
-            tts_clips.append({
-                "path": clip_audio_path,
-                "duration": total_duration,
-                "sentences": sentence_timeline,
-                "index": i
-            })
-            print(f"  → {len(sentence_audios)} 句, {total_duration:.1f}s")
-
-            # 5. 清理句子临时文件
             for sa in sentence_audios:
                 if os.path.exists(sa["path"]):
                     os.remove(sa["path"])
+            print(f"  → {len(sentence_audios)} 句, {total_duration:.1f}s")
+            return {
+                "path": clip_audio_path,
+                "duration": total_duration,
+                "sentences": sentence_timeline,
+                "index": i,
+            }
+
+        tts_clips: list[dict] = []
+        jobs = list(enumerate(clips_with_tts))
+        if len(jobs) <= 1:
+            for job in jobs:
+                row = _one_clip(job)
+                if row:
+                    tts_clips.append(row)
+        else:
+            import concurrent.futures
+
+            workers = min(2, len(jobs))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+                futs = [pool.submit(_one_clip, job) for job in jobs]
+                for fut in concurrent.futures.as_completed(futs):
+                    row = fut.result()
+                    if row:
+                        tts_clips.append(row)
+            tts_clips.sort(key=lambda x: int(x.get("index", 0)))
 
         # 恢复原始语音设置
         self.voice = original_voice

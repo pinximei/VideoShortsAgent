@@ -115,6 +115,8 @@ def generate_platform_copy(
         broll_section=broll_section,
         capabilities_section=llm_capabilities_section(feed_kind=brief.feed_kind),
     )
+    if getattr(brief, "cover_image_url", ""):
+        user += "\n\n## 封面图\n文章有封面图，抖音片头 intro_card 可设为 true（系统会自动挂载）。"
     if article:
         excerpt = collect_article_text(article, max_chars=4500)
         plain_excerpt = plain_without_urls(excerpt)

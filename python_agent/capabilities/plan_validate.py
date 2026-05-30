@@ -49,6 +49,8 @@ def validate_platform_video_block(
             return False, f"clip_{i}_end_before_start"
         if start < prev_end - 0.01:
             return False, f"clip_{i}_overlap_start"
+        if i > 0 and broll_seconds and (start - prev_end) < 0.4:
+            return False, f"clip_{i}_gap_too_small={start - prev_end:.2f}s"
         prev_end = end
         if broll_seconds and end > float(broll_seconds) + 0.5:
             return False, f"clip_{i}_exceeds_broll={broll_seconds:.0f}s"
@@ -127,6 +129,6 @@ def repair_prompt_note(reason: str) -> str:
     return (
         f"\n\n## 修复要求（上次校验失败：{reason}）\n"
         "请重新输出完整 JSON。clips 必须 2~4 段；effects.preset 必填且为合法风格名；"
-        "每段 start/end 在 B-roll 时长内且不重叠；口播总字数≤220；末段 transition_to_next 为 fade；"
-        "pixelize/diag* 实验转场全片最多 1 次。"
+        "每段 start/end 在 B-roll 时长内且不重叠；相邻段 start 与上一段 end 至少间隔 0.4s；"
+        "口播总字数≤220；末段 transition_to_next 为 fade；pixelize/diag* 实验转场全片最多 1 次。"
     )

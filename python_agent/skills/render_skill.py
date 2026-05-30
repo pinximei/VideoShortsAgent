@@ -171,7 +171,10 @@ class RenderSkill:
         else:
             # ASS 字幕烧录
             ass_path = os.path.join(output_dir, "subtitle.ass")
-            self._generate_ass(subtitle_text, target_duration, ass_path, sentences=sentences)
+            self._generate_ass(
+                subtitle_text, target_duration, ass_path,
+                sentences=sentences, caption_style=caption_style,
+            )
             self._burn_subtitle(
                 clip_path, ass_path, output_path, x264_preset=self._x264_preset(effects)
             )
@@ -275,7 +278,10 @@ class RenderSkill:
                 )
             else:
                 ass_path = os.path.join(output_dir, f"subtitle_{i}.ass")
-                self._generate_ass(subtitle_text, target_duration, ass_path, sentences=sentences)
+                self._generate_ass(
+                    subtitle_text, target_duration, ass_path,
+                    sentences=sentences, caption_style=caption_style,
+                )
                 self._burn_subtitle(
                     clip_path, ass_path, segment_path, x264_preset=self._x264_preset(effects)
                 )
@@ -303,15 +309,19 @@ class RenderSkill:
             cap = (effects or {}).get("caption_style", "spring")
             if (effects or {}).get("intro_card"):
                 intro_path = os.path.join(output_dir, "segment_intro.mp4")
-                self._render_remotion_composition_mp4(
-                    "TitleCard",
-                    {
+                intro_props: dict = {
                         "heading": str((effects or {}).get("intro_heading") or "")[:80],
-                        "subheading": "",
+                        "subheading": str((effects or {}).get("intro_subheading") or "")[:80],
                         "captionStyle": cap,
                         "colors": colors,
                         "accentColor": colors[0],
-                    },
+                        "layoutStyle": "split-left" if (effects or {}).get("intro_image_path") else "center",
+                    }
+                if (effects or {}).get("intro_image_path"):
+                    intro_props["imagePath"] = effects["intro_image_path"]
+                self._render_remotion_composition_mp4(
+                    "TitleCard",
+                    intro_props,
                     intro_path,
                     output_dir,
                     tag="intro",
@@ -417,8 +427,17 @@ class RenderSkill:
         ]
         self._run_cmd(cmd, "附加音频")
 
+    def _ass_effect_tags(self, caption_style: str = "spring") -> str:
+        style = (caption_style or "spring").strip().lower()
+        if style == "fade":
+            return r"{\fad(500,400)}{\blur1}"
+        if style == "typewriter":
+            return r"{\fad(120,80)}"
+        return r"{\fad(300,250)}{\blur1}"
+
     def _generate_ass(self, text: str, duration: float, output_path: str,
-                      sentences: list = None, bullets: list | None = None):
+                      sentences: list = None, bullets: list | None = None,
+                      caption_style: str = "spring"):
         """生成 ASS 字幕文件
 
         Args:
@@ -427,6 +446,7 @@ class RenderSkill:
         """
         import re
 
+        tags = self._ass_effect_tags(caption_style)
         dialogues: list[str] = []
         if sentences:
             for s in sentences:
@@ -436,7 +456,7 @@ class RenderSkill:
                 e_h, e_m, e_s = int(e_t // 3600), int((e_t % 3600) // 60), e_t % 60
                 dialogues.append(
                     f"Dialogue: 0,{s_h}:{s_m:02d}:{s_s:05.2f},{e_h}:{e_m:02d}:{e_s:05.2f},"
-                    f"Hook,,0,0,0,,{{\\fad(300,250)}}{{\\blur1}}{s['text']}"
+                    f"Hook,,0,0,0,,{tags}{s['text']}"
                 )
         elif (text or "").strip():
             sents = re.split(r'[。！？；\n]+', text)
@@ -471,7 +491,7 @@ class RenderSkill:
                 e_h, e_m, e_s = int(e_t // 3600), int((e_t % 3600) // 60), e_t % 60
                 dialogues.append(
                     f"Dialogue: 0,{s_h}:{s_m:02d}:{s_s:05.2f},{e_h}:{e_m:02d}:{e_s:05.2f},"
-                    f"Hook,,0,0,0,,{{\\fad(300,250)}}{{\\blur1}}{s_text}"
+                    f"Hook,,0,0,0,,{tags}{s_text}"
                 )
                 current = e_t + pause
 
