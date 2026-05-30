@@ -105,14 +105,14 @@ def build_system_prompt() -> str:
 class VideoShortsAgent:
     """ReAct Agent - LLM 驱动的短视频加工 Agent"""
 
-    def __init__(self, api_key: str, llm_model: str = "qwen3.5-flash",
+    def __init__(self, api_key: str, llm_model: str = "deepseek-chat",
                  whisper_model: str = "base", transcribe_mode: str = "local",
                  groq_api_key: str = ""):
         """初始化 Agent
 
         Args:
             api_key: DashScope API Key
-            llm_model: Qwen 模型名称
+            llm_model: LLM 模型名称（默认 deepseek-chat）
             whisper_model: Whisper 模型大小（local 模式）
             transcribe_mode: "local" 或 "groq"
             groq_api_key: Groq API Key（groq 模式）

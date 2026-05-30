@@ -1059,7 +1059,7 @@ def create_app():
                     )
                     set_base_url = gr.Textbox(
                         label="API 地址 (Base URL)", value=_cfg.llm_base_url, lines=1,
-                        info="支持任何 OpenAI 兼容 API（DashScope / DeepSeek / Ollama 等）"
+                        info="默认 https://api.deepseek.com，也可填其他 OpenAI 兼容地址"
                     )
                     with gr.Row():
                         set_model = gr.Textbox(
@@ -1117,7 +1117,7 @@ def create_app():
                     updates = {}
                     # 只保存用户实际修改的值（跳过密码框的占位符）
                     if api_key and not api_key.endswith("..."):
-                        updates["DASHSCOPE_API_KEY"] = api_key
+                        updates["DEEPSEEK_API_KEY"] = api_key
                     if base_url:
                         updates["LLM_BASE_URL"] = base_url
                     if model:
@@ -1150,7 +1150,7 @@ def create_app():
         gr.Markdown("---")
         gr.Markdown(
             "**VideoShortsAgent** | "
-            "Powered by Qwen + Whisper + FFmpeg + Remotion | "
+            "Powered by DeepSeek + Whisper + FFmpeg + Remotion | "
             "[GitHub](https://github.com/pinximei/VideoShortsAgent)",
             elem_classes="subtitle"
         )

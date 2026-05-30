@@ -61,4 +61,7 @@ npm install
 ## 配置
 
 - `paths.vsa_root` 默认同仓库根，一般无需改
-- `llm.enabled: true` + `DASHSCOPE_API_KEY`
+- `llm.enabled: true` + DeepSeek Key（二选一）：
+  - 仓库根目录 `.env`：`DEEPSEEK_API_KEY=sk-你的密钥`
+  - 或 `middle/config.yaml` 里 `llm.api_key: "sk-..."`（勿提交 git）
+- 默认模型 **`deepseek-chat`**，`llm.base_url: https://api.deepseek.com`

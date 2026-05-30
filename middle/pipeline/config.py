@@ -43,9 +43,9 @@ class PipelineConfig:
     render_allow_template_fallback: bool = False
     llm_enabled: bool = True
     llm_api_key: str = ""
-    llm_api_key_env: str = "DASHSCOPE_API_KEY"
-    llm_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    llm_model: str = "qwen-plus"
+    llm_api_key_env: str = "DEEPSEEK_API_KEY"
+    llm_base_url: str = "https://api.deepseek.com/v1"
+    llm_model: str = "deepseek-chat"
     themes: list[Theme] = field(default_factory=lambda: parse_themes(None))
     sites: list[Site] = field(default_factory=list)
     channel_accounts: list[ChannelAccount] = field(default_factory=list)
@@ -132,10 +132,19 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         render_skip_tts=bool(render.get("skip_tts", False)),
         render_allow_template_fallback=bool(render.get("allow_template_fallback", False)),
         llm_enabled=bool(llm.get("enabled", True)),
-        llm_api_key=str(llm.get("api_key") or ""),
-        llm_api_key_env=str(llm.get("api_key_env") or "DASHSCOPE_API_KEY"),
-        llm_base_url=str(llm.get("base_url") or "https://dashscope.aliyuncs.com/compatible-mode/v1"),
-        llm_model=str(llm.get("model") or "qwen-plus"),
+        llm_api_key=str(
+            llm.get("api_key")
+            or os.getenv("DEEPSEEK_API_KEY")
+            or os.getenv("LLM_API_KEY")
+            or ""
+        ).strip(),
+        llm_api_key_env=str(llm.get("api_key_env") or "DEEPSEEK_API_KEY"),
+        llm_base_url=str(
+            llm.get("base_url")
+            or os.getenv("LLM_BASE_URL")
+            or "https://api.deepseek.com/v1"
+        ).rstrip("/"),
+        llm_model=str(llm.get("model") or os.getenv("LLM_MODEL") or "deepseek-chat"),
         themes=themes,
         sites=sites,
         channel_accounts=channel_accounts,

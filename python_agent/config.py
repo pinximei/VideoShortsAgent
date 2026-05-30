@@ -12,25 +12,32 @@ _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(dotenv_path=os.path.join(_PROJECT_ROOT, ".env"))
 
 
+def _read_llm_api_key() -> str:
+    return (os.getenv("DEEPSEEK_API_KEY") or os.getenv("LLM_API_KEY") or "").strip()
+
+
 class Config:
     """全局配置（从 .env 读取，提供默认值）"""
 
-    # ── LLM 配置 ──
+    # ── LLM 配置（默认 DeepSeek OpenAI 兼容接口）──
     @property
     def llm_api_key(self) -> str:
         """LLM API Key（必需）"""
-        key = os.getenv("DASHSCOPE_API_KEY", "")
+        return self.require_llm_api_key()
+
+    def require_llm_api_key(self) -> str:
+        key = _read_llm_api_key()
         if not key:
-            raise ValueError("请在 .env 文件中设置 DASHSCOPE_API_KEY")
+            raise ValueError("请在 .env 文件中设置 DEEPSEEK_API_KEY")
         return key
 
     @property
     def llm_base_url(self) -> str:
-        return os.getenv("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+        return os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1").rstrip("/")
 
     @property
     def llm_model(self) -> str:
-        return os.getenv("LLM_MODEL", "qwen3.5-flash")
+        return os.getenv("LLM_MODEL", "deepseek-chat")
 
     @property
     def llm_analysis_model(self) -> str:
@@ -40,7 +47,7 @@ class Config:
     @property
     def llm_translate_model(self) -> str:
         """翻译专用模型"""
-        return os.getenv("LLM_TRANSLATE_MODEL", "qwen-turbo")
+        return os.getenv("LLM_TRANSLATE_MODEL", self.llm_model)
 
     # ── 转录配置 ──
     @property
@@ -107,8 +114,13 @@ def get_config() -> Config:
 
 
 # ── 向下兼容旧接口 ──
-def get_dashscope_api_key() -> str:
+def get_llm_api_key() -> str:
     return get_config().llm_api_key
+
+
+def get_dashscope_api_key() -> str:
+    """已废弃：请使用 get_llm_api_key / DEEPSEEK_API_KEY。"""
+    return get_llm_api_key()
 
 
 def get_groq_api_key() -> str:

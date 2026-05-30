@@ -13,7 +13,7 @@ AI 驱动的视频短片生成工具。**两大核心功能**：
 
 | 特性 | 说明 |
 |------|------|
-| 🤖 AI Agent 自主决策 | Qwen LLM 自动选择精彩片段、特效、转场 |
+| 🤖 AI Agent 自主决策 | DeepSeek LLM 自动选择精彩片段、特效、转场 |
 | 🎵 中文 TTS 配音 | Edge TTS，语速自动适配原始节奏 |
 | 🎨 Remotion 字幕特效 | spring 弹出 / fade 淡入 / typewriter 打字机 |
 | 🔀 16 种转场效果 | fade / wipeleft / circleopen / dissolve 等 |
@@ -76,14 +76,14 @@ brew install ffmpeg
 
 | API Key | 用途 | 必需？ | 获取地址 |
 |---------|------|--------|----------|
-| `DASHSCOPE_API_KEY` | 通义千问 LLM (翻译+分析) | ✅ 必需 | https://dashscope.console.aliyun.com/ |
+| `DEEPSEEK_API_KEY` | DeepSeek LLM (分镜/翻译/分析) | ✅ 必需 | https://platform.deepseek.com/api_keys |
 | `GROQ_API_KEY` | Groq Whisper (极速转录) | ⭐ 推荐 | https://console.groq.com/ |
 
-> **DASHSCOPE_API_KEY 获取步骤**：
-> 1. 注册/登录阿里云
-> 2. 打开 [DashScope 控制台](https://dashscope.console.aliyun.com/)
-> 3. 点击"API-KEY 管理" → 创建 API Key
-> 4. 复制保存
+> **DEEPSEEK_API_KEY 获取步骤**：
+> 1. 注册 [DeepSeek 开放平台](https://platform.deepseek.com/)
+> 2. API Keys → 创建密钥
+> 3. 写入仓库根目录 `.env`：`DEEPSEEK_API_KEY=sk-...`
+> 4. 默认模型 `deepseek-chat`，Base URL `https://api.deepseek.com/v1`
 
 > **GROQ_API_KEY 获取步骤**（推荐，转录速度快 10 倍）：
 > 1. 注册 https://console.groq.com/
@@ -152,7 +152,7 @@ cd remotion_effects && npm install && cd ..
 | **Windows 浏览器版** | 双击 `start.bat` |
 | **macOS / Linux** | `chmod +x start.sh && ./start.sh` |
 
-**桌面版要点**：「✂️ 本地裁剪」**不需要 API Key**；AI 功能仍用你自己的通义/Groq。免费版 AI 每月 2 次导出（带水印），专业版激活码用 `tools/generate_license.py` 生成。
+**桌面版要点**：「✂️ 本地裁剪」**不需要 API Key**；AI 功能用你自己的 DeepSeek/Groq。免费版 AI 每月 2 次导出（带水印），专业版激活码用 `tools/generate_license.py` 生成。
 
 ---
 
@@ -202,7 +202,7 @@ cd remotion_effects && npm install && cd ..
 ```
 ┌──────────────────────────────────────────────┐
 │  🎬 AI Agent 模式                              │
-│  ReAct Agent (Qwen) 自主决策                    │
+│  ReAct Agent (DeepSeek) 自主决策                │
 │  download → transcribe → analyze → dub → render │
 │  多片段裁剪 + Remotion特效 + 转场拼接            │
 ├──────────────────────────────────────────────┤
@@ -218,7 +218,7 @@ cd remotion_effects && npm install && cd ..
 |------|------|--------|
 | `download` | 从 URL 下载视频 | yt-dlp |
 | `transcribe` | 语音转文字 | Groq Whisper / faster-whisper |
-| `analyze` | 提取精彩片段 + 规划特效 | Qwen LLM |
+| `analyze` | 提取精彩片段 + 规划特效 | DeepSeek LLM |
 | `dubbing` | 中文 TTS 配音 | Edge TTS（句级精确同步）|
 | `render` | 多段裁剪 + 字幕 + 转场拼接 | FFmpeg + Remotion |
 
@@ -249,7 +249,7 @@ VideoShortsAgent/
 │   └── skills/
 │       ├── download_skill.py   # yt-dlp 视频下载
 │       ├── transcribe_skill.py # Whisper 语音转录
-│       ├── analysis_skill.py   # Qwen 金句分析
+│       ├── analysis_skill.py   # LLM 金句分析
 │       ├── dubbing_skill.py    # Edge TTS 配音
 │       └── render_skill.py     # FFmpeg + Remotion 渲染
 ├── remotion_effects/           # Remotion 特效组件（可选）
@@ -275,7 +275,7 @@ A: 确保 Node.js 已安装且版本 ≥ 18。在 `remotion_effects` 目录下�
 A: 支持。安装 Python + FFmpeg + Node.js 后，运行 `python -m python_agent.app` 即可。
 
 ### Q: API Key 收费吗？
-A: 通义千问（qwen-turbo）有免费额度，足够日常使用。Groq 有免费 tier，速率限制内免费。
+A: DeepSeek 按量计费，价格较低。Groq 有免费 tier，速率限制内免费。
 
 ---
 

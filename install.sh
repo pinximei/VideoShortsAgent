@@ -190,7 +190,7 @@ if [ ! -f ".env" ]; then
     if [ -f ".env.example" ]; then
         cp .env.example .env
         echo "  Created .env from .env.example"
-        warn "Edit .env: DASHSCOPE_API_KEY and optional GROQ_API_KEY"
+        warn "Edit .env: DEEPSEEK_API_KEY and optional GROQ_API_KEY"
     else
         warn "No .env; create one with your API keys"
     fi

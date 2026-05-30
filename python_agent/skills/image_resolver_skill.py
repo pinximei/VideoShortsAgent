@@ -4,7 +4,7 @@ ImageResolverSkill - 图片解析技能
 处理三种图片来源（按优先级）：
 1. 用户上传图片 → 验证文件存在，映射到 slides
 2. Pexels API 搜索 → 按 image_keywords 搜索高质量无版权图片
-3. 通义万相 AI 生图 → 调用 DashScope API 生成
+3. AI 生图（仅阿里万相，已弃用；DeepSeek 配置下自动跳过，改用 Pexels/渐变）
 4. 兜底 → image=None，渲染时使用纯渐变背景
 """
 import os
@@ -21,7 +21,7 @@ class ImageResolverSkill:
                 image_mode: str = "search", output_dir: str = None) -> list:
         """解析并填充每个 slide 的图片
 
-        优先级：用户上传 → Pexels 搜索 → 通义万相 AI 生图 → 渐变背景
+        优先级：用户上传 → Pexels 搜索 → 渐变背景（DeepSeek 不提供生图 API）
 
         Args:
             slides: ComposeSkill 生成的 slides 数组
@@ -210,10 +210,13 @@ class ImageResolverSkill:
             return ""
 
     def _generate_image(self, prompt: str, output_dir: str, index: int) -> str:
-        """调用通义万相 API 生成图片"""
+        """AI 生图（万相仅阿里 Key；DeepSeek 配置下跳过）"""
         config = get_config()
-        api_key = config.llm_api_key
+        if "deepseek" in (config.llm_base_url or "").lower():
+            print(f"  [Slide {index+1}] DeepSeek 无生图 API，跳过")
+            return ""
 
+        api_key = config.llm_api_key
         print(f"  [Slide {index+1}] AI 生图: {prompt[:50]}...")
 
         try:

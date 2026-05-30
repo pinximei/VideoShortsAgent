@@ -1,4 +1,4 @@
-"""Pipeline LLM 客户端（OpenAI 兼容，默认通义 DashScope）。"""
+"""Pipeline LLM 客户端（OpenAI 兼容，默认 DeepSeek）。"""
 from __future__ import annotations
 
 import json

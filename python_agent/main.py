@@ -32,8 +32,8 @@ def main():
     )
     parser.add_argument(
         "--llm",
-        default="qwen3.5-flash",
-        help="Qwen 模型名称，如 qwen3.5-flash / qwen-plus / qwen-max（默认: qwen3.5-flash）"
+        default="deepseek-chat",
+        help="LLM 模型，如 deepseek-chat / deepseek-reasoner（默认: deepseek-chat）"
     )
     parser.add_argument(
         "--prompt", "-p",
@@ -49,9 +49,9 @@ def main():
 
     # 创建并运行 Agent
     from python_agent.agent import VideoShortsAgent
-    from python_agent.config import get_dashscope_api_key
+    from python_agent.config import get_llm_api_key
 
-    api_key = get_dashscope_api_key()
+    api_key = get_llm_api_key()
     agent = VideoShortsAgent(api_key=api_key, llm_model=args.llm, whisper_model=args.model)
 
     # 用户的指令交给 Agent 自主决策

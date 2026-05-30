@@ -2,7 +2,7 @@
 LLM 客户端工厂
 
 统一的 LLM 客户端创建入口。从 Config 读取 provider 配置，
-支持任何 OpenAI 兼容 API（DashScope、DeepSeek、Ollama 等）。
+支持任何 OpenAI 兼容 API（默认 DeepSeek，也可 Ollama 等）。
 """
 from openai import OpenAI
 from python_agent.config import get_config
