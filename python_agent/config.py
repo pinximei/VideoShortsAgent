@@ -77,6 +77,14 @@ class Config:
     def tts_clip_workers(self) -> int:
         return max(1, int(os.getenv("TTS_CLIP_WORKERS", "1")))
 
+    @property
+    def tts_provider(self) -> str:
+        return (os.getenv("TTS_PROVIDER", "auto") or "auto").strip().lower()
+
+    @property
+    def tts_fallback(self) -> str:
+        return os.getenv("TTS_FALLBACK", "dashscope,azure,openai")
+
     # ── 外部 API 配置 ──
     @property
     def freesound_api_key(self) -> str:

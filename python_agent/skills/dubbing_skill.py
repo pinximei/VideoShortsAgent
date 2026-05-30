@@ -263,7 +263,7 @@ class DubbingSkill:
 
     def _generate_tts_batch(self, sentences: list, tts_dir: str, clip_index: int) -> list:
         """顺序生成各句 TTS（限流 + 重试），避免 gather 触发 503。"""
-        from python_agent.tts_edge import run_async, synthesize_batch_sequential
+        from python_agent.tts_provider import run_async, synthesize_batch_sequential
 
         paths = [os.path.join(tts_dir, f"sent_{clip_index}_{j}.mp3")
                  for j in range(len(sentences))]
@@ -288,7 +288,7 @@ class DubbingSkill:
 
     def _generate_tts(self, text: str, output_path: str):
         """使用 Edge TTS 生成语音（带重试）。"""
-        from python_agent.tts_edge import run_async, synthesize_to_file
+        from python_agent.tts_provider import run_async, synthesize_to_file
 
         cache_dir = self._tts_cache_dir(os.path.dirname(output_path) or ".")
         run_async(

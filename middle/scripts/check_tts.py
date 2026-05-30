@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""运维：探测 Edge TTS 是否可用（带重试）。"""
+"""探测 TTS 渠道（Edge + 已配置的 Key 后端）。"""
 from __future__ import annotations
 
 import json
