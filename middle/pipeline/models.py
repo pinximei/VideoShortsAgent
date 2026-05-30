@@ -37,6 +37,7 @@ class VideoBrief:
     theme_id: str = ""
     detail_url: str = ""
     source_url: str = ""
+    cover_image_url: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

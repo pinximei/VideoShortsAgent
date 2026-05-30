@@ -23,19 +23,9 @@ _VALID_X264_PRESETS = frozenset(
 
 
 def _clip_bullets(clip: dict) -> list[str]:
-    raw = clip.get("bullets")
-    if isinstance(raw, list):
-        out = [str(b).strip() for b in raw if str(b).strip()]
-        return out[:4]
-    hook = str(clip.get("hook_text") or "").strip()
-    if not hook:
-        return []
-    import re
+    from python_agent.capabilities.clip_text import clip_bullets
 
-    if re.search(r"[·、\n]", hook):
-        parts = re.split(r"[·、\n]+", hook)
-        return [p.strip() for p in parts if p.strip()][:4]
-    return []
+    return clip_bullets(clip)
 
 
 class RenderSkill:
@@ -357,7 +347,10 @@ class RenderSkill:
 
         all_segments = bookend_prefix + segment_paths + bookend_suffix
         print(f"\n[RenderSkill] 拼接 {len(all_segments)} 个片段（含片头/片尾 {len(bookend_prefix)+len(bookend_suffix)}）...")
-        self._concat_videos(all_segments, output_path, output_dir, effects, clips=clips)
+        self._concat_videos(
+            all_segments, output_path, output_dir, effects, clips=clips,
+            x264_preset=self._x264_preset(effects),
+        )
 
         for path in segment_paths:
             if os.path.exists(path):
@@ -787,7 +780,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             return 1080, 1920  # 默认竖屏
 
     def _concat_videos(self, video_paths: list, output_path: str, output_dir: str,
-                        effects: dict = None, clips: list = None):
+                        effects: dict = None, clips: list = None, *,
+                        x264_preset: str = "medium"):
         """FFmpeg xfade 拼接多个视频（支持每段不同转场效果）"""
         if len(video_paths) == 1:
             import shutil
@@ -888,7 +882,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "-crf", "18", "-profile:v", "high", "-level", "4.1",
             "-pix_fmt", "yuv420p",
             "-movflags", "+faststart",
-            "-preset", "medium",
+            "-preset", x264_preset,
             output_path
         ]
         self._run_cmd(cmd, "转场拼接")

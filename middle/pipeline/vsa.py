@@ -30,8 +30,24 @@ def render_from_llm_plan(
     preset = get_platform_preset(platform_id)
     broll = (broll_path or cfg.broll_template or "").strip()
     plan = load_video_plan(task_dir, platform_id)
-    out = task_dir / "videos" / f"{platform_id}.mp4"
     brief = load_brief(task_dir)
+
+    from .media_probe import probe_video_duration
+    from python_agent.capabilities.plan_validate import validate_platform_video_block
+
+    broll_sec = probe_video_duration(broll) if broll else None
+    block: dict[str, Any] = {
+        "clips": plan.get("clips") or [],
+        "effects": plan.get("effects") or {},
+        "title": str(brief.get("title") or brief.get("hook") or ""),
+    }
+    if platform_id == "xhs":
+        xhs_body = task_dir / "publish" / "xhs_body.txt"
+        block["body"] = xhs_body.read_text(encoding="utf-8")[:500] if xhs_body.is_file() else " "
+    ok, err = validate_platform_video_block(platform_id, block, broll_seconds=broll_sec)
+    if not ok:
+        raise ValueError(f"plan_preflight_failed:{platform_id}:{err}")
+    out = task_dir / "videos" / f"{platform_id}.mp4"
     render_from_plan(
         clips=plan["clips"],
         broll_path=broll,

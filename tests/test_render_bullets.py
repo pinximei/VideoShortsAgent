@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from python_agent.capabilities.registry import merge_render_effects
-from python_agent.skills.render_skill import _clip_bullets
+from python_agent.capabilities.clip_text import clip_bullets as _clip_bullets
 
 
 def test_clip_bullets_from_list() -> None:

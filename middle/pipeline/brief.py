@@ -124,6 +124,7 @@ def build_brief(article: dict[str, Any], *, public_base_url: str, theme_id: str 
         theme_id=theme_id,
         detail_url=detail_url,
         source_url=str(article.get("source_original_url") or ""),
+        cover_image_url=str(article.get("cover_image_url") or "")[:2048],
     )
 
 

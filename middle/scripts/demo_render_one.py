@@ -39,6 +39,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--render-only", action="store_true", help="仅重渲视频（任务目录已有 llm 分镜）")
     ap.add_argument("--task-dir", type=str, default="", help="如 data/output/838")
+    ap.add_argument("--article-id", type=int, default=0, help="指定 Soul 文章 id（如 889）")
     args = ap.parse_args()
     _load_dotenv()
     from pipeline.article_content import article_has_substantive_content
@@ -75,28 +76,41 @@ def main() -> int:
         return 0
 
     client = SoulClient(cfg)
-    items = client.list_feed()
-    if not items:
-        print("Soul feed 为空", file=sys.stderr)
-        return 1
-
     article = None
     article_id = 0
-    for it in items:
-        aid = int(it.get("id") or 0)
-        if aid <= 0:
-            continue
-        full = client.get_article(aid)
+
+    if args.article_id > 0:
+        full = client.get_article(args.article_id)
         if not full:
-            continue
+            print(f"文章 {args.article_id} 不存在", file=sys.stderr)
+            return 1
         ok, reason = article_has_substantive_content(full)
         if not ok:
-            print(f"  跳过 {aid}: {reason}")
-            continue
+            print(f"文章 {args.article_id} 无实质正文: {reason}", file=sys.stderr)
+            return 1
         article = full
-        article_id = aid
-        print(f"[demo] 选用文章 id={aid} title={str(full.get('title') or '')[:60]}")
-        break
+        article_id = args.article_id
+        print(f"[demo] 指定文章 id={article_id} title={str(full.get('title') or '')[:60]}")
+    else:
+        items = client.list_feed()
+        if not items:
+            print("Soul feed 为空", file=sys.stderr)
+            return 1
+        for it in items:
+            aid = int(it.get("id") or 0)
+            if aid <= 0:
+                continue
+            full = client.get_article(aid)
+            if not full:
+                continue
+            ok, reason = article_has_substantive_content(full)
+            if not ok:
+                print(f"  跳过 {aid}: {reason}")
+                continue
+            article = full
+            article_id = aid
+            print(f"[demo] 选用文章 id={aid} title={str(full.get('title') or '')[:60]}")
+            break
 
     if not article:
         print("未找到有实质正文的文章", file=sys.stderr)

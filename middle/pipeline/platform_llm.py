@@ -142,6 +142,9 @@ def generate_platform_copy(
     for attempt in range(max_attempts):
         u = user_base + (repair_prompt_note(last_err) if attempt else "")
         copy = llm.chat_json(SYSTEM_PROMPT, u)
+        from python_agent.capabilities.clip_text import enrich_apps_platform_copy
+
+        copy = enrich_apps_platform_copy(copy, feed_kind=brief.feed_kind)
         ok, msg = validate_platform_copy(copy, broll_seconds=broll_seconds)
         if ok:
             return copy

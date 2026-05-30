@@ -155,20 +155,24 @@ def brief_to_clips(brief: dict[str, Any], preset: PlatformPreset) -> list[dict[s
             }
         )
 
+    from python_agent.capabilities.clip_text import bullets_from_prose
+
     for point in brief.get("talking_points") or []:
         text = str(point).strip()
         if not text:
             continue
-        clips.append(
-            {
-                "tts_text": text,
-                "hook_text": text[:24],
-                "caption_style": preset.body_caption_style,
-                "transition_to_next": preset.body_transition,
-                "start": 0.0,
-                "end": 8.0,
-            }
-        )
+        entry: dict[str, Any] = {
+            "tts_text": text,
+            "hook_text": text[:24],
+            "caption_style": preset.body_caption_style,
+            "transition_to_next": preset.body_transition,
+            "start": 0.0,
+            "end": 8.0,
+        }
+        derived = bullets_from_prose(text)
+        if len(derived) >= 2:
+            entry["bullets"] = derived
+        clips.append(entry)
 
     cta = (brief.get("cta") or "").strip()
     if cta:
