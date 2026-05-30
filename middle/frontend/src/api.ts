@@ -41,6 +41,16 @@ export type ChannelConfigOverview = {
   accounts_by_site_channel: Record<string, Record<string, ChannelAccount[]>>;
 };
 
+export type LlmSettings = {
+  enabled: boolean;
+  api_key_env: string;
+  api_key_set: boolean;
+  api_key_masked: string;
+  base_url: string;
+  model: string;
+  env_path: string;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(path, {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
@@ -107,4 +117,20 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ account_id }),
     }),
+  llmSettings: () => request<LlmSettings>("/api/v1/settings/llm"),
+  saveLlmSettings: (body: {
+    api_key?: string;
+    base_url?: string;
+    model?: string;
+    enabled?: boolean;
+  }) =>
+    request<LlmSettings>("/api/v1/settings/llm", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  testLlmSettings: () =>
+    request<{ ok: boolean; model: string; base_url: string; sample: Record<string, unknown> }>(
+      "/api/v1/settings/llm/test",
+      { method: "POST" }
+    ),
 };

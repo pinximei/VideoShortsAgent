@@ -139,6 +139,50 @@ class ChannelAccountsBatchBody(BaseModel):
     accounts: list[ChannelAccountCardBody] = Field(default_factory=list)
 
 
+class LlmSettingsBody(BaseModel):
+    api_key: str = ""
+    base_url: str = ""
+    model: str = ""
+    enabled: bool | None = None
+
+
+@app.get("/api/v1/settings/llm")
+def get_llm_settings_api():
+    from pipeline.llm_settings import llm_settings_public
+
+    return _envelope(llm_settings_public(get_cfg()))
+
+
+@app.put("/api/v1/settings/llm")
+def put_llm_settings_api(body: LlmSettingsBody):
+    from pipeline.llm_settings import llm_settings_public, save_llm_settings
+
+    cfg_path = ROOT / "config.yaml"
+    if not cfg_path.is_file():
+        cfg_path = ROOT / "config.example.yaml"
+    save_llm_settings(
+        api_key=body.api_key or None,
+        base_url=body.base_url or None,
+        model=body.model or None,
+        enabled=body.enabled,
+        config_yaml=cfg_path if cfg_path.is_file() else None,
+    )
+    reload_cfg()
+    return _envelope(llm_settings_public(get_cfg()))
+
+
+@app.post("/api/v1/settings/llm/test")
+def test_llm_settings_api():
+    from pipeline.llm_settings import test_llm_connection
+
+    cfg = reload_cfg()
+    try:
+        result = test_llm_connection(cfg)
+        return _envelope(result)
+    except Exception as e:
+        raise HTTPException(400, f"LLM 测试失败: {type(e).__name__}: {str(e)[:300]}")
+
+
 @app.get("/api/v1/channel-config")
 def channel_config_overview_api():
     from pipeline.channel_config import get_overview
@@ -285,12 +329,17 @@ def vsa_capabilities():
 
 @app.get("/api/v1/health")
 def health():
+    from pipeline.llm_settings import llm_settings_public
+
     cfg = get_cfg()
+    llm = llm_settings_public(cfg)
     return _envelope(
         {
             "service": "aisoul-pipeline",
             "soul_base_url": cfg.soul_base_url,
             "data_dir": str(cfg.data_dir),
+            "llm_configured": llm.get("api_key_set"),
+            "llm_model": llm.get("model"),
         }
     )
 

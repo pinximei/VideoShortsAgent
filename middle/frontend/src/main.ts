@@ -9,6 +9,7 @@ import PendingView from "./views/PendingView.vue";
 import PublishingView from "./views/PublishingView.vue";
 import ChannelConfigView from "./views/ChannelConfigView.vue";
 import PublisherBatchesView from "./views/PublisherBatchesView.vue";
+import LlmSettingsView from "./views/LlmSettingsView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -20,6 +21,7 @@ const router = createRouter({
     { path: "/publishing", component: PublishingView },
     { path: "/settings/channels", component: ChannelConfigView },
     { path: "/settings/publisher", component: PublisherBatchesView },
+    { path: "/settings/llm", component: LlmSettingsView },
   ],
 });
 
