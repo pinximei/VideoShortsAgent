@@ -10,6 +10,7 @@ from .config import PipelineConfig, repo_root
 from .llm_client import PipelineLLM
 from .models import VideoBrief
 from .publish_pack import write_publish_pack_templates
+from .article_content import collect_article_text, is_placeholder_summary, plain_without_urls
 
 # 同仓库：python_agent.capabilities
 _root = repo_root()
@@ -111,9 +112,22 @@ def generate_platform_copy(
         capabilities_section=llm_capabilities_section(),
     )
     if article:
-        summary = (article.get("summary") or article.get("card_description") or "")[:600]
-        if summary:
-            user += f"\n\n## 文章摘要（补充）\n{summary}"
+        excerpt = collect_article_text(article, max_chars=4500)
+        plain_excerpt = plain_without_urls(excerpt)
+        if len(plain_excerpt) >= 60:
+            user += f"\n\n## 文章正文（必读，勿仅根据标题编造）\n{excerpt[:4500]}"
+        else:
+            summary = (article.get("summary") or article.get("card_description") or "")[:600]
+            if summary and not is_placeholder_summary(summary):
+                user += f"\n\n## 文章摘要（补充）\n{summary}"
+            repl = article.get("replication_analysis") or {}
+            if isinstance(repl, dict) and repl.get("value_summary"):
+                user += f"\n\n## 变现价值摘要\n{repl.get('value_summary')}"
+            user += (
+                "\n\n## 注意\n"
+                "站内正文过短，可能仅为外链卡片；请基于已有字段保守生成，"
+                "勿编造具体产品细节；引导用户点击详情链接。"
+            )
 
     return llm.chat_json(SYSTEM_PROMPT, user)
 

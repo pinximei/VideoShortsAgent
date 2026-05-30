@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .brief import build_brief, passes_filter
+from .article_content import article_has_substantive_content, collect_article_text, content_quality_report
 from .themes import resolve_theme
 from .config import PipelineConfig
 from .db import JobStore
@@ -61,6 +62,12 @@ def process_jobs(
                 stats.skipped += 1
                 continue
 
+            content_ok, content_reason = article_has_substantive_content(article)
+            if not content_ok:
+                store.advance(ck, status=STATUS_SKIPPED, step=STEP_FILTER, message=content_reason)
+                stats.skipped += 1
+                continue
+
             theme_id = resolve_theme(article, cfg.themes)
             if not theme_id:
                 store.advance(ck, status=STATUS_SKIPPED, step=STEP_FILTER, message="no matching theme")
@@ -76,17 +83,26 @@ def process_jobs(
                 continue
 
             out_dir = cfg.output_root / str(article_id)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            brief_dict = brief.to_dict()
             store.advance(
                 ck,
                 status=STATUS_PROCESSING,
                 step=STEP_BRIEF,
                 brief_hash=bh,
-                brief_json=brief.to_dict(),
+                brief_json=brief_dict,
                 output_dir=str(out_dir),
+                message=f"正文 {content_quality_report(article)['substantive_chars']} 字",
             )
             stats.queued += 1
 
             broll_sec = probe_video_duration(cfg.broll_template) if cfg.broll_template else None
+
+            excerpt_path = out_dir / "source_excerpt.txt"
+            excerpt_path.write_text(
+                collect_article_text(article, max_chars=8000),
+                encoding="utf-8",
+            )
 
             store.advance(ck, status=STATUS_PROCESSING, step=STEP_LLM, message="大模型生成各平台文案与分镜")
             write_publish_pack(brief, out_dir, cfg=cfg, article=article, broll_seconds=broll_sec)

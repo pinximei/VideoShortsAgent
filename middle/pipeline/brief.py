@@ -4,6 +4,12 @@ import re
 from typing import Any
 
 from .models import VideoBrief, content_key_for_article
+from .article_content import (
+    collect_article_text,
+    extract_talking_point_candidates,
+    is_placeholder_summary,
+    plain_without_urls,
+)
 
 
 def _plain(text: str, *, max_len: int = 400) -> str:
@@ -49,20 +55,20 @@ def build_brief(article: dict[str, Any], *, public_base_url: str, theme_id: str 
         max_len=80,
     )
 
-    points: list[str] = []
-    desc = _tab_summary(article, "描述")
-    if desc:
-        points.append(desc)
-    monet = _tab_summary(article, "变现评估")
-    if monet:
-        points.append(monet)
-    hi = _tab_summary(article, "数据支撑")
-    if hi:
-        points.append(hi)
+    points = extract_talking_point_candidates(article, max_points=3)
     if len(points) < 2:
-        summary = _plain(str(article.get("summary") or article.get("card_description") or ""), max_len=200)
-        if summary and summary not in points:
+        for label in ("描述", "变现评估", "数据支撑"):
+            t = _tab_summary(article, label)
+            if t and len(plain_without_urls(t)) >= 12 and t not in points:
+                points.append(t)
+    if len(points) < 2:
+        summary = _plain(str(article.get("summary") or article.get("card_description") or ""), max_len=400)
+        if summary and not is_placeholder_summary(summary) and summary not in points:
             points.append(summary)
+    if len(points) < 1:
+        excerpt = plain_without_urls(collect_article_text(article, max_chars=2000))
+        if len(excerpt) >= 40:
+            points.append(excerpt[:280])
     points = points[:3]
 
     mp = repl.get("market_position") or {}
