@@ -58,20 +58,12 @@ def _render_platform_job(cfg: PipelineConfig, task_dir: Path, platform_id: str) 
     return {"platform": platform_id, "label": preset.label, "path": str(path), "content_kind": "video"}
 
 
-def render_task_videos(
+def _render_platforms_inner(
     cfg: PipelineConfig,
     task_dir: Path,
-    *,
-    platforms: list[str] | None = None,
-) -> dict[str, Any] | None:
-    if not cfg.render_enabled:
-        return None
-
-    task_dir = task_dir.resolve()
-    brief = load_brief(task_dir)
-    presets = video_platforms(platforms or cfg.render_platforms)
+    presets: list,
+) -> list[dict[str, Any]]:
     videos: list[dict[str, Any]] = []
-
     if cfg.render_parallel and len(presets) > 1:
         workers = min(cfg.render_parallel_workers, len(presets))
         errors: list[BaseException] = []
@@ -90,6 +82,26 @@ def render_task_videos(
     else:
         for preset in presets:
             videos.append(_render_platform_job(cfg, task_dir, preset.id))
+    return videos
+
+
+def render_task_videos(
+    cfg: PipelineConfig,
+    task_dir: Path,
+    *,
+    platforms: list[str] | None = None,
+) -> dict[str, Any] | None:
+    if not cfg.render_enabled:
+        return None
+
+    task_dir = task_dir.resolve()
+    brief = load_brief(task_dir)
+    presets = video_platforms(platforms or cfg.render_platforms)
+
+    from .render_lock import global_render_slot
+
+    with global_render_slot(cfg.data_dir, max_slots=cfg.render_max_concurrent):
+        videos = _render_platforms_inner(cfg, task_dir, presets)
 
     articles = article_manifest_entries(task_dir)
     manifest = {

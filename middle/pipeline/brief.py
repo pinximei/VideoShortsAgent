@@ -5,6 +5,7 @@ from typing import Any
 
 from .models import VideoBrief, content_key_for_article
 from .article_content import (
+    MIN_TALKING_POINT_CHARS,
     collect_article_text,
     extract_talking_point_candidates,
     is_placeholder_summary,
@@ -74,6 +75,14 @@ def build_brief(article: dict[str, Any], *, public_base_url: str, theme_id: str 
     )
 
     points = extract_talking_point_candidates(article, max_points=3)
+    article_body_plain = plain_without_urls((article.get("article_body") or "").strip())
+    if len(article_body_plain) >= 80 and len(points) < 3:
+        for chunk in re.split(r"[。！？\n]+", article_body_plain):
+            plain = plain_without_urls(chunk)
+            if len(plain) >= MIN_TALKING_POINT_CHARS and plain not in points:
+                points.append(plain[:280])
+            if len(points) >= 3:
+                break
     if len(points) < 2:
         for label in ("描述", "变现评估", "数据支撑"):
             t = _tab_summary(article, label)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from .brief import build_brief, brief_is_renderable, passes_filter
@@ -114,20 +115,39 @@ def process_jobs(
             store.advance(ck, status=STATUS_PROCESSING, step=STEP_PACK, message="发布包已写入")
 
             if cfg.render_enabled:
-                store.advance(ck, status=STATUS_PROCESSING, step=STEP_VSA, message="VSA 裁剪视频")
-                result = render_task_videos(cfg, out_dir)
-                if not result or not result.get("primary_video"):
-                    raise RuntimeError("VSA 未产出视频")
-                try:
-                    from .render_verify import run_post_render_verify
+                from .render_verify import run_post_render_verify
 
-                    run_post_render_verify(
-                        out_dir,
-                        platforms=cfg.render_platforms,
-                        full_verify=cfg.render_full_verify,
-                    )
-                except Exception as ve:
-                    store.advance(ck, status=STATUS_PROCESSING, step=STEP_VSA, message=f"验收警告: {ve}")
+                store.advance(ck, status=STATUS_PROCESSING, step=STEP_VSA, message="VSA 裁剪视频")
+                verify_report: dict | None = None
+                last_render_err: str | None = None
+                attempts = cfg.render_retry_max + 1
+                for attempt in range(attempts):
+                    try:
+                        result = render_task_videos(cfg, out_dir)
+                        if not result or not result.get("primary_video"):
+                            raise RuntimeError("VSA 未产出视频")
+                        verify_report = run_post_render_verify(
+                            out_dir,
+                            platforms=cfg.render_platforms,
+                            full_verify=cfg.render_full_verify,
+                        )
+                        if verify_report.get("ok", True) or not cfg.render_verify_required:
+                            last_render_err = None
+                            break
+                        last_render_err = json.dumps(
+                            verify_report, ensure_ascii=False
+                        )[:400]
+                    except Exception as rexc:
+                        last_render_err = f"{type(rexc).__name__}: {str(rexc)[:200]}"
+                    if attempt < attempts - 1:
+                        store.advance(
+                            ck,
+                            status=STATUS_PROCESSING,
+                            step=STEP_VSA,
+                            message=f"渲染/验收失败，重试 ({attempt + 2}/{attempts})",
+                        )
+                if last_render_err:
+                    raise RuntimeError(f"render_failed: {last_render_err}")
 
             brief_dict = brief.to_dict()
             try:

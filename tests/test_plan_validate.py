@@ -41,6 +41,15 @@ def test_validate_rejects_missing_preset() -> None:
     assert "preset" in msg
 
 
+def test_validate_rejects_multiple_experimental_transitions() -> None:
+    b = _valid_block()
+    b["clips"][0]["transition_to_next"] = "pixelize"
+    b["clips"][1]["transition_to_next"] = "diagtl"
+    ok, msg = validate_platform_video_block("douyin", b)
+    assert not ok
+    assert "experimental" in msg
+
+
 def test_validate_platform_copy() -> None:
     copy = {"douyin": _valid_block(), "xhs": _valid_block()}
     ok, msg = validate_platform_copy(copy, broll_seconds=60)

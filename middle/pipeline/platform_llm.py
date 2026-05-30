@@ -72,7 +72,8 @@ feed：{feed_kind}
 }}
 
 视频 clips：2~4 段；口播总字数≤220；段间转场 0.2~0.3 秒；start/end 在 B-roll 时长内且各段 start 应错开。
-**effects.preset 必填**；按 feed_kind 选 preset（见能力目录）。
+每段 `hook_text` 为屏上短字幕（≤24 字）；正文段可用要点式 hook_text。
+**effects.preset 必填**；按 feed_kind 选 preset（见能力目录）；pixelize/diag* 实验转场全片最多 1 次。
 
 {capabilities_section}"""
 

@@ -88,6 +88,9 @@ render:
   allow_template_fallback: false
   parallel: true
   parallel_workers: 2
+  max_concurrent: 1
+  retry_max: 1
+  verify_required: true
   full_verify: false
   bookends: douyin
 

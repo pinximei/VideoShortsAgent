@@ -5,6 +5,10 @@ from typing import Any
 
 from .registry import STYLE_PRESETS, VALID_CAPTION_STYLES, VALID_TRANSITIONS, resolve_transition
 
+_EXPERIMENTAL_TRANSITIONS = frozenset(
+    {"pixelize", "diagtl", "diagtr", "diagbl", "diagbr"},
+)
+
 
 def _clip_tts_len(clip: dict) -> int:
     return len(str(clip.get("tts_text") or clip.get("hook_text") or ""))
@@ -63,6 +67,14 @@ def validate_platform_video_block(
     if total_tts < 40:
         return False, f"tts_total={total_tts} too_short"
 
+    exp_count = sum(
+        1
+        for c in clips
+        if resolve_transition(str(c.get("transition_to_next") or "")) in _EXPERIMENTAL_TRANSITIONS
+    )
+    if exp_count > 1:
+        return False, f"experimental_transitions={exp_count} max=1"
+
     last_tr = resolve_transition(
         str(clips[-1].get("transition_to_next") or ""),
         default="fade",
@@ -106,5 +118,6 @@ def repair_prompt_note(reason: str) -> str:
     return (
         f"\n\n## 修复要求（上次校验失败：{reason}）\n"
         "请重新输出完整 JSON。clips 必须 2~4 段；effects.preset 必填且为合法风格名；"
-        "每段 start/end 在 B-roll 时长内且不重叠；口播总字数≤220；末段 transition_to_next 为 fade。"
+        "每段 start/end 在 B-roll 时长内且不重叠；口播总字数≤220；末段 transition_to_next 为 fade；"
+        "pixelize/diag* 实验转场全片最多 1 次。"
     )

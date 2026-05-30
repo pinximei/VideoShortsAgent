@@ -12,8 +12,11 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+MIN_VIDEO_BYTES = 48 * 1024
+
+
 def _quick_video_checks(task_dir: Path, platforms: list[str]) -> dict[str, Any]:
-    """轻量验收：文件存在 + 时长 > 3s。"""
+    """轻量验收：文件存在 + 体积 + 时长 > 3s。"""
     from .media_probe import probe_video_duration
 
     out: dict[str, Any] = {"platforms": {}, "ok": True}
@@ -24,9 +27,17 @@ def _quick_video_checks(task_dir: Path, platforms: list[str]) -> dict[str, Any]:
             entry["ok"] = False
             out["ok"] = False
         else:
+            size = p.stat().st_size
+            entry["size_bytes"] = size
             dur = probe_video_duration(str(p))
             entry["duration_sec"] = dur
-            entry["ok"] = dur is not None and dur >= 3.0
+            entry["ok"] = (
+                size >= MIN_VIDEO_BYTES
+                and dur is not None
+                and dur >= 3.0
+            )
+            if size < MIN_VIDEO_BYTES:
+                entry["warn"] = f"file_too_small<{MIN_VIDEO_BYTES}"
             if not entry["ok"]:
                 out["ok"] = False
         out["platforms"][pid] = entry
