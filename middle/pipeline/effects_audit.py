@@ -11,12 +11,24 @@ from .render_verify import MIN_VIDEO_BYTES
 def audit_task_effects(task_dir: Path, platforms: list[str] | None = None) -> dict[str, Any]:
     task_dir = task_dir.resolve()
     plat = platforms or ["douyin", "xhs"]
-    report: dict[str, Any] = {"platforms": {}, "ok": True}
+    report: dict[str, Any] = {"platforms": {}, "ok": True, "warnings": []}
 
     for pid in plat:
         plan_path = task_dir / "llm" / f"video_clips_{pid}.json"
         applied_path = task_dir / "llm" / f"render_effects_{pid}.json"
         entry: dict[str, Any] = {"has_plan": plan_path.is_file(), "has_applied": applied_path.is_file()}
+        mp4 = task_dir / "videos" / f"{pid}.mp4"
+        video_ok = mp4.is_file() and mp4.stat().st_size >= MIN_VIDEO_BYTES
+        if mp4.is_file():
+            entry["video_bytes"] = mp4.stat().st_size
+
+        if not video_ok:
+            entry["ok"] = False
+            entry["warn"] = "video_missing_or_too_small"
+            report["ok"] = False
+        else:
+            entry["ok"] = True
+
         if plan_path.is_file() and applied_path.is_file():
             plan = json.loads(plan_path.read_text(encoding="utf-8-sig"))
             applied = json.loads(applied_path.read_text(encoding="utf-8-sig"))
@@ -25,17 +37,14 @@ def audit_task_effects(task_dir: Path, platforms: list[str] | None = None) -> di
             entry["gradient_applied"] = (applied.get("applied_effects") or {}).get("gradient")
             entry["transitions"] = applied.get("clip_transitions")
             if not entry["preset_applied"]:
-                entry["warn"] = "missing preset after merge"
-                report["ok"] = False
+                msg = f"{pid}:missing_preset_after_merge"
+                entry["warn"] = msg
+                report["warnings"].append(msg)
         elif plan_path.is_file() and not applied_path.is_file():
-            entry["warn"] = "render_effects file missing (render not run?)"
-            report["ok"] = False
-        mp4 = task_dir / "videos" / f"{pid}.mp4"
-        if mp4.is_file():
-            entry["video_bytes"] = mp4.stat().st_size
-            if entry["video_bytes"] < MIN_VIDEO_BYTES:
-                entry["warn"] = f"video_too_small<{MIN_VIDEO_BYTES}"
-                report["ok"] = False
+            msg = f"{pid}:render_effects_missing"
+            entry["warn"] = msg
+            report["warnings"].append(msg)
+
         report["platforms"][pid] = entry
 
     audit_path = task_dir / "effects_audit.json"

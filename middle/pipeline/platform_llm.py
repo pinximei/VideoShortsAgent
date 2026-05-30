@@ -157,15 +157,25 @@ def generate_platform_copy(
 def _save_video_clip_files(output_dir: Path, copy: dict[str, Any]) -> None:
     llm_dir = output_dir / "llm"
     llm_dir.mkdir(parents=True, exist_ok=True)
+    feed_kind = ""
+    brief_p = output_dir / "brief.json"
+    if brief_p.is_file():
+        try:
+            feed_kind = str(json.loads(brief_p.read_text(encoding="utf-8-sig")).get("feed_kind") or "")
+        except Exception:
+            pass
     for platform in ("douyin", "xhs"):
         block = copy.get(platform) or {}
         clips = block.get("clips")
         if not clips:
             continue
+        effects = dict(block.get("effects") or {})
+        if feed_kind in ("apps", "news"):
+            effects["gradient"] = False
         payload = {
             "clips": clips,
             "platform": platform,
-            "effects": block.get("effects") or {},
+            "effects": effects,
             "source": "pipeline_llm",
         }
         (llm_dir / f"video_clips_{platform}.json").write_text(

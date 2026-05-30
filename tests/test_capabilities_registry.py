@@ -28,7 +28,8 @@ def test_merge_requires_preset_and_normalizes_last_transition() -> None:
     fx = merge_render_effects("douyin", clips, {"gradient": True}, feed_kind="apps")
     assert fx["preset"] in ("科技", "活力", "情感", "叙事", "严肃")
     assert clips[-1]["transition_to_next"] == "fade"
-    assert fx["gradient"] is True
+    assert fx["gradient"] is False
+    assert fx["caption_remotion"] is False
 
 
 def test_merge_news_feed_suggests_serious_preset() -> None:
@@ -42,6 +43,7 @@ def test_merge_news_disables_remotion_for_fast_captions() -> None:
     clips = [{"start": 0, "end": 10, "hook_text": "x", "transition_to_next": "fade"}]
     fx = merge_render_effects("douyin", clips, {"preset": "严肃"}, feed_kind="news", use_remotion=True)
     assert fx["use_remotion"] is False
+    assert fx["caption_remotion"] is False
 
 
 def test_merge_news_forces_gradient_off_even_if_llm_requests() -> None:

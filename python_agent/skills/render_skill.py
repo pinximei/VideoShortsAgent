@@ -114,11 +114,11 @@ class RenderSkill:
             self._render_multi(video_path, clips, output_path, output_dir,
                                effects, tts_clips)
 
-        if os.path.exists(output_path):
+        if os.path.exists(output_path) and os.path.getsize(output_path) >= 48 * 1024:
             file_size = os.path.getsize(output_path)
-            print(f"[RenderSkill] ✅ 最终输出: {output_path} ({file_size / 1024:.1f} KB)")
+            print(f"[RenderSkill] 最终输出: {output_path} ({file_size / 1024:.1f} KB)")
         else:
-            print(f"[RenderSkill] ❌ 渲染失败：输出文件不存在")
+            raise RuntimeError(f"渲染输出无效: {output_path}")
 
         return output_path
 
@@ -159,11 +159,14 @@ class RenderSkill:
 
         # 字幕/特效
         sentences = tts_clip.get("sentences") if tts_clip else None
-        use_remotion = (effects or {}).get("use_remotion", True) and self._remotion_available
+        cap_rem = (effects or {}).get(
+            "caption_remotion",
+            (effects or {}).get("use_remotion", True),
+        )
+        use_remotion = bool(cap_rem) and self._remotion_available
         caption_style = (effects or {}).get("caption_style", "spring")
 
         if use_remotion:
-            # Remotion 特效覆盖层
             self._apply_remotion_caption(
                 clip_path, subtitle_text, target_duration, output_path,
                 output_dir, caption_style, sentences=sentences, effects=effects
@@ -266,8 +269,11 @@ class RenderSkill:
 
             # 字幕/特效（每段独立选择）
             sentences = tts_clip.get("sentences") if tts_clip else None
-            use_remotion = (effects or {}).get("use_remotion", True) and self._remotion_available
-            # 优先使用 clip 级别的 caption_style，降级到全局 effects
+            cap_rem = (effects or {}).get(
+                "caption_remotion",
+                (effects or {}).get("use_remotion", True),
+            )
+            use_remotion = bool(cap_rem) and self._remotion_available
             caption_style = clip.get("caption_style") or (effects or {}).get("caption_style", "spring")
 
             if use_remotion:
@@ -330,6 +336,7 @@ class RenderSkill:
                     height=height,
                 )
                 if os.path.isfile(intro_path):
+                    intro_path = self._ensure_has_audio(intro_path, 2.2, output_dir, "intro")
                     bookend_prefix.append(intro_path)
             if (effects or {}).get("outro_card"):
                 outro_path = os.path.join(output_dir, "segment_outro.mp4")
@@ -350,6 +357,7 @@ class RenderSkill:
                     height=height,
                 )
                 if os.path.isfile(outro_path):
+                    outro_path = self._ensure_has_audio(outro_path, 2.0, output_dir, "outro")
                     bookend_suffix.append(outro_path)
 
         if not segment_paths:
@@ -358,8 +366,13 @@ class RenderSkill:
         all_segments = bookend_prefix + segment_paths + bookend_suffix
         print(f"\n[RenderSkill] 拼接 {len(all_segments)} 个片段（含片头/片尾 {len(bookend_prefix)+len(bookend_suffix)}）...")
         self._concat_videos(
-            all_segments, output_path, output_dir, effects, clips=clips,
+            all_segments,
+            output_path,
+            output_dir,
+            effects,
+            clips=clips,
             x264_preset=self._x264_preset(effects),
+            bookend_prefix_len=len(bookend_prefix),
         )
 
         for path in segment_paths:
@@ -580,17 +593,22 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             props=props,
             output_path=caption_overlay_path,
             width=width, height=height, fps=fps, frames=total_frames,
-            output_dir=output_dir, tag=f"caption_{clip_index}"
+            output_dir=output_dir, tag=f"caption_{clip_index}",
         )
-
-        if not os.path.exists(caption_overlay_path):
-            print(f"[RenderSkill] ⚠️ Remotion 渲染失败，降级为 ASS 字幕")
+        ready_caption = self._overlay_media_ready(caption_overlay_path)
+        if not ready_caption:
+            print(f"[RenderSkill] Remotion 字幕层失败，降级 ASS")
             ass_path = os.path.join(output_dir, f"subtitle_{clip_index}.ass")
-            self._generate_ass(text, duration, ass_path, sentences=sentences)
-            self._burn_subtitle(video_path, ass_path, output_path)
+            self._generate_ass(
+                text, duration, ass_path, sentences=sentences,
+                caption_style=caption_style,
+            )
+            self._burn_subtitle(
+                video_path, ass_path, output_path,
+                x264_preset=self._x264_preset(effects),
+            )
             return
 
-        # 2. 可选：渲染渐变背景覆盖层
         gradient_overlay_path = None
         if effects and effects.get("gradient", False):
             colors = effects.get("gradient_colors", ["#FF6B6B", "#4ECDC4"])
@@ -600,13 +618,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 props={"colorFrom": colors[0], "colorTo": colors[1], "opacity": 0.3},
                 output_path=gradient_overlay_path,
                 width=width, height=height, fps=fps, frames=total_frames,
-                output_dir=output_dir, tag=f"gradient_{clip_index}"
+                output_dir=output_dir, tag=f"gradient_{clip_index}",
             )
+            gradient_overlay_path = self._overlay_media_ready(gradient_overlay_path)
 
-        # 3. 叠加覆盖层到视频
-        overlays = [caption_overlay_path]
-        if gradient_overlay_path and os.path.exists(gradient_overlay_path):
-            overlays.insert(0, gradient_overlay_path)  # 渐变在字幕下方
+        overlays = [ready_caption]
+        if gradient_overlay_path:
+            overlays.insert(0, gradient_overlay_path)
 
         self._overlay_videos(video_path, overlays, output_path)
 
@@ -799,37 +817,133 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         except Exception:
             return 1080, 1920  # 默认竖屏
 
+    def _overlay_media_ready(self, path: str) -> str | None:
+        if path.endswith(".webm"):
+            mov = path.replace(".webm", ".mov")
+            for p in (path, mov):
+                if os.path.isfile(p) and os.path.getsize(p) > 200:
+                    return p
+        elif os.path.isfile(path) and os.path.getsize(path) > 200:
+            return path
+        return None
+
+    def _probe_has_audio(self, video_path: str) -> bool:
+        cmd = [
+            "ffprobe", "-v", "quiet", "-select_streams", "a",
+            "-show_entries", "stream=codec_type", "-of", "csv=p=0",
+            video_path,
+        ]
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=10,
+                encoding="utf-8", errors="replace",
+            )
+            return "audio" in (result.stdout or "")
+        except Exception:
+            return False
+
+    def _ensure_has_audio(self, video_path: str, duration: float, output_dir: str, tag: str) -> str:
+        if self._probe_has_audio(video_path):
+            return video_path
+        out = os.path.join(output_dir, f"{tag}_with_audio.mp4")
+        cmd = [
+            "ffmpeg", "-y", "-i", video_path,
+            "-f", "lavfi", "-i", f"anullsrc=r=44100:cl=stereo",
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+            "-shortest", "-t", str(max(0.5, duration)),
+            out,
+        ]
+        self._run_cmd(cmd, f"附加静音轨:{tag}", timeout=120)
+        if os.path.isfile(out) and os.path.getsize(out) > 500:
+            return out
+        return video_path
+
+    def _build_transition_list(
+        self,
+        n_segments: int,
+        clips: list | None,
+        effects: dict | None,
+        *,
+        bookend_prefix_len: int = 0,
+    ) -> list[str]:
+        from python_agent.capabilities.registry import VALID_TRANSITIONS, resolve_transition
+
+        default_transition = (effects or {}).get("transition", "fade")
+        valid = list(VALID_TRANSITIONS)
+        transitions: list[str] = []
+        for i in range(n_segments - 1):
+            if bookend_prefix_len > 0 and i == 0:
+                t = "fade"
+            elif clips:
+                clip_idx = i - bookend_prefix_len
+                if 0 <= clip_idx < len(clips):
+                    t = clips[clip_idx].get("transition_to_next", "") or default_transition
+                else:
+                    t = "fade"
+            else:
+                t = default_transition
+            t = resolve_transition(t, default="fade")
+            if t not in valid:
+                t = "fade"
+            transitions.append(t)
+        return transitions
+
+    def _simple_concat(
+        self,
+        video_paths: list,
+        output_path: str,
+        output_dir: str,
+        *,
+        x264_preset: str = "medium",
+    ) -> bool:
+        concat_list = os.path.join(output_dir, "concat_list.txt")
+        with open(concat_list, "w", encoding="utf-8") as f:
+            for p in video_paths:
+                f.write(f"file '{os.path.abspath(p).replace(chr(92), '/')}'\n")
+        cmd = [
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
+            "-c:v", "libx264", "-c:a", "aac", "-b:a", "192k",
+            "-crf", "18", "-profile:v", "high", "-level", "4.1",
+            "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            "-preset", x264_preset, output_path,
+        ]
+        ok = self._run_cmd_returns_ok(cmd, "简单拼接", timeout=600)
+        if os.path.exists(concat_list):
+            os.remove(concat_list)
+        return ok and os.path.isfile(output_path) and os.path.getsize(output_path) > 48 * 1024
+
     def _concat_videos(self, video_paths: list, output_path: str, output_dir: str,
                         effects: dict = None, clips: list = None, *,
-                        x264_preset: str = "medium"):
-        """FFmpeg xfade 拼接多个视频（支持每段不同转场效果）"""
+                        x264_preset: str = "medium", bookend_prefix_len: int = 0):
+        """FFmpeg xfade 拼接；失败则 concat 降级。"""
         if len(video_paths) == 1:
             import shutil
             shutil.copy2(video_paths[0], output_path)
             return
 
-        # 全局默认转场
+        if any(self._probe_has_audio(p) for p in video_paths):
+            fixed: list[str] = []
+            for i, p in enumerate(video_paths):
+                if self._probe_has_audio(p):
+                    fixed.append(p)
+                else:
+                    fixed.append(
+                        self._ensure_has_audio(
+                            p, self._get_duration(p), output_dir, f"seg_{i}",
+                        )
+                    )
+            video_paths = fixed
+
         default_transition = (effects or {}).get("transition", "fade")
         transition_duration = float((effects or {}).get("transition_duration", 0.25))
-
-        from python_agent.capabilities.registry import VALID_TRANSITIONS, resolve_transition
-
-        valid_transitions = list(VALID_TRANSITIONS)
-
-        # 检测 FFmpeg 是否支持 easing 参数（FFmpeg 7.0+）
         easing_supported = self._check_ffmpeg_easing_support()
-
-        # 为每个转场点确定转场类型（从 clip 级别读取，降级到全局默认）
-        transitions = []
-        for i in range(len(video_paths) - 1):
-            t = default_transition
-            if clips and i < len(clips):
-                t = clips[i].get("transition_to_next", "") or default_transition
-            t = resolve_transition(t, default="fade")
-            if t not in valid_transitions:
-                t = "fade"
-            transitions.append(t)
-        print(f"[RenderSkill] 转场序列: {transitions} ({transition_duration}s, easing={'on' if easing_supported else 'off'})")
+        transitions = self._build_transition_list(
+            len(video_paths), clips, effects, bookend_prefix_len=bookend_prefix_len,
+        )
+        print(
+            f"[RenderSkill] 转场序列: {transitions} "
+            f"({transition_duration}s, easing={'on' if easing_supported else 'off'})"
+        )
 
         # 获取每个片段的时长
         durations = [self._get_duration(path) for path in video_paths]
@@ -905,7 +1019,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "-preset", x264_preset,
             output_path
         ]
-        self._run_cmd(cmd, "转场拼接")
+        xfade_ok = self._run_cmd_returns_ok(cmd, "转场拼接", timeout=900)
+        valid_out = os.path.isfile(output_path) and os.path.getsize(output_path) > 48 * 1024
+        if not xfade_ok or not valid_out:
+            print("[RenderSkill] xfade 失败或输出过小，降级简单拼接")
+            if os.path.isfile(output_path):
+                os.remove(output_path)
+            if not self._simple_concat(video_paths, output_path, output_dir, x264_preset=x264_preset):
+                raise RuntimeError("视频拼接失败（xfade 与 concat 均失败）")
 
     def _get_duration(self, video_path: str) -> float:
         """获取视频时长"""
@@ -914,10 +1035,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             "-of", "default=noprint_wrappers=1:nokey=1", video_path
         ]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=10,
+                encoding="utf-8", errors="replace",
+            )
             return float(result.stdout.strip())
         except Exception:
-            return 5.0  # 默认 5 秒
+            return 5.0
 
     def _check_ffmpeg_easing_support(self) -> bool:
         """检测 FFmpeg xfade 是否支持 easing=（gyan 等常见构建通常不支持）。"""
@@ -927,6 +1051,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 capture_output=True,
                 text=True,
                 timeout=8,
+                encoding="utf-8",
+                errors="replace",
             )
             text = (result.stdout or "") + (result.stderr or "")
             return "easing" in text.lower()
@@ -937,6 +1063,17 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     def _run_cmd(self, cmd: list, step_name: str, cwd: str = None,
                  timeout: int = 120, shell: bool = False):
+        self._run_cmd_returns_ok(cmd, step_name, cwd=cwd, timeout=timeout, shell=shell)
+
+    def _run_cmd_returns_ok(
+        self,
+        cmd: list,
+        step_name: str,
+        cwd: str | None = None,
+        *,
+        timeout: int = 120,
+        shell: bool = False,
+    ) -> bool:
         try:
             result = subprocess.run(
                 cmd,
@@ -949,9 +1086,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 errors="replace",
             )
             if result.returncode != 0:
-                stderr = result.stderr[-500:] if result.stderr else ""
-                print(f"[RenderSkill] ⚠️ {step_name}警告: {stderr}")
+                stderr = (result.stderr or "")[-500:]
+                print(f"[RenderSkill] {step_name} 失败: {stderr}")
+                return False
+            return True
         except subprocess.TimeoutExpired:
-            raise RuntimeError(f"{step_name}超时（{timeout}秒）")
+            print(f"[RenderSkill] {step_name} 超时（{timeout}s）")
+            return False
         except Exception as e:
-            raise RuntimeError(f"{step_name}失败: {e}")
+            print(f"[RenderSkill] {step_name} 异常: {e}")
+            return False

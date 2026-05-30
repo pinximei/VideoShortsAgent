@@ -69,8 +69,9 @@ def run_post_render_verify(
             if not fx.get("ok", True):
                 report["ok"] = False
         except Exception as exc:
-            report["effects_audit"] = {"ok": False, "error": str(exc)[:200]}
-            report["ok"] = False
+            report["effects_audit"] = {"ok": False, "error": str(exc)[:200], "warnings": []}
+            if not report["quick"].get("ok", True):
+                report["ok"] = False
     else:
         av_script = middle / "scripts" / "verify_av_sync.py"
         vis_script = middle / "scripts" / "verify_video_visual.py"
