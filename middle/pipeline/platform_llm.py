@@ -131,7 +131,18 @@ def generate_platform_copy(
                 "勿编造具体产品细节；引导用户点击详情链接。"
             )
 
-    return llm.chat_json(SYSTEM_PROMPT, user)
+    from python_agent.capabilities.plan_validate import repair_prompt_note, validate_platform_copy
+
+    user_base = user
+    last_err = ""
+    for attempt in range(2):
+        u = user_base + (repair_prompt_note(last_err) if attempt else "")
+        copy = llm.chat_json(SYSTEM_PROMPT, u)
+        ok, msg = validate_platform_copy(copy, broll_seconds=broll_seconds)
+        if ok:
+            return copy
+        last_err = msg
+    raise ValueError(f"platform_copy_invalid: {last_err}")
 
 
 def _save_video_clip_files(output_dir: Path, copy: dict[str, Any]) -> None:
@@ -179,6 +190,7 @@ def write_fallback_video_plans(brief: VideoBrief, output_dir: Path, cfg: Pipelin
             preset.effects,
             use_remotion=cfg.render_use_remotion,
             feed_kind=brief.feed_kind,
+            bookends=cfg.render_bookends,
         )
         save_video_clips_plan(
             output_dir,

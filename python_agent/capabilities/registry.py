@@ -182,6 +182,24 @@ def _normalize_clip_transitions(clips: list[dict[str, Any]], default_tr: str) ->
             )
 
 
+def _apply_bookends_policy(
+    effects: dict[str, Any],
+    platform_id: str,
+    *,
+    bookends: str = "douyin",
+) -> None:
+    """bookends: douyin | both | none — 控制片头片尾 Remotion 卡片。"""
+    mode = (bookends or "douyin").strip().lower()
+    if mode == "none":
+        effects["intro_card"] = False
+        effects["outro_card"] = False
+    elif mode == "douyin":
+        if platform_id != "douyin":
+            effects["intro_card"] = False
+            effects["outro_card"] = False
+    # both: 保留 merge 结果
+
+
 def merge_render_effects(
     platform_id: str,
     clips: list[dict[str, Any]],
@@ -189,6 +207,7 @@ def merge_render_effects(
     *,
     use_remotion: bool | None = None,
     feed_kind: str = "news",
+    bookends: str = "douyin",
 ) -> dict[str, Any]:
     cat = effects_catalog()
     defaults = platform_video_defaults(platform_id)
@@ -223,6 +242,8 @@ def merge_render_effects(
         gradient = bool(preset_spec.get("gradient", False))
     else:
         gradient = bool(gradient)
+    if (feed_kind or "news").strip().lower() == "news":
+        gradient = False
 
     effects: dict[str, Any] = {
         "use_remotion": remotion_on,
@@ -250,6 +271,8 @@ def merge_render_effects(
         )
 
     _normalize_clip_transitions(clips, default_tr)
+
+    _apply_bookends_policy(effects, platform_id, bookends=bookends)
 
     if clips:
         if effects["intro_card"] and not pe.get("intro_heading"):

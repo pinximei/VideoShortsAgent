@@ -59,6 +59,8 @@ def render_from_plan(
     effects: dict[str, Any] | None = None,
     use_remotion: bool = True,
     task_dir: str | None = None,
+    feed_kind: str = "news",
+    bookends: str = "douyin",
 ) -> dict[str, Any]:
     import os
 
@@ -95,7 +97,12 @@ def render_from_plan(
                 pass
     plan_effects = dict(effects or {})
     render_effects = merge_render_effects(
-        platform, clips, plan_effects, use_remotion=use_remotion, feed_kind=feed_kind
+        platform,
+        clips,
+        plan_effects,
+        use_remotion=use_remotion,
+        feed_kind=feed_kind,
+        bookends=bookends,
     )
     analysis = {"clips": clips}
     tts_info: dict[str, Any] = {"tts_clips": []}

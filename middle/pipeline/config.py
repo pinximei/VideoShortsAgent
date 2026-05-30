@@ -42,6 +42,9 @@ class PipelineConfig:
     render_use_remotion: bool = True
     render_skip_tts: bool = False
     render_allow_template_fallback: bool = False
+    render_parallel: bool = True
+    render_full_verify: bool = False
+    render_bookends: str = "douyin"
     llm_enabled: bool = True
     llm_api_key: str = ""
     llm_api_key_env: str = "DEEPSEEK_API_KEY"
@@ -132,6 +135,9 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         render_use_remotion=bool(render.get("use_remotion", True)),
         render_skip_tts=bool(render.get("skip_tts", False)),
         render_allow_template_fallback=bool(render.get("allow_template_fallback", False)),
+        render_parallel=bool(render.get("parallel", True)),
+        render_full_verify=bool(render.get("full_verify", False)),
+        render_bookends=str(render.get("bookends") or "douyin"),
         llm_enabled=bool(llm.get("enabled", True)),
         llm_api_key=str(
             llm.get("api_key")

@@ -38,6 +38,25 @@ def test_merge_news_feed_suggests_serious_preset() -> None:
     assert fx["gradient"] is False
 
 
+def test_merge_news_forces_gradient_off_even_if_llm_requests() -> None:
+    clips = [{"start": 0, "end": 10, "hook_text": "x", "transition_to_next": "fade"}]
+    fx = merge_render_effects(
+        "xhs",
+        clips,
+        {"preset": "情感", "gradient": True},
+        feed_kind="news",
+    )
+    assert fx["gradient"] is False
+
+
+def test_bookends_douyin_only() -> None:
+    clips = [{"start": 0, "end": 10, "hook_text": "x", "transition_to_next": "fade"}]
+    dy = merge_render_effects("douyin", clips, {"preset": "活力", "intro_card": True}, bookends="douyin")
+    xh = merge_render_effects("xhs", clips, {"preset": "情感", "intro_card": True}, bookends="douyin")
+    assert dy["intro_card"] is True
+    assert xh["intro_card"] is False
+
+
 def test_llm_section_has_rules() -> None:
     from python_agent.capabilities.registry import llm_capabilities_section
 

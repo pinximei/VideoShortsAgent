@@ -12,52 +12,94 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def run_post_render_verify(task_dir: Path, platforms: list[str] | None = None) -> dict[str, Any]:
-    """调用 middle/scripts 验收脚本，返回汇总。"""
+def _quick_video_checks(task_dir: Path, platforms: list[str]) -> dict[str, Any]:
+    """轻量验收：文件存在 + 时长 > 3s。"""
+    from .media_probe import probe_video_duration
+
+    out: dict[str, Any] = {"platforms": {}, "ok": True}
+    for pid in platforms:
+        p = task_dir / "videos" / f"{pid}.mp4"
+        entry: dict[str, Any] = {"path": str(p), "exists": p.is_file()}
+        if not p.is_file():
+            entry["ok"] = False
+            out["ok"] = False
+        else:
+            dur = probe_video_duration(str(p))
+            entry["duration_sec"] = dur
+            entry["ok"] = dur is not None and dur >= 3.0
+            if not entry["ok"]:
+                out["ok"] = False
+        out["platforms"][pid] = entry
+    return out
+
+
+def run_post_render_verify(
+    task_dir: Path,
+    platforms: list[str] | None = None,
+    *,
+    full_verify: bool = False,
+) -> dict[str, Any]:
+    """验收：默认轻量（时长+特效审计）；full_verify=true 时跑抽帧/音画脚本。"""
     root = _repo_root()
     middle = root / "middle"
     plat = platforms or ["xhs", "douyin"]
-    report: dict[str, Any] = {"platforms": {}, "ok": True}
+    report: dict[str, Any] = {"platforms": {}, "ok": True, "mode": "full" if full_verify else "quick"}
 
-    av_script = middle / "scripts" / "verify_av_sync.py"
-    vis_script = middle / "scripts" / "verify_video_visual.py"
-    import os
-
-    env = os.environ.copy()
-    env["PYTHONIOENCODING"] = "utf-8"
-    py = sys.executable
-
-    for script, key in ((av_script, "av_sync"), (vis_script, "visual")):
-        if not script.is_file():
-            continue
-        r = subprocess.run(
-            [py, str(script)],
-            cwd=str(middle),
-            capture_output=True,
-            text=True,
-            timeout=180,
-            encoding="utf-8",
-            errors="replace",
-            env=env,
-        )
-        report[key] = {
-            "exit_code": r.returncode,
-            "stdout_tail": (r.stdout or "")[-2000:],
-            "stderr_tail": (r.stderr or "")[-800:],
-        }
-        if r.returncode != 0:
-            report["ok"] = False
-
-    try:
-        from .effects_audit import audit_task_effects
-
-        fx = audit_task_effects(task_dir, platforms=plat)
-        report["effects_audit"] = fx
-        if not fx.get("ok", True):
-            report["ok"] = False
-    except Exception as exc:
-        report["effects_audit"] = {"ok": False, "error": str(exc)[:200]}
+    report["quick"] = _quick_video_checks(task_dir, plat)
+    if not report["quick"].get("ok", True):
         report["ok"] = False
+
+    if not full_verify:
+        try:
+            from .effects_audit import audit_task_effects
+
+            fx = audit_task_effects(task_dir, platforms=plat)
+            report["effects_audit"] = fx
+            if not fx.get("ok", True):
+                report["ok"] = False
+        except Exception as exc:
+            report["effects_audit"] = {"ok": False, "error": str(exc)[:200]}
+            report["ok"] = False
+    else:
+        av_script = middle / "scripts" / "verify_av_sync.py"
+        vis_script = middle / "scripts" / "verify_video_visual.py"
+        import os
+
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        py = sys.executable
+
+        for script, key in ((av_script, "av_sync"), (vis_script, "visual")):
+            if not script.is_file():
+                continue
+            r = subprocess.run(
+                [py, str(script)],
+                cwd=str(middle),
+                capture_output=True,
+                text=True,
+                timeout=180,
+                encoding="utf-8",
+                errors="replace",
+                env=env,
+            )
+            report[key] = {
+                "exit_code": r.returncode,
+                "stdout_tail": (r.stdout or "")[-2000:],
+                "stderr_tail": (r.stderr or "")[-800:],
+            }
+            if r.returncode != 0:
+                report["ok"] = False
+
+        try:
+            from .effects_audit import audit_task_effects
+
+            fx = audit_task_effects(task_dir, platforms=plat)
+            report["effects_audit"] = fx
+            if not fx.get("ok", True):
+                report["ok"] = False
+        except Exception as exc:
+            report["effects_audit"] = {"ok": False, "error": str(exc)[:200]}
+            report["ok"] = False
 
     manifest = task_dir / "videos" / "manifest.json"
     if manifest.is_file():

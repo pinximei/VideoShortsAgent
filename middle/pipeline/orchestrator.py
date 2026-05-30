@@ -121,7 +121,11 @@ def process_jobs(
                 try:
                     from .render_verify import run_post_render_verify
 
-                    run_post_render_verify(out_dir, platforms=cfg.render_platforms)
+                    run_post_render_verify(
+                        out_dir,
+                        platforms=cfg.render_platforms,
+                        full_verify=cfg.render_full_verify,
+                    )
                 except Exception as ve:
                     store.advance(ck, status=STATUS_PROCESSING, step=STEP_VSA, message=f"验收警告: {ve}")
 

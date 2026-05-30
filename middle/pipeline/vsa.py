@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +31,7 @@ def render_from_llm_plan(
     broll = (broll_path or cfg.broll_template or "").strip()
     plan = load_video_plan(task_dir, platform_id)
     out = task_dir / "videos" / f"{platform_id}.mp4"
+    brief = load_brief(task_dir)
     render_from_plan(
         clips=plan["clips"],
         broll_path=broll,
@@ -43,8 +46,16 @@ def render_from_llm_plan(
         effects=plan.get("effects"),
         use_remotion=cfg.render_use_remotion,
         task_dir=str(task_dir),
+        feed_kind=str(brief.get("feed_kind") or "news"),
+        bookends=cfg.render_bookends,
     )
     return out
+
+
+def _render_platform_job(cfg: PipelineConfig, task_dir: Path, platform_id: str) -> dict[str, Any]:
+    preset = get_platform_preset(platform_id)
+    path = render_from_llm_plan(cfg, task_dir, platform_id)
+    return {"platform": platform_id, "label": preset.label, "path": str(path), "content_kind": "video"}
 
 
 def render_task_videos(
@@ -58,13 +69,20 @@ def render_task_videos(
 
     task_dir = task_dir.resolve()
     brief = load_brief(task_dir)
+    presets = video_platforms(platforms or cfg.render_platforms)
     videos: list[dict[str, Any]] = []
 
-    for preset in video_platforms(platforms or cfg.render_platforms):
-        path = render_from_llm_plan(cfg, task_dir, preset.id)
-        videos.append({"platform": preset.id, "label": preset.label, "path": str(path), "content_kind": "video"})
-
-    import json
+    if cfg.render_parallel and len(presets) > 1:
+        with ThreadPoolExecutor(max_workers=min(2, len(presets))) as pool:
+            futs = {
+                pool.submit(_render_platform_job, cfg, task_dir, p.id): p for p in presets
+            }
+            for fut in as_completed(futs):
+                videos.append(fut.result())
+        videos.sort(key=lambda x: (0 if x["platform"] == "douyin" else 1, x["platform"]))
+    else:
+        for preset in presets:
+            videos.append(_render_platform_job(cfg, task_dir, preset.id))
 
     articles = article_manifest_entries(task_dir)
     manifest = {
@@ -74,6 +92,7 @@ def render_task_videos(
         "videos": videos,
         "articles": articles,
         "executor": "python_agent.vsa_render.render_from_plan",
+        "render_parallel": cfg.render_parallel,
     }
     manifest_path = task_dir / "videos" / "manifest.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -82,7 +101,11 @@ def render_task_videos(
     try:
         from .render_verify import run_post_render_verify
 
-        run_post_render_verify(task_dir, platforms=cfg.render_platforms)
+        run_post_render_verify(
+            task_dir,
+            platforms=cfg.render_platforms,
+            full_verify=cfg.render_full_verify,
+        )
     except Exception:
         pass
 
