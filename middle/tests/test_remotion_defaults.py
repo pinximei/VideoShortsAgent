@@ -24,8 +24,11 @@ def test_resolve_caption_style_maps_preset_name() -> None:
     assert resolve_caption_style("spring", default="fade") == "spring"
 
 
-def test_merge_render_effects_defaults_remotion_on() -> None:
-    clips = [{"tts_text": "测试", "caption_style": "情感"}]
-    fx = merge_render_effects("douyin", clips, {"use_remotion": False})
-    assert fx["use_remotion"] is True
+def test_merge_render_effects_respects_explicit_remotion_flag() -> None:
+    clips = [
+        {"tts_text": "测试", "caption_style": "情感", "transition_to_next": "fade"},
+        {"tts_text": "测试二", "transition_to_next": "fade"},
+    ]
+    fx = merge_render_effects("douyin", clips, {"preset": "情感", "use_remotion": False})
+    assert fx["use_remotion"] is False
     assert clips[0]["caption_style"] == "fade"

@@ -37,6 +37,25 @@ def render_from_llm_plan(
     from python_agent.capabilities.registry import merge_render_effects
 
     broll_sec = probe_video_duration(broll) if broll else None
+    clips = list(plan.get("clips") or [])
+    if broll_sec and clips:
+        from python_agent.pipeline_media import prefetch_task_cover
+        from python_agent.pipeline_render import sync_broll_timings_to_clips
+        from python_agent.pipeline_input import save_video_clips_plan
+
+        prefetch_task_cover(task_dir, brief)
+        if sync_broll_timings_to_clips(clips, float(broll_sec)):
+            prev_source = str(plan.get("source") or "pipeline_llm")
+            save_video_clips_plan(
+                task_dir,
+                platform_id,
+                clips,
+                effects=plan.get("effects"),
+                source=prev_source,
+                render_status="ok",
+                extra={"broll_timings": "preflight"},
+            )
+            plan["clips"] = clips
     merged_effects = merge_render_effects(
         platform_id,
         plan.get("clips") or [],

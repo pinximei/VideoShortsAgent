@@ -49,7 +49,7 @@ class RenderSkill:
         p = str((effects or {}).get("ffmpeg_preset") or "medium")
         return p if p in _VALID_X264_PRESETS else "medium"
 
-    def _apply_bullet_overlay(
+    def _apply_content_highlight(
         self,
         segment_path: str,
         clip: dict,
@@ -58,12 +58,20 @@ class RenderSkill:
         clip_index: int,
         *,
         effects: dict | None = None,
-    ) -> None:
+        sentences: list | None = None,
+    ) -> bool:
+        """apps 正文段：Remotion ContentCard(hud) 或 ASS 要点条。"""
         if not (effects or {}).get("content_highlight"):
-            return
+            return False
         bullets = _clip_bullets(clip)
         if not bullets:
-            return
+            return False
+        if self._remotion_available:
+            if self._apply_content_card_overlay(
+                segment_path, clip, duration, output_dir, clip_index,
+                effects=effects, bullets=bullets, sentences=sentences,
+            ):
+                return True
         ass_path = os.path.join(output_dir, f"bullets_{clip_index}.ass")
         self._generate_ass("", duration, ass_path, bullets=bullets)
         tmp = segment_path + ".bul.mp4"
@@ -74,6 +82,72 @@ class RenderSkill:
             os.replace(tmp, segment_path)
         if os.path.isfile(ass_path):
             os.remove(ass_path)
+        return True
+
+    def _apply_content_card_overlay(
+        self,
+        segment_path: str,
+        clip: dict,
+        duration: float,
+        output_dir: str,
+        clip_index: int,
+        *,
+        effects: dict | None = None,
+        bullets: list[str] | None = None,
+        sentences: list | None = None,
+    ) -> bool:
+        bullets = bullets or _clip_bullets(clip)
+        if not bullets:
+            return False
+        width, height = self._get_video_resolution(segment_path)
+        fps = 30
+        frames = max(1, int(duration * fps))
+        colors = (effects or {}).get("gradient_colors") or ["#0f0c29", "#302b63"]
+        if not isinstance(colors, list) or len(colors) < 2:
+            colors = ["#0f0c29", "#302b63"]
+        cap = clip.get("caption_style") or (effects or {}).get("caption_style", "spring")
+        props: dict = {
+            "heading": str(clip.get("hook_text") or "")[:60],
+            "bullets": bullets[:4],
+            "captionStyle": cap,
+            "colors": colors,
+            "textColor": "#ffffff",
+            "accentColor": colors[0],
+            "layoutStyle": "top-heavy",
+            "overlayMode": "hud",
+            "particleType": "none",
+            "decorationStyle": "none",
+        }
+        if sentences:
+            props["sentences"] = sentences
+        if clip_index == 0 and (effects or {}).get("intro_image_path"):
+            props["imagePath"] = effects["intro_image_path"]
+            props["overlayMode"] = "full"
+            props["layoutStyle"] = "split-left"
+        overlay_path = os.path.join(output_dir, f"content_card_{clip_index}.webm")
+        self._render_remotion_overlay(
+            composition="ContentCard",
+            props=props,
+            output_path=overlay_path,
+            width=width,
+            height=height,
+            fps=fps,
+            frames=frames,
+            output_dir=output_dir,
+            tag=f"content_{clip_index}",
+        )
+        ready = self._overlay_media_ready(overlay_path)
+        if not ready:
+            return False
+        tmp = segment_path + ".cc.mp4"
+        self._overlay_videos(segment_path, [ready], tmp)
+        if os.path.isfile(tmp) and os.path.getsize(tmp) > 1024:
+            os.replace(tmp, segment_path)
+            for p in (overlay_path, overlay_path.replace(".webm", ".mov")):
+                if os.path.isfile(p):
+                    os.remove(p)
+            return True
+        return False
 
     def execute(self, video_path: str, analysis: dict, output_dir: str,
                 effects: dict = None, tts_info: dict = None) -> str:
@@ -182,8 +256,9 @@ class RenderSkill:
                 clip_path, ass_path, output_path, x264_preset=self._x264_preset(effects)
             )
 
-        self._apply_bullet_overlay(
-            output_path, clip, target_duration, output_dir, 0, effects=effects
+        self._apply_content_highlight(
+            output_path, clip, target_duration, output_dir, 0,
+            effects=effects, sentences=sentences,
         )
 
         if os.path.exists(clip_path):
@@ -292,8 +367,9 @@ class RenderSkill:
                     clip_path, ass_path, segment_path, x264_preset=self._x264_preset(effects)
                 )
 
-            self._apply_bullet_overlay(
-                segment_path, clip, target_duration, output_dir, i, effects=effects
+            self._apply_content_highlight(
+                segment_path, clip, target_duration, output_dir, i,
+                effects=effects, sentences=sentences,
             )
 
             if os.path.isfile(segment_path) and os.path.getsize(segment_path) > 1024:
@@ -811,7 +887,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             video_path
         ]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=10,
+                encoding="utf-8", errors="replace",
+            )
             parts = result.stdout.strip().split("x")
             return int(parts[0]), int(parts[1])
         except Exception:
@@ -968,8 +1047,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             probe_cmd = ["ffprobe", "-v", "quiet", "-select_streams", "a",
                          "-show_entries", "stream=codec_type", "-of", "csv=p=0",
                          video_paths[0]]
-            probe_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=5)
-            has_audio = "audio" in probe_result.stdout
+            probe_result = subprocess.run(
+                probe_cmd, capture_output=True, text=True, timeout=5,
+                encoding="utf-8", errors="replace",
+            )
+            has_audio = "audio" in (probe_result.stdout or "")
         except Exception:
             pass
 

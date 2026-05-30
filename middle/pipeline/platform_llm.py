@@ -154,9 +154,15 @@ def generate_platform_copy(
     raise ValueError(f"platform_copy_invalid: {last_err}")
 
 
-def _save_video_clip_files(output_dir: Path, copy: dict[str, Any]) -> None:
-    llm_dir = output_dir / "llm"
-    llm_dir.mkdir(parents=True, exist_ok=True)
+def _save_video_clip_files(
+    output_dir: Path,
+    copy: dict[str, Any],
+    *,
+    broll_seconds: float | None = None,
+) -> None:
+    from python_agent.pipeline_input import save_video_clips_plan
+    from python_agent.pipeline_render import sync_broll_timings_to_clips
+
     feed_kind = ""
     brief_p = output_dir / "brief.json"
     if brief_p.is_file():
@@ -172,15 +178,15 @@ def _save_video_clip_files(output_dir: Path, copy: dict[str, Any]) -> None:
         effects = dict(block.get("effects") or {})
         if feed_kind in ("apps", "news"):
             effects["gradient"] = False
-        payload = {
-            "clips": clips,
-            "platform": platform,
-            "effects": effects,
-            "source": "pipeline_llm",
-        }
-        (llm_dir / f"video_clips_{platform}.json").write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2),
-            encoding="utf-8",
+        if broll_seconds and broll_seconds > 0:
+            sync_broll_timings_to_clips(clips, float(broll_seconds))
+        save_video_clips_plan(
+            output_dir,
+            platform,
+            clips,
+            effects=effects,
+            source="pipeline_llm",
+            render_status="ok",
         )
 
 
@@ -246,7 +252,7 @@ def write_publish_pack(
                     json.dumps(copy, ensure_ascii=False, indent=2),
                     encoding="utf-8",
                 )
-                _save_video_clip_files(output_dir, copy)
+                _save_video_clip_files(output_dir, copy, broll_seconds=broll_seconds)
             except Exception as e:
                 meta["llm_error"] = f"{type(e).__name__}: {str(e)[:200]}"
                 copy = {}
@@ -270,7 +276,15 @@ def write_publish_pack(
         existing.update(meta)
         meta_path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    _prefetch_cover_if_needed(output_dir, brief)
     return meta
+
+
+def _prefetch_cover_if_needed(output_dir: Path, brief: VideoBrief) -> None:
+    from python_agent.pipeline_media import prefetch_task_cover
+
+    if getattr(brief, "cover_image_url", ""):
+        prefetch_task_cover(output_dir, brief.to_dict())
 
 
 def _write_from_llm(brief: VideoBrief, output_dir: Path, copy: dict[str, Any]) -> Path:

@@ -44,10 +44,40 @@ def _probe_duration(video_path: str) -> float:
         video_path,
     ]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=15,
+            encoding="utf-8", errors="replace",
+        )
         return max(1.0, float(result.stdout.strip()))
     except Exception:
         return 60.0
+
+
+def estimate_tts_durations_from_clips(clips: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """按口播字数估算每段时长（渲染前写回 B-roll 时间轴）。"""
+    out: list[dict[str, Any]] = []
+    for clip in clips:
+        text = str(clip.get("tts_text") or clip.get("hook_text") or "").strip()
+        chars = max(1, len(text))
+        dur = max(2.5, min(18.0, chars / 3.8))
+        out.append({"duration": round(dur, 3)})
+    return out
+
+
+def sync_broll_timings_to_clips(
+    clips: list[dict[str, Any]],
+    broll_duration: float,
+    *,
+    tts_clips: list[dict[str, Any]] | None = None,
+) -> bool:
+    """若分镜需重算 B-roll 起点，原地修改 clips 并返回是否已更新。"""
+    if not clips or broll_duration <= 0:
+        return False
+    if not clips_need_broll_retiming(clips):
+        return False
+    tts = tts_clips if tts_clips else estimate_tts_durations_from_clips(clips)
+    allocate_broll_timings(clips, tts, broll_duration)
+    return True
 
 
 def clips_need_broll_retiming(clips: list[dict[str, Any]]) -> bool:

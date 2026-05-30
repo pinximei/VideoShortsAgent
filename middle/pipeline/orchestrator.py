@@ -91,6 +91,10 @@ def process_jobs(
             out_dir = cfg.output_root / str(article_id)
             out_dir.mkdir(parents=True, exist_ok=True)
             brief_dict = brief.to_dict()
+            if brief.cover_image_url:
+                from python_agent.pipeline_media import prefetch_task_cover
+
+                prefetch_task_cover(out_dir, brief_dict)
             store.advance(
                 ck,
                 status=STATUS_PROCESSING,

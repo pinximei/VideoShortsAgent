@@ -32,6 +32,8 @@ interface ContentCardProps {
   colorMood?: string;
   headingStartFrame?: number;
   bulletStartFrames?: number[];
+  /** hud：透明底，仅叠要点条（用于 B-roll 正片） */
+  overlayMode?: 'full' | 'hud';
 }
 
 export const ContentCard: React.FC<ContentCardProps> = ({
@@ -52,7 +54,9 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   colorMood = '',
   headingStartFrame = 0,
   bulletStartFrames = [],
+  overlayMode = 'full',
 }) => {
+  const hud = overlayMode === 'hud';
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const currentTime = frame / fps;
@@ -103,6 +107,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
 
   return (
     <div style={{position: 'absolute', top: 0, left: 0, width, height}}>
+      {!hud && (
       <SlideBackground 
         colors={colors} 
         imagePath={imagePath} 
@@ -112,8 +117,10 @@ export const ContentCard: React.FC<ContentCardProps> = ({
         decorationStyle={decorationStyle}
         colorMood={colorMood}
       />
+      )}
 
       {/* Top Right Decor */}
+      {!hud && (<>
       <div style={{
         position: 'absolute', top: -40, right: -40, width: 200, height: 200,
         borderRadius: '0 0 0 100%', background: `linear-gradient(135deg, ${accentColor}40, transparent)`,
@@ -124,9 +131,18 @@ export const ContentCard: React.FC<ContentCardProps> = ({
         border: `2px solid ${accentColor}30`, borderRadius: '50%',
         opacity: decorOpacity, transform: `rotate(${-decorRotate}deg)`, pointerEvents: 'none',
       }} />
+      </>)}
 
       {/* Main Content Area */}
-      <div style={wrapperStyle}>
+      <div style={{
+        ...wrapperStyle,
+        ...(hud ? {
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          paddingBottom: 220,
+          paddingTop: 0,
+        } : {}),
+      }}>
         {/* Title rendering engine */}
         {textEffect === 'glitch' && (
           <div style={{

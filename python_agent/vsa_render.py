@@ -10,7 +10,12 @@ from typing import Any
 from python_agent.capabilities.registry import merge_render_effects, platform_video_defaults
 from python_agent.pipeline_input import save_video_clips_plan
 from python_agent.pipeline_quality import effective_max_seconds
-from python_agent.pipeline_render import allocate_broll_timings, clips_need_broll_retiming, _probe_duration
+from python_agent.pipeline_render import (
+    allocate_broll_timings,
+    clips_need_broll_retiming,
+    sync_broll_timings_to_clips,
+    _probe_duration,
+)
 from python_agent.skills.dubbing_skill import DubbingSkill
 from python_agent.skills.render_skill import RenderSkill
 
@@ -114,7 +119,7 @@ def render_from_plan(
         plan_effects.get("ffmpeg_preset") or ffmpeg_preset or "fast"
     )
     if task_dir and Path(task_dir).is_dir():
-        from python_agent.pipeline_media import apply_intro_cover_from_brief
+        from python_agent.pipeline_media import apply_intro_cover_from_brief, prefetch_task_cover
 
         brief_data: dict[str, Any] = {}
         brief_p = Path(task_dir) / "brief.json"
@@ -123,9 +128,31 @@ def render_from_plan(
                 brief_data = json.loads(brief_p.read_text(encoding="utf-8-sig"))
             except Exception:
                 pass
+        prefetch_task_cover(Path(task_dir), brief_data)
         render_effects = apply_intro_cover_from_brief(
             render_effects, Path(task_dir), brief_data
         )
+    broll_dur = _probe_duration(broll_path)
+    if sync_broll_timings_to_clips(clips, broll_dur):
+        if task_dir and Path(task_dir).is_dir():
+            plan_path = Path(task_dir) / "llm" / f"video_clips_{platform}.json"
+            prev_source = "pipeline_llm"
+            if plan_path.is_file():
+                try:
+                    prev_source = str(
+                        json.loads(plan_path.read_text(encoding="utf-8-sig")).get("source") or prev_source
+                    )
+                except Exception:
+                    pass
+            save_video_clips_plan(
+                task_dir,
+                platform,
+                clips,
+                effects=plan_effects,
+                source=prev_source,
+                render_status="ok",
+                extra={"broll_timings": "preflight_estimate"},
+            )
     analysis = {"clips": clips}
     tts_info: dict[str, Any] = {"tts_clips": []}
 

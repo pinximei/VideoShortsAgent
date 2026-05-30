@@ -18,5 +18,6 @@ def test_apply_intro_cover_local(tmp_path: Path) -> None:
     )
     assert fx.get("intro_subheading") == "Demo Title"
     assert fx.get("intro_image_path")
+    assert fx.get("intro_card") is True
     rem = remotion_public_image(cover, task_tag="t1")
     assert rem and rem.startswith("/images/")

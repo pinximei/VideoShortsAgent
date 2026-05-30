@@ -48,6 +48,14 @@ def remotion_public_image(local_path: str | Path, *, task_tag: str = "cover") ->
     return f"/images/{name}"
 
 
+def prefetch_task_cover(task_dir: Path, brief: dict) -> Path | None:
+    """任务落盘时预下载封面，供片头 TitleCard / ContentCard 使用。"""
+    url = str(brief.get("cover_image_url") or "").strip()
+    if not url:
+        return None
+    return resolve_cover_for_task(Path(task_dir), url)
+
+
 def apply_intro_cover_from_brief(
     render_effects: dict,
     task_dir: Path,
@@ -72,4 +80,6 @@ def apply_intro_cover_from_brief(
         rem = remotion_public_image(local, task_tag=str(brief.get("article_id") or task_dir.name))
         if rem:
             fx["intro_image_path"] = rem
+            if fx.get("intro_card") is not False:
+                fx["intro_card"] = True
     return fx

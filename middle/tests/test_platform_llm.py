@@ -27,13 +27,21 @@ MOCK_COPY = {
         "title": "LLM抖音标题",
         "tags": ["AI工具"],
         "script": "LLM口播稿内容",
-        "clips": [{"start": 0, "end": 5, "hook_text": "钩子", "tts_text": "LLM口播", "caption_style": "spring"}],
+        "effects": {"preset": "活力", "gradient": False},
+        "clips": [
+            {"start": 0, "end": 8, "hook_text": "钩子", "tts_text": "LLM口播第一段内容需要足够长才能通过校验规则", "caption_style": "spring", "transition_to_next": "fade"},
+            {"start": 12, "end": 20, "hook_text": "正文", "tts_text": "LLM口播第二段同样要写够字数以满足平台校验", "caption_style": "spring", "transition_to_next": "fade"},
+        ],
     },
     "xhs": {
         "title": "LLM小红书",
         "body": "LLM笔记正文",
         "video_script": "LLM小红书口播",
-        "clips": [{"start": 0, "end": 5, "hook_text": "分享", "tts_text": "LLM口播", "caption_style": "情感"}],
+        "effects": {"preset": "情感", "gradient": False},
+        "clips": [
+            {"start": 0, "end": 8, "hook_text": "分享", "tts_text": "LLM口播第一段内容需要足够长才能通过校验规则", "caption_style": "fade", "transition_to_next": "dissolve"},
+            {"start": 14, "end": 22, "hook_text": "要点", "tts_text": "LLM口播第二段同样要写够字数以满足平台校验", "caption_style": "fade", "transition_to_next": "fade"},
+        ],
     },
     "toutiao": {"title": "LLM头条", "body": "LLM微头条正文"},
     "douban": {"title": "LLM豆瓣", "body": "LLM豆瓣笔记"},
