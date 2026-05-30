@@ -87,6 +87,7 @@ render:
   # 生产 false；LLM 欠费/失败时仅调试可开 true
   allow_template_fallback: false
   parallel: true
+  parallel_workers: 2
   full_verify: false
   bookends: douyin
 

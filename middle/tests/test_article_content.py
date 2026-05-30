@@ -44,6 +44,21 @@ def test_rich_tabs_accepted() -> None:
     assert substantive_char_count(collect_article_text(article)) >= 60
 
 
+def test_article_body_included_in_collect() -> None:
+    article = {
+        "title": "快讯",
+        "article_body": (
+            "OpenAI 发布新模型，支持更长上下文窗口，面向企业 API 客户。"
+            "业内认为这将改变长文档问答与代码辅助场景，开发者可更低成本接入。"
+        ),
+        "summary": "https://example.com/x",
+    }
+    blob = collect_article_text(article)
+    assert "OpenAI" in blob
+    ok, _ = article_has_substantive_content(article)
+    assert ok
+
+
 def test_fixture_article_has_content() -> None:
     p = Path(__file__).parent / "fixtures" / "article_detail.json"
     article = json.loads(p.read_text(encoding="utf-8"))

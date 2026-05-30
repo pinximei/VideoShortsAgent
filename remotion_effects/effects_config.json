@@ -80,7 +80,7 @@
   "feed_kind_hints": {
     "news": {
       "preset": "严肃",
-      "note": "资讯：少用 circleopen/pixelize；末段 transition_to_next 用 fade"
+      "note": "资讯：ASS 快路径渲染；gradient=false；少用 circleopen/pixelize；末段 fade"
     },
     "apps": {
       "preset": "科技",

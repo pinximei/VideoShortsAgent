@@ -54,11 +54,15 @@ def is_placeholder_summary(text: str) -> bool:
 
 
 def collect_article_text(article: dict[str, Any], *, max_chars: int = 12000) -> str:
-    """合并 body、tabs、复刻分析等可读字段。"""
+    """合并 article_body、body、tabs、复刻分析等可读字段。"""
     parts: list[str] = []
 
+    article_body = (article.get("article_body") or "").strip()
+    if article_body:
+        parts.append(article_body)
+
     body = (article.get("body") or "").strip()
-    if body:
+    if body and body not in article_body:
         parts.append(body)
 
     for tab in article.get("tabs") or []:

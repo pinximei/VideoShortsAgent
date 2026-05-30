@@ -54,7 +54,7 @@ _FALLBACK_TRANSITIONS = (
 EFFECT_SELECTION_RULES = """
 ### 特效选型规则（必须遵守）
 1. **必须**为每个视频平台填写 `effects.preset`（科技/情感/叙事/活力/严肃之一），不要只写零散字段。
-2. **feed_kind=news**（资讯）：优先 preset=严肃 或 叙事；`gradient` 建议 false；末段 `transition_to_next` 用 fade。
+2. **feed_kind=news**（资讯）：优先 preset=严肃 或 叙事；`gradient` 必须为 false；字幕由系统走 FFmpeg ASS 快路径（勿依赖 Remotion 动画）；末段 `transition_to_next` 用 fade。
 3. **feed_kind=apps**（应用/变现）：优先 preset=科技 或 活力；钩子段 `caption_style=spring`，`transition_to_next=circleopen` 或 slideup。
 4. **段角色**：第 1 段=钩子（可 spring/circleopen）；中间段=正文（wipe/slide/dissolve）；**最后一段** `transition_to_next` 必须为 fade 或 dissolve。
 5. **禁止**使用目录外的转场名；禁止 pixelize/diag* 连续出现超过 1 次。
@@ -242,8 +242,10 @@ def merge_render_effects(
         gradient = bool(preset_spec.get("gradient", False))
     else:
         gradient = bool(gradient)
-    if (feed_kind or "news").strip().lower() == "news":
+    fk = (feed_kind or "news").strip().lower()
+    if fk == "news":
         gradient = False
+        remotion_on = False
 
     effects: dict[str, Any] = {
         "use_remotion": remotion_on,

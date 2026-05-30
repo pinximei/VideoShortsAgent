@@ -87,14 +87,17 @@ def render_from_plan(
     tmp = Path(work_dir or out.parent / "_vsa_work" / platform)
     tmp.mkdir(parents=True, exist_ok=True)
 
-    feed_kind = "news"
+    resolved_feed = (feed_kind or "news").strip()
     if task_dir and Path(task_dir).is_dir():
         brief_p = Path(task_dir) / "brief.json"
         if brief_p.is_file():
             try:
-                feed_kind = str(json.loads(brief_p.read_text(encoding="utf-8-sig")).get("feed_kind") or "news")
+                resolved_feed = str(
+                    json.loads(brief_p.read_text(encoding="utf-8-sig")).get("feed_kind") or resolved_feed
+                )
             except Exception:
                 pass
+    feed_kind = resolved_feed
     plan_effects = dict(effects or {})
     render_effects = merge_render_effects(
         platform,

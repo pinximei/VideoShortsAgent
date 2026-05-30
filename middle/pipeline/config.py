@@ -43,6 +43,7 @@ class PipelineConfig:
     render_skip_tts: bool = False
     render_allow_template_fallback: bool = False
     render_parallel: bool = True
+    render_parallel_workers: int = 2
     render_full_verify: bool = False
     render_bookends: str = "douyin"
     llm_enabled: bool = True
@@ -136,6 +137,7 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         render_skip_tts=bool(render.get("skip_tts", False)),
         render_allow_template_fallback=bool(render.get("allow_template_fallback", False)),
         render_parallel=bool(render.get("parallel", True)),
+        render_parallel_workers=max(1, int(render.get("parallel_workers") or 2)),
         render_full_verify=bool(render.get("full_verify", False)),
         render_bookends=str(render.get("bookends") or "douyin"),
         llm_enabled=bool(llm.get("enabled", True)),

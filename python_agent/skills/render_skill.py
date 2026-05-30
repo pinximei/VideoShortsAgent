@@ -556,16 +556,39 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     def _render_remotion_overlay(self, composition: str, props: dict, output_path: str,
                                  width: int, height: int, fps: int, frames: int,
                                  output_dir: str, tag: str = "overlay"):
-        """调用 Remotion CLI 渲染透明覆盖层（PNG 序列帧）"""
-        # 写入 props 文件（Windows 下必须用绝对路径 + 正斜杠）
+        """调用 Remotion CLI 渲染透明覆盖层；优先直出 WebM，失败再 PNG 序列。"""
         props_path = os.path.abspath(os.path.join(output_dir, f"remotion_props_{tag}.json"))
         with open(props_path, "w", encoding="utf-8") as f:
             json.dump(props, f, ensure_ascii=False)
 
-        # Windows 路径转正斜杠（Remotion CLI 要求）
         props_path_fwd = props_path.replace("\\", "/")
+        out_target = output_path
+        if output_path.endswith(".webm"):
+            out_target = output_path.replace(".webm", ".mov")
+        out_fwd = os.path.abspath(out_target).replace("\\", "/")
 
-        # 渲染为 PNG 序列帧到临时目录
+        fast_cmd = [
+            "npx", "remotion", "render", "src/index.tsx", composition,
+            f"--output={out_fwd}",
+            f"--props={props_path_fwd}",
+            "--codec=vp8",
+            "--pixel-format=yuva420p",
+            f"--width={width}", f"--height={height}",
+            f"--frames=0-{frames - 1}",
+        ]
+        try:
+            self._run_cmd(fast_cmd, f"Remotion:{composition}:fast", cwd=REMOTION_DIR,
+                          timeout=420, shell=True)
+            if os.path.isfile(out_target) and os.path.getsize(out_target) > 200:
+                if output_path != out_target and output_path.endswith(".webm"):
+                    os.replace(out_target, output_path)
+                if os.path.exists(props_path):
+                    os.remove(props_path)
+                return
+        except Exception:
+            pass
+
+        # 降级：PNG 序列帧（兼容旧 Remotion / 直出失败）
         seq_dir = os.path.join(output_dir, f"remotion_seq_{tag}")
         os.makedirs(seq_dir, exist_ok=True)
         seq_dir_fwd = os.path.abspath(seq_dir).replace("\\", "/")

@@ -116,7 +116,8 @@ def generate_platform_copy(
     if article:
         excerpt = collect_article_text(article, max_chars=4500)
         plain_excerpt = plain_without_urls(excerpt)
-        if len(plain_excerpt) >= 60:
+        min_excerpt = 40 if (article.get("article_body") or "").strip() else 60
+        if len(plain_excerpt) >= min_excerpt:
             user += f"\n\n## 文章正文（必读，勿仅根据标题编造）\n{excerpt[:4500]}"
         else:
             summary = (article.get("summary") or article.get("card_description") or "")[:600]

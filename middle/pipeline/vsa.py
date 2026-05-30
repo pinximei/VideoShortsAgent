@@ -73,12 +73,19 @@ def render_task_videos(
     videos: list[dict[str, Any]] = []
 
     if cfg.render_parallel and len(presets) > 1:
-        with ThreadPoolExecutor(max_workers=min(2, len(presets))) as pool:
+        workers = min(cfg.render_parallel_workers, len(presets))
+        errors: list[BaseException] = []
+        with ThreadPoolExecutor(max_workers=workers) as pool:
             futs = {
                 pool.submit(_render_platform_job, cfg, task_dir, p.id): p for p in presets
             }
             for fut in as_completed(futs):
-                videos.append(fut.result())
+                try:
+                    videos.append(fut.result())
+                except BaseException as exc:
+                    errors.append(exc)
+        if errors:
+            raise errors[0]
         videos.sort(key=lambda x: (0 if x["platform"] == "douyin" else 1, x["platform"]))
     else:
         for preset in presets:
