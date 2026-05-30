@@ -78,6 +78,14 @@ paths:
 site:
   public_base_url: "https://ai-trends.news"
 
+# Edge TTS（环境变量，也可写入仓库根 .env）
+# TTS_MAX_RETRIES=6          # 503/限流时重试次数
+# TTS_RETRY_BASE_SEC=1.5     # 指数退避基数（秒）
+# TTS_MAX_CONCURRENT=1       # 同时 WebSocket 连接数（建议 1）
+# TTS_SENTENCE_DELAY_MS=250  # 句间间隔，降低 burst 503
+# TTS_CLIP_WORKERS=1         # 多片段并行配音线程数
+# TTS_CACHE=1                # 同任务目录下 tts_cache 复用
+
 render:
   enabled: false
   platforms: ["douyin", "xhs"]

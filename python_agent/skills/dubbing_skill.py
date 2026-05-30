@@ -7,8 +7,8 @@ DubbingSkill - 中文配音技能（句级精确同步）
 import os
 import re
 import json
-import asyncio
 import subprocess
+from pathlib import Path
 
 
 VOICE_MALE = "zh-CN-YunxiNeural"
@@ -108,8 +108,9 @@ class DubbingSkill:
                     tts_clips.append(row)
         else:
             import concurrent.futures
+            from python_agent.config import get_config
 
-            workers = min(2, len(jobs))
+            workers = min(get_config().tts_clip_workers, len(jobs))
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
                 futs = [pool.submit(_one_clip, job) for job in jobs]
                 for fut in concurrent.futures.as_completed(futs):
@@ -253,62 +254,48 @@ class DubbingSkill:
         except Exception:
             pass
 
+    def _tts_cache_dir(self, tts_dir: str) -> str:
+        """任务级 TTS 缓存（跨片段复用相同句子）。"""
+        root = Path(tts_dir).resolve().parent
+        cache = root / "tts_cache"
+        cache.mkdir(parents=True, exist_ok=True)
+        return str(cache)
+
     def _generate_tts_batch(self, sentences: list, tts_dir: str, clip_index: int) -> list:
-        """并发生成所有句子的 TTS，返回音频信息列表"""
-        import edge_tts
+        """顺序生成各句 TTS（限流 + 重试），避免 gather 触发 503。"""
+        from python_agent.tts_edge import run_async, synthesize_batch_sequential
 
         paths = [os.path.join(tts_dir, f"sent_{clip_index}_{j}.mp3")
                  for j in range(len(sentences))]
-
-        async def _run_all():
-            tasks = []
-            for text, path in zip(sentences, paths):
-                comm = edge_tts.Communicate(text, self.voice)
-                tasks.append(comm.save(path))
-            await asyncio.gather(*tasks)
-
-        # 兼容已有事件循环
+        items = list(zip(sentences, paths))
+        cache_dir = self._tts_cache_dir(tts_dir)
         try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
+            run_async(
+                synthesize_batch_sequential(
+                    items, voice=self.voice, cache_dir=cache_dir,
+                )
+            )
+        except RuntimeError as exc:
+            print(f"[DubbingSkill] TTS 失败: {exc}")
+            return []
 
-        if loop and loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, _run_all())
-                future.result(timeout=120)
-        else:
-            asyncio.run(_run_all())
-
-        # 收集结果
         results = []
-        for j, (sentence, path) in enumerate(zip(sentences, paths)):
-            if os.path.exists(path):
+        for sentence, path in zip(sentences, paths):
+            if os.path.exists(path) and os.path.getsize(path) > 80:
                 duration = self._get_audio_duration(path)
                 results.append({"text": sentence, "path": path, "duration": duration})
         return results
 
     def _generate_tts(self, text: str, output_path: str):
-        """使用 edge-tts 生成语音文件"""
-        import edge_tts
+        """使用 Edge TTS 生成语音（带重试）。"""
+        from python_agent.tts_edge import run_async, synthesize_to_file
 
-        async def _run():
-            communicate = edge_tts.Communicate(text, self.voice)
-            await communicate.save(output_path)
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, _run())
-                future.result(timeout=60)
-        else:
-            asyncio.run(_run())
+        cache_dir = self._tts_cache_dir(os.path.dirname(output_path) or ".")
+        run_async(
+            synthesize_to_file(
+                text, self.voice, output_path, cache_dir=cache_dir,
+            )
+        )
 
     def _get_audio_duration(self, audio_path: str) -> float:
         """获取音频文件时长（秒）"""

@@ -60,10 +60,22 @@ class Config:
         default = "groq" if self.groq_api_key else "local"
         return os.getenv("TRANSCRIBE_MODE", default)
 
-    # ── TTS 配置 ──
+    # ── TTS 配置（Edge 在线，见 python_agent/tts_edge.py）──
     @property
     def tts_voice(self) -> str:
         return os.getenv("TTS_VOICE", "zh-CN-YunxiNeural")
+
+    @property
+    def tts_max_retries(self) -> int:
+        return max(1, int(os.getenv("TTS_MAX_RETRIES", "6")))
+
+    @property
+    def tts_max_concurrent(self) -> int:
+        return max(1, int(os.getenv("TTS_MAX_CONCURRENT", "1")))
+
+    @property
+    def tts_clip_workers(self) -> int:
+        return max(1, int(os.getenv("TTS_CLIP_WORKERS", "1")))
 
     # ── 外部 API 配置 ──
     @property
