@@ -28,7 +28,7 @@ PLATFORM_PRESETS: dict[str, PlatformPreset] = {
         max_seconds=60.0,
         voice="zh-CN-YunxiNeural",
         effects={
-            "use_remotion": False,
+            "use_remotion": True,
             "caption_style": "spring",
             "transition": "fade",
             "transition_duration": 0.35,
@@ -43,8 +43,10 @@ PLATFORM_PRESETS: dict[str, PlatformPreset] = {
         max_seconds=60.0,
         voice="zh-CN-XiaoxiaoNeural",
         effects={
-            "use_remotion": False,
-            "caption_style": "情感",
+            "use_remotion": True,
+            "caption_style": "fade",
+            "gradient": True,
+            "gradient_colors": ["#FF9A9E", "#FECFEF"],
             "transition": "dissolve",
             "transition_duration": 0.45,
             "gradient": True,

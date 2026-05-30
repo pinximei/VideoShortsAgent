@@ -44,7 +44,7 @@ feed：{feed_kind}
     "script": "60秒内口播稿",
     "effects": {{
       "preset": "活力",
-      "use_remotion": false,
+      "use_remotion": true,
       "gradient": false,
       "transition_duration": 0.35
     }},
@@ -63,7 +63,7 @@ feed：{feed_kind}
     "title": "40字内标题",
     "body": "900字内笔记",
     "video_script": "60秒口播稿",
-    "effects": {{ "preset": "情感", "use_remotion": false, "gradient": true }},
+    "effects": {{ "preset": "情感", "use_remotion": true, "gradient": true }},
     "clips": [{{"start": 0, "end": 10, "hook_text": "...", "tts_text": "...", "caption_style": "fade", "transition_to_next": "dissolve"}}]
   }},
   "toutiao": {{ "title": "...", "body": "微头条短文" }},

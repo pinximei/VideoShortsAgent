@@ -24,6 +24,7 @@ PLATFORM_VIDEO_DEFAULTS: dict[str, dict[str, Any]] = {
         "default_preset": "活力",
         "default_caption_style": "spring",
         "default_transition": "circleopen",
+        "use_remotion": True,
     },
     "xhs": {
         "width": 1080,
@@ -33,6 +34,7 @@ PLATFORM_VIDEO_DEFAULTS: dict[str, dict[str, Any]] = {
         "default_preset": "情感",
         "default_caption_style": "fade",
         "default_transition": "dissolve",
+        "use_remotion": True,
     },
 }
 
@@ -43,6 +45,32 @@ VALID_TRANSITIONS = (
     "pixelize", "diagtl", "diagtr", "diagbl", "diagbr",
 )
 STYLE_PRESETS = ("科技", "情感", "叙事", "活力", "严肃")
+
+# 默认 Remotion 字幕/渐变（需 remotion_effects 下 npm install）；yaml render.use_remotion: false 可退回 ASS
+DEFAULT_USE_REMOTION = True
+
+
+def resolve_caption_style(
+    raw: str | None,
+    *,
+    preset_spec: dict[str, Any] | None = None,
+    default: str = "spring",
+) -> str:
+    """将 LLM/平台误写的风格名（如「情感」）映射为 CaptionOverlay 合法值。"""
+    s = (raw or "").strip()
+    if s in VALID_CAPTION_STYLES:
+        return s
+    cat = effects_catalog()
+    if s in STYLE_PRESETS:
+        spec = (cat.get("presets") or {}).get(s) or {}
+        cs = str(spec.get("caption_style") or "").strip()
+        if cs in VALID_CAPTION_STYLES:
+            return cs
+    if preset_spec:
+        cs = str(preset_spec.get("caption_style") or "").strip()
+        if cs in VALID_CAPTION_STYLES:
+            return cs
+    return default if default in VALID_CAPTION_STYLES else "spring"
 
 
 @lru_cache(maxsize=1)
@@ -77,7 +105,7 @@ def llm_capabilities_section() -> str:
     lines.append("")
     lines.append("### effects 对象（平台级，可选）")
     lines.append(
-        '- `use_remotion`: true 启用 Remotion 字幕层（需本机 node）；false 用 ASS 烧录\n'
+        '- `use_remotion`: 默认 true（Remotion 句级字幕 + 渐变，与 TTS 时间轴对齐）；false 仅调试时用 ASS\n'
         '- `gradient`: true/false 渐变氛围层\n'
         '- `gradient_colors`: ["#from", "#to"]\n'
         '- `transition_duration`: 0.3~0.8 秒\n'
@@ -98,7 +126,7 @@ def merge_render_effects(
     clips: list[dict[str, Any]],
     plan_effects: dict[str, Any] | None = None,
     *,
-    use_remotion: bool = False,
+    use_remotion: bool | None = None,
 ) -> dict[str, Any]:
     """
     将 LLM 输出的 effects + 每段 clip 字段合并为 RenderSkill 所需 effects dict。
@@ -109,10 +137,17 @@ def merge_render_effects(
     pe = dict(plan_effects or {})
     preset_name = pe.get("preset") or defaults.get("default_preset")
     preset_spec = (cat.get("presets") or {}).get(preset_name) or {}
+    # 以 render.use_remotion / 调用方为准；不采用 LLM 分镜里的 use_remotion: false
+    remotion_on = DEFAULT_USE_REMOTION if use_remotion is None else bool(use_remotion)
 
+    cap_default = defaults.get("default_caption_style") or "spring"
     effects: dict[str, Any] = {
-        "use_remotion": bool(pe.get("use_remotion", use_remotion)),
-        "caption_style": pe.get("caption_style") or preset_spec.get("caption_style") or defaults["default_caption_style"],
+        "use_remotion": remotion_on,
+        "caption_style": resolve_caption_style(
+            pe.get("caption_style"),
+            preset_spec=preset_spec,
+            default=cap_default,
+        ),
         "transition": pe.get("transition") or preset_spec.get("transition") or defaults["default_transition"],
         "transition_duration": float(pe.get("transition_duration", 0.45)),
         "gradient": bool(pe.get("gradient", preset_spec.get("gradient", False))),
@@ -121,8 +156,11 @@ def merge_render_effects(
 
     # 每段 clip 可覆盖 caption_style / transition_to_next（RenderSkill 已支持）
     for clip in clips:
-        if clip.get("caption_style") and clip["caption_style"] not in VALID_CAPTION_STYLES:
-            clip["caption_style"] = effects["caption_style"]
+        clip["caption_style"] = resolve_caption_style(
+            clip.get("caption_style"),
+            preset_spec=preset_spec,
+            default=effects["caption_style"],
+        )
         tr = clip.get("transition_to_next")
         if tr and tr not in VALID_TRANSITIONS:
             clip["transition_to_next"] = effects["transition"]

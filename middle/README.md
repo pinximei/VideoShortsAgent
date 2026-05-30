@@ -15,6 +15,19 @@ py -3.12 scripts\start_server.py
 
 `GET http://127.0.0.1:8780/api/v1/capabilities` — 全部字幕样式、转场、Remotion 预设，LLM 生成时必须引用。
 
+## 视频渲染（默认 Remotion）
+
+`config.yaml` → `render.use_remotion: true`（默认）：句级字幕与 TTS 时间轴对齐，不用 FFmpeg ASS。
+
+首次需安装特效工程：
+
+```powershell
+cd D:\VideoShortsAgent\remotion_effects
+npm install
+```
+
+关闭 Remotion、退回 ASS 烧录：`render.use_remotion: false`
+
 ## 内容赛道（多账号）
 
 一平台账号只维护一种内容类型。在 `config.yaml` 的 `themes` 中配置赛道（如 AI 变现 / AI 资讯），每赛道绑定各平台账号名称；任务按 Soul `feed_kind` 自动归类。

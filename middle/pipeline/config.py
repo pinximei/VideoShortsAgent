@@ -38,7 +38,7 @@ class PipelineConfig:
     render_mode: str = "pipeline"
     default_segments: str = "0:00-0:45"
     render_platforms: list[str] = field(default_factory=lambda: ["douyin", "xhs"])
-    render_use_remotion: bool = False
+    render_use_remotion: bool = True
     render_skip_tts: bool = False
     render_allow_template_fallback: bool = False
     llm_enabled: bool = True
@@ -128,7 +128,7 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         render_mode=str(render.get("mode") or "pipeline"),
         default_segments=str(render.get("default_segments") or "0:00-0:45"),
         render_platforms=list(render.get("platforms") or ["douyin", "xhs"]),
-        render_use_remotion=bool(render.get("use_remotion", False)),
+        render_use_remotion=bool(render.get("use_remotion", True)),
         render_skip_tts=bool(render.get("skip_tts", False)),
         render_allow_template_fallback=bool(render.get("allow_template_fallback", False)),
         llm_enabled=bool(llm.get("enabled", True)),

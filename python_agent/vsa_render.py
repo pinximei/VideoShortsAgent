@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from python_agent.capabilities.registry import merge_render_effects, platform_video_defaults
+from python_agent.pipeline_render import allocate_broll_timings, _probe_duration
 from python_agent.skills.dubbing_skill import DubbingSkill
 from python_agent.skills.render_skill import RenderSkill
 
@@ -54,7 +55,7 @@ def render_from_plan(
     skip_tts: bool = False,
     work_dir: str | None = None,
     effects: dict[str, Any] | None = None,
-    use_remotion: bool = False,
+    use_remotion: bool = True,
 ) -> dict[str, Any]:
     import os
 
@@ -84,6 +85,9 @@ def render_from_plan(
         clips, tts_list = _trim_clips(clips, tts_info.get("tts_clips") or [], max_seconds)
         analysis["clips"] = clips
         tts_info["tts_clips"] = tts_list
+        # 音画同步：无 LLM 时间轴时，按 TTS 时长在 B-roll 上顺序分配 start/end
+        if tts_list and not all("start" in c and "end" in c for c in clips):
+            allocate_broll_timings(clips, tts_list, _probe_duration(broll_path))
 
     renderer = RenderSkill()
     raw = renderer.execute(

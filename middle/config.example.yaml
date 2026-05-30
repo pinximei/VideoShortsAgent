@@ -81,7 +81,8 @@ site:
 render:
   enabled: false
   platforms: ["douyin", "xhs"]
-  use_remotion: false
+  # 默认 Remotion 句级字幕 + 渐变（需 cd remotion_effects && npm install）
+  use_remotion: true
   skip_tts: false
   allow_template_fallback: false
 

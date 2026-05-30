@@ -117,7 +117,7 @@ class RenderSkill:
 
         # 字幕/特效
         sentences = tts_clip.get("sentences") if tts_clip else None
-        use_remotion = (effects or {}).get("use_remotion", False) and self._remotion_available
+        use_remotion = (effects or {}).get("use_remotion", True) and self._remotion_available
         caption_style = (effects or {}).get("caption_style", "spring")
 
         if use_remotion:
@@ -212,7 +212,7 @@ class RenderSkill:
 
             # 字幕/特效（每段独立选择）
             sentences = tts_clip.get("sentences") if tts_clip else None
-            use_remotion = (effects or {}).get("use_remotion", False) and self._remotion_available
+            use_remotion = (effects or {}).get("use_remotion", True) and self._remotion_available
             # 优先使用 clip 级别的 caption_style，降级到全局 effects
             caption_style = clip.get("caption_style") or (effects or {}).get("caption_style", "spring")
 
@@ -413,9 +413,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         print(f"[RenderSkill] Remotion 特效: {width}x{height}, {total_frames} 帧, style={caption_style}")
 
         # 1. 渲染字幕覆盖层
-        props = {"style": caption_style}
+        props = {
+            "style": caption_style,
+            "durationSec": float(duration),
+            "fps": fps,
+        }
         if sentences and len(sentences) > 0:
-            # 传递精确时间轴，Remotion 组件逐句显示
+            # DubbingSkill 句级时间轴（秒）→ Remotion 按 currentTime 逐句显示，与 TTS 对齐
             props["sentences"] = sentences
         else:
             props["text"] = text
