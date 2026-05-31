@@ -105,7 +105,13 @@ def render_from_plan(
     if task_dir and Path(task_dir).is_dir():
         brief_for_tts = load_tts_from_task_dir(task_dir)
     tts_cfg = resolve_tts_for_platform(brief_for_tts, platform)
-    voice = voice or brief_for_tts.get("tts_voice") or tts_cfg["tts_voice"] or defaults["voice"]
+    # 显式传入的 voice 仅作兜底；优先 brief / V 模板 / 平台默认（避免 Yunxi 覆盖 Yunyang）
+    voice = (
+        brief_for_tts.get("tts_voice")
+        or tts_cfg["tts_voice"]
+        or voice
+        or defaults["voice"]
+    )
     tts_rate = str(brief_for_tts.get("tts_rate") or tts_cfg["tts_rate"])
     tts_pitch = str(brief_for_tts.get("tts_pitch") or tts_cfg["tts_pitch"])
     sent_pause = brief_for_tts.get("sentence_pause_sec", tts_cfg["sentence_pause_sec"])

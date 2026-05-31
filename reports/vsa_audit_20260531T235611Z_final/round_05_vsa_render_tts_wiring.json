@@ -1,0 +1,10 @@
+{
+  "id": 5,
+  "name": "vsa_render_tts_wiring",
+  "ok": true,
+  "evidence": {
+    "has_rate": true,
+    "has_pitch": true,
+    "has_resolve": true
+  }
+}

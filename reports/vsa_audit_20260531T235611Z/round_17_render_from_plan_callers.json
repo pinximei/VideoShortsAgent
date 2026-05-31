@@ -1,0 +1,15 @@
+{
+  "id": 17,
+  "name": "render_from_plan_callers",
+  "ok": true,
+  "evidence": {
+    "files": [
+      "python_agent\\vsa_render.py",
+      "python_agent\\vsa_cli.py",
+      "middle\\scripts\\demo_render_one.py",
+      "middle\\pipeline\\vsa.py",
+      "middle\\scripts\\render_video.py"
+    ],
+    "count": 5
+  }
+}

@@ -133,7 +133,15 @@ class VideoShortsAgent:
         self.analysis_skill = AnalysisSkill(api_key=api_key, model=llm_model)
         self.render_skill = RenderSkill()
         self.download_skill = DownloadSkill()
-        self.dubbing_skill = DubbingSkill()
+        from python_agent.tts_params import resolve_tts_for_platform
+
+        _tts = resolve_tts_for_platform({}, "douyin")
+        self.dubbing_skill = DubbingSkill(
+            voice=_tts["tts_voice"],
+            tts_rate=_tts["tts_rate"],
+            tts_pitch=_tts["tts_pitch"],
+            sentence_pause=_tts["sentence_pause_sec"],
+        )
 
         # 3. 注册 Tools
         self.tools = ToolRegistry()
@@ -233,7 +241,17 @@ class VideoShortsAgent:
             analysis = json.loads(analysis_json)
         except json.JSONDecodeError:
             return f"错误：analysis_json 不是合法的 JSON: {analysis_json[:200]}"
-        result = self.dubbing_skill.execute(analysis, self._task_dir, voice=voice)
+        from python_agent.tts_params import resolve_tts_for_platform
+
+        tts = resolve_tts_for_platform({}, "douyin")
+        dub_voice = (voice or "").strip() or tts["tts_voice"]
+        dubber = DubbingSkill(
+            voice=dub_voice,
+            tts_rate=tts["tts_rate"],
+            tts_pitch=tts["tts_pitch"],
+            sentence_pause=tts["sentence_pause_sec"],
+        )
+        result = dubber.execute(analysis, self._task_dir, voice=dub_voice)
         return json.dumps(result, ensure_ascii=False, indent=2)
 
     def _tool_render(self, video_path: str, analysis_json: str,

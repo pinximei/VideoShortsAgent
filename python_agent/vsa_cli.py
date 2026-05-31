@@ -18,8 +18,8 @@ import json
 import sys
 
 PLATFORM_DEFAULTS = {
-    "douyin": {"voice": "zh-CN-YunxiNeural", "width": 1080, "height": 1920, "max_seconds": 60},
-    "xhs": {"voice": "zh-CN-XiaoxiaoNeural", "width": 1080, "height": 1920, "max_seconds": 60},
+    "douyin": {"width": 1080, "height": 1920, "max_seconds": 60},
+    "xhs": {"width": 1080, "height": 1920, "max_seconds": 60},
 }
 
 

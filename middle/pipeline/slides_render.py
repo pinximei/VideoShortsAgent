@@ -113,6 +113,9 @@ def render_slides_video(
 
     task_dir = task_dir.resolve()
     brief_dict = load_brief(task_dir)
+    from python_agent.tts_params import load_tts_from_task_dir
+
+    brief_dict = {**brief_dict, **load_tts_from_task_dir(task_dir)}
 
     scene_key = (cfg.render_scene or "").strip() or _default_scene_for_feed(
         str(brief_dict.get("feed_kind") or "news")

@@ -1,0 +1,12 @@
+{
+  "id": 16,
+  "name": "vsa_file_manifest_sha256",
+  "ok": true,
+  "evidence": {
+    "middle/pipeline/vsa.py": "72075a9813dcc26b",
+    "middle/pipeline/vsa_adapter.py": "294a8768782440cd",
+    "python_agent/vsa_render.py": "e42410f4e8d13fa2",
+    "python_agent/vsa_cli.py": "e156dad00bf46f9a",
+    "middle/tests/test_vsa.py": "e5cde4ef6f5a8fb0"
+  }
+}

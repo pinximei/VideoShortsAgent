@@ -1,0 +1,19 @@
+{
+  "id": 1,
+  "name": "pytest_test_vsa",
+  "ok": false,
+  "evidence": {
+    "cmd": [
+      "C:\\Users\\dell\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "-m",
+      "pytest",
+      "middle/tests/test_vsa.py",
+      "-v",
+      "--tb=short",
+      "-q"
+    ],
+    "exit_code": 4,
+    "stdout": "",
+    "stderr": "ImportError while loading conftest 'D:\\VideoShortsAgent\\middle\\tests\\conftest.py'.\nmiddle\\tests\\conftest.py:8: in <module>\n    from pipeline.channel_registry import ChannelAccount\nE   ModuleNotFoundError: No module named 'pipeline.channel_registry'\n"
+  }
+}

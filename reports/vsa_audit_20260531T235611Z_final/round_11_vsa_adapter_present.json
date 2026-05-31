@@ -1,0 +1,9 @@
+{
+  "id": 11,
+  "name": "vsa_adapter_present",
+  "ok": true,
+  "evidence": {
+    "exists": true,
+    "lines": 41
+  }
+}

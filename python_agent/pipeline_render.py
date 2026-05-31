@@ -234,6 +234,8 @@ def render_platform_video(
     plan_source = str(analysis.get("source") or "pipeline_llm")
     max_sec = effective_max_seconds(preset)
     render_status = "degraded" if "fallback" in plan_source else "ok"
+    effects = dict(preset.effects)
+    effects["use_remotion"] = bool(use_remotion)
     tts_info: dict[str, Any] = {"tts_clips": []}
     if not skip_tts:
         from python_agent.tts_params import load_tts_from_task_dir, resolve_tts_for_platform
@@ -278,9 +280,6 @@ def render_platform_video(
         analysis["clips"] = clips
         if allow_template_fallback and clips_need_broll_retiming(clips):
             allocate_broll_timings(clips, fake_tts, broll_duration)
-
-    effects = dict(preset.effects)
-    effects["use_remotion"] = bool(use_remotion)
 
     renderer = RenderSkill()
     raw_path = renderer.execute(

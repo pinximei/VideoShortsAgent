@@ -896,7 +896,16 @@ def create_app():
                             slides = resolver.execute(slides, images_dir, image_mode, task_dir)
 
                             print("[Text2Video] 步骤 2/4: 生成 TTS 配音...")
-                            dubbing_skill = DubbingSkill(voice=voice)
+                            from python_agent.tts_params import resolve_tts_for_platform
+
+                            tts_cfg = resolve_tts_for_platform({}, "douyin")
+                            dub_voice = (voice or "").strip() or tts_cfg["tts_voice"]
+                            dubbing_skill = DubbingSkill(
+                                voice=dub_voice,
+                                tts_rate=tts_cfg["tts_rate"],
+                                tts_pitch=tts_cfg["tts_pitch"],
+                                sentence_pause=tts_cfg["sentence_pause_sec"],
+                            )
                             clips_with_tts = [{"tts_text": s.get("tts_text", "")} for s in slides]
                             tts_result = dubbing_skill.execute(clips_with_tts, task_dir)
                             if isinstance(tts_result, dict):

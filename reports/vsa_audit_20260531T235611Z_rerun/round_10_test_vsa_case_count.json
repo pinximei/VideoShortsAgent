@@ -1,0 +1,12 @@
+{
+  "id": 10,
+  "name": "test_vsa_case_count",
+  "ok": true,
+  "evidence": {
+    "test_functions": [
+      "test_load_video_clips_missing_raises",
+      "test_load_video_clips_ok"
+    ],
+    "count": 2
+  }
+}

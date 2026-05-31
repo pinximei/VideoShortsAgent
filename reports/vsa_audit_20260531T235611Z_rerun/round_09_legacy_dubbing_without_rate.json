@@ -1,0 +1,11 @@
+{
+  "id": 9,
+  "name": "legacy_dubbing_without_rate",
+  "ok": false,
+  "evidence": {
+    "hits": [
+      "python_agent/agent.py:136:self.dubbing_skill = DubbingSkill()"
+    ],
+    "count": 1
+  }
+}

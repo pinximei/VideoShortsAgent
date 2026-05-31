@@ -81,7 +81,6 @@ def render_from_llm_plan(
         broll_path=broll,
         output_path=str(out),
         platform=platform_id,
-        voice=preset.voice,
         max_seconds=preset.max_seconds,
         width=preset.width,
         height=preset.height,
