@@ -13,6 +13,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+# 慢讲模板：抖音男声任务上降低抽中权重（仍可通过 motion_id 显式配对）
+SLOW_VOICE_STYLE_IDS = frozenset(
+    {"V04_minimal_calm", "V08_terminal_dev", "V12_phrase_pages", "V17_code_rain_hook", "V20_clean_badge_friend"}
+)
+
 _REPO = Path(__file__).resolve().parents[1]
 _CATALOG_PATH = _REPO / "templates" / "voice_content_20" / "catalog.json"
 
@@ -55,8 +60,14 @@ def pick_voice_content_style(brief: dict[str, Any]) -> dict[str, Any]:
         for s in styles:
             if s.get("reference_motion") and motion_id.startswith(str(s["reference_motion"])):
                 return dict(s)
-    idx = _seed_int(f"voice_content:{seed}") % len(styles)
-    return dict(styles[idx])
+    platform = str(brief.get("platform") or "").strip().lower()
+    pool = list(styles)
+    if platform in ("douyin", ""):
+        fast = [s for s in pool if s.get("id") not in SLOW_VOICE_STYLE_IDS]
+        if len(fast) >= 8:
+            pool = fast
+    idx = _seed_int(f"voice_content:{seed}") % len(pool)
+    return dict(pool[idx])
 
 
 def _fallback_style() -> dict[str, Any]:
@@ -84,14 +95,37 @@ def voice_style_prompt_block(style: dict[str, Any]) -> str:
 【口播风格模板 {style.get('id', '')} — {style.get('name', '')}】
 - 语气：{style.get('tone', '口语化')}
 - 钩子句式参考：{style.get('hook_pattern', '悬念/反差')}
-- 全片总字数：{tc[0]}~{tc[1]} 字（60秒内）
+- 全片口播总字数：**硬性** {tc[0]}~{tc[1]} 字（60秒内），低于 {tc[0]} 字视为失败
 - 目标语速：约 {style.get('words_per_minute', 230)} 字/分钟
-- 每镜字数：
+- 每镜口播字数（tts_text，不是屏幕大字）：
 {slide_block}
 - 禁止开场：「大家好」「今天给大家介绍」
 - 第1镜前2句必须含钩子（疑问/数字/利益）
 - 句长：口语短句，单句尽量 ≤18 字；多用「你」「这个」「真的」
+- 屏幕标题可短，但 tts_text 口播必须写满，禁止整片只有两三句空话
 """.strip()
+
+
+def script_tts_char_total(slides: list[dict[str, Any]]) -> int:
+    return sum(len(str(s.get("tts_text") or "").replace(" ", "")) for s in slides)
+
+
+def ensure_script_tts_minimum(
+    script: dict[str, Any],
+    style: dict[str, Any],
+    *,
+    min_ratio: float = 0.85,
+) -> tuple[dict[str, Any], int, int]:
+    """口播过短时打日志；返回 (script, actual, required_min)。"""
+    slides = list(script.get("slides") or [])
+    tc = style.get("total_chars") or [180, 260]
+    need = int(tc[0]) if isinstance(tc, list) and tc else 180
+    actual = script_tts_char_total(slides)
+    if actual < int(need * min_ratio):
+        print(
+            f"[VoiceContent] ⚠️ 口播偏短: {actual} 字 < 目标 {need}（模板 {style.get('id', '?')}）"
+        )
+    return script, actual, need
 
 
 def apply_voice_style_to_brief(

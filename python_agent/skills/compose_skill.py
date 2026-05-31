@@ -78,6 +78,14 @@ class ComposeSkill:
 
         total_chars = sum(len(s.get("tts_text", "")) for s in script.get("slides", []))
         print(f"[ComposeSkill] 双脑导演编排完毕: {total} 个分镜, 总旁白 {total_chars} 字")
+        if self._voice_style:
+            from python_agent.voice_content_templates import ensure_script_tts_minimum
+
+            script, actual, need = ensure_script_tts_minimum(script, self._voice_style)
+            if actual < need:
+                print(
+                    f"[ComposeSkill] 提示：口播 {actual} 字未达模板下限 {need}，成片可能显空、男声更显慢"
+                )
         return script
 
     def _generate_outline(
@@ -124,7 +132,7 @@ class ComposeSkill:
   "outline": [
     {{
       "type": "title_card (开场强推) 或 content_card (中间层层推进) 或 cta_card (震撼结尾)",
-      "tts_text": "本镜头的解说旁白，口语化，具有强烈的感染力（30-70字左右）"
+      "tts_text": "本镜头完整口播旁白，口语化有信息量（每镜40~65字；全片口播总字数须达到模板要求，禁止整片只有两三句）"
     }}
   ]
 }}
@@ -151,8 +159,8 @@ class ComposeSkill:
 
 无论前四种如何搭配，必须保证：
 1. 提取极具张力的短字幕或标题显示在屏幕上！绝对不允许在画面上留白不显文字！
-2. 字数越少越狠，排版才会宏大！"tts_text": "{tts}" (原封不动抄过来)
-3. "heading": "凝练的大标题(极少字数冲击，10字以内)"
+2. 屏幕上标题/大字要短、有冲击力；但 "tts_text" 必须原封不动抄写完整旁白（不得删减口播字数）："{tts}"
+3. "heading": "凝练的大标题(屏显10字以内，口播长短不受影响)"
 4. "hook_text": "左上角标签词"
 
 【智能时轨 - Audio/Visual Sync】

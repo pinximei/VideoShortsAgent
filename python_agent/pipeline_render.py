@@ -236,8 +236,18 @@ def render_platform_video(
     render_status = "degraded" if "fallback" in plan_source else "ok"
     tts_info: dict[str, Any] = {"tts_clips": []}
     if not skip_tts:
-        dubber = DubbingSkill(voice=preset.voice)
-        tts_info = dubber.execute(analysis, output_dir, voice=preset.voice)
+        from python_agent.tts_params import load_tts_from_task_dir, resolve_tts_for_platform
+
+        brief_tts = {**brief, **load_tts_from_task_dir(task_dir)}
+        tts_cfg = resolve_tts_for_platform(brief_tts, preset.id)
+        dub_voice = str(brief_tts.get("tts_voice") or tts_cfg["tts_voice"] or preset.voice)
+        dubber = DubbingSkill(
+            voice=dub_voice,
+            tts_rate=str(brief_tts.get("tts_rate") or tts_cfg["tts_rate"]),
+            tts_pitch=str(brief_tts.get("tts_pitch") or tts_cfg["tts_pitch"]),
+            sentence_pause=float(brief_tts.get("sentence_pause_sec") or tts_cfg["sentence_pause_sec"]),
+        )
+        tts_info = dubber.execute(analysis, output_dir, voice=dub_voice)
         clips, tts_list = trim_to_max_duration(clips, tts_info.get("tts_clips") or [], max_sec)
         analysis["clips"] = clips
         tts_info["tts_clips"] = tts_list

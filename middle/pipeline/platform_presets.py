@@ -26,7 +26,7 @@ PLATFORM_PRESETS: dict[str, PlatformPreset] = {
         width=1080,
         height=1920,
         max_seconds=45.0,
-        voice="zh-CN-YunxiNeural",
+        voice="zh-CN-YunyangNeural",
         effects={
             "preset": "活力",
             "use_remotion": True,

@@ -14,7 +14,7 @@ from pathlib import Path
 
 VOICE_MALE = "zh-CN-YunxiNeural"
 VOICE_FEMALE = "zh-CN-XiaoxiaoNeural"
-DEFAULT_VOICE = VOICE_MALE
+DEFAULT_VOICE = "zh-CN-YunyangNeural"  # 男声默认用云扬（比 Yunxi 更利落）；女声请显式传 Xiaoxiao
 
 # 句间停顿（秒）
 SENTENCE_PAUSE = 0.2

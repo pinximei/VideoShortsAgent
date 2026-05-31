@@ -98,8 +98,17 @@ def render_from_plan(
         raise FileNotFoundError(f"B-roll 不存在: {broll_path}")
 
     defaults = platform_video_defaults(platform)
-    voice = voice or defaults["voice"]
     from python_agent.platform_presets import get_platform_preset
+    from python_agent.tts_params import load_tts_from_task_dir, resolve_tts_for_platform
+
+    brief_for_tts: dict = {}
+    if task_dir and Path(task_dir).is_dir():
+        brief_for_tts = load_tts_from_task_dir(task_dir)
+    tts_cfg = resolve_tts_for_platform(brief_for_tts, platform)
+    voice = voice or brief_for_tts.get("tts_voice") or tts_cfg["tts_voice"] or defaults["voice"]
+    tts_rate = str(brief_for_tts.get("tts_rate") or tts_cfg["tts_rate"])
+    tts_pitch = str(brief_for_tts.get("tts_pitch") or tts_cfg["tts_pitch"])
+    sent_pause = brief_for_tts.get("sentence_pause_sec", tts_cfg["sentence_pause_sec"])
 
     preset = get_platform_preset(platform)
     max_seconds = (
@@ -177,7 +186,12 @@ def render_from_plan(
     tts_info: dict[str, Any] = {"tts_clips": []}
 
     if not skip_tts:
-        dubber = DubbingSkill(voice=voice)
+        dubber = DubbingSkill(
+            voice=voice,
+            tts_rate=tts_rate,
+            tts_pitch=tts_pitch,
+            sentence_pause=float(sent_pause) if sent_pause is not None else None,
+        )
         tts_info = dubber.execute(analysis, str(tmp), voice=voice)
         tts_list = list(tts_info.get("tts_clips") or [])
         expected = sum(1 for c in clips if (c.get("tts_text") or "").strip())

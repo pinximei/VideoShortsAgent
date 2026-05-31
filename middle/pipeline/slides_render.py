@@ -156,6 +156,15 @@ def render_slides_video(
     slides = script.get("slides") or []
     if len(slides) < 2:
         raise RuntimeError("slides_script_too_short")
+    if voice_style:
+        from python_agent.voice_content_templates import ensure_script_tts_minimum
+
+        script, actual, need = ensure_script_tts_minimum(script, voice_style)
+        slides = script.get("slides") or []
+        if actual < int(need * 0.6):
+            raise RuntimeError(
+                f"voice_script_too_short:{actual}<{need} — 口播过少，请检查素材或重新生成文案"
+            )
 
     from python_agent.motion_templates import (
         apply_template_plan_to_slides,
@@ -190,10 +199,13 @@ def render_slides_video(
         output_dir=str(work / "images"),
     )
 
-    voice = str(brief_dict.get("tts_voice") or preset.voice)
-    tts_rate = str(brief_dict.get("tts_rate") or "+12%")
-    tts_pitch = str(brief_dict.get("tts_pitch") or "+0Hz")
-    sent_pause = brief_dict.get("sentence_pause_sec")
+    from python_agent.tts_params import resolve_tts_for_platform
+
+    tts = resolve_tts_for_platform(brief_dict, platform_id, voice_style=voice_style or None)
+    voice = str(brief_dict.get("tts_voice") or tts["tts_voice"])
+    tts_rate = str(brief_dict.get("tts_rate") or tts["tts_rate"])
+    tts_pitch = str(brief_dict.get("tts_pitch") or tts["tts_pitch"])
+    sent_pause = brief_dict.get("sentence_pause_sec", tts["sentence_pause_sec"])
     dubbing = DubbingSkill(
         voice=voice,
         tts_rate=tts_rate,

@@ -19,7 +19,7 @@ PLATFORM_VIDEO_DEFAULTS: dict[str, dict[str, Any]] = {
         "width": 1080,
         "height": 1920,
         "max_seconds": 45.0,
-        "voice": "zh-CN-YunxiNeural",
+        "voice": "zh-CN-YunyangNeural",
         "default_preset": "活力",
         "default_caption_style": "spring",
         "default_transition": "slideup",
