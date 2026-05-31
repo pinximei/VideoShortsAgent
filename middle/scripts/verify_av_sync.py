@@ -69,6 +69,7 @@ def main() -> int:
         return 1
 
     issues: list[str] = []
+    slides_mode = (task / "llm" / "slides_script.json").is_file()
 
     for plat in ("xhs", "douyin"):
         plan_path = task / "llm" / f"video_clips_{plat}.json"
@@ -94,7 +95,9 @@ def main() -> int:
                 max(2.5, min(18.0, len(str(c.get("tts_text") or "")) / 3.8))
                 for c in clips
             )
-        bookends = 2.2 if fx.get("intro_card") and plat == "douyin" else 0.0
+        bookends = 0.0
+        if fx.get("intro_card"):
+            bookends += 2.2
         if fx.get("outro_card"):
             bookends += 2.0
         expected = tts_sum + bookends
@@ -108,7 +111,12 @@ def main() -> int:
         av_delta = actual - expected
 
         starts = [round(float(c.get("start") or 0), 2) for c in clips]
-        broll_ok = len(set(starts)) > 1 or (len(starts) == 1 and starts[0] == 0)
+        broll_ok = (
+            slides_mode
+            or str(plan.get("source") or "") == "slides_render"
+            or len(set(starts)) > 1
+            or (len(starts) == 1 and starts[0] == 0)
+        )
 
         print(f"\n=== {plat}.mp4 ===")
         print(f"  成片时长: {actual:.2f}s (视频轨 {vd or 'n/a'}s / 音频轨 {ad or 'n/a'}s)")

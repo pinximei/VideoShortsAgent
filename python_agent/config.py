@@ -104,7 +104,7 @@ class Config:
     @property
     def max_video_duration(self) -> float:
         """输出视频最大时长（秒）"""
-        return float(os.getenv("MAX_VIDEO_DURATION", "65"))
+        return float(os.getenv("MAX_VIDEO_DURATION", "72"))
 
     # ── 服务器配置 ──
     @property

@@ -1,0 +1,33 @@
+{
+  "heading": "GitHub 又炸了",
+  "subheading": "每天一个 GitHub 项目",
+  "motionProfile": "glitch_hook_clean",
+  "motionParams": {
+    "wordsPerPageMs": 800,
+    "staggerFrames": 5
+  },
+  "layoutStyle": "top-heavy",
+  "useWeb3Background": false,
+  "backgroundColor": "#0d1117",
+  "cssDecorations": [
+    "github-badge"
+  ],
+  "githubDailyStyleId": "G07_hook_glitch_github",
+  "sentences": [
+    {
+      "text": "今天 ",
+      "start": 0,
+      "end": 0.4
+    },
+    {
+      "text": "这个 ",
+      "start": 0.4,
+      "end": 0.8
+    },
+    {
+      "text": "项目 ",
+      "start": 0.8,
+      "end": 1.2
+    }
+  ]
+}

@@ -2,11 +2,54 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from .channel_registry import ChannelAccount, accounts_for, site_for_theme
 from .config import PipelineConfig
 from .job_flow import PUBLISH_CHANNELS
+
+
+def _publish_state_path(cfg: PipelineConfig, article_id: int) -> Path:
+    return cfg.output_root / str(article_id) / "publish" / "publish_state.json"
+
+
+def load_publish_state(cfg: PipelineConfig, article_id: int) -> dict[str, Any]:
+    p = _publish_state_path(cfg, article_id)
+    if not p.is_file():
+        return {"channels": {}}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {"channels": {}}
+    except Exception:
+        return {"channels": {}}
+
+
+def record_dry_run_ok(cfg: PipelineConfig, article_id: int, channel_id: str) -> None:
+    p = _publish_state_path(cfg, article_id)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    state = load_publish_state(cfg, article_id)
+    ch = dict((state.get("channels") or {}).get(channel_id) or {})
+    ch["dry_run_ok"] = True
+    state.setdefault("channels", {})[channel_id] = ch
+    p.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def assert_dry_run_before_publish(
+    cfg: PipelineConfig,
+    article_id: int,
+    channel_id: str,
+) -> None:
+    if channel_id not in ("douyin", "xhs"):
+        return
+    if not getattr(cfg, "publish_require_dry_run", True):
+        return
+    ch = (load_publish_state(cfg, article_id).get("channels") or {}).get(channel_id) or {}
+    if not ch.get("dry_run_ok"):
+        raise PublishGuardError(
+            "dry_run_required",
+            f"渠道 {channel_id} 须先 API/UI 试跑发布（dry_run=true）后再真实发布",
+        )
 
 
 class PublishGuardError(Exception):

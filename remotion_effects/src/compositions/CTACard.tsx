@@ -6,6 +6,8 @@ import {
   interpolate,
 } from 'remotion';
 import {SlideBackground} from './SlideBackground';
+import {MotionSlideShell} from '../motion/decorations/MotionSlideShell';
+import type {MotionParams} from '../motion/types';
 
 /**
  * CTACard - 行动号召卡组件（升级版）
@@ -32,6 +34,16 @@ interface CTACardProps {
   particleType?: string;
   colorMood?: string;
   headingStartFrame?: number;
+  accentColor2?: string;
+  backgroundVariant?: string;
+  useWeb3Background?: boolean;
+  overlayOpacity?: number;
+  decorationStyle?: string;
+  textEffect?: 'glitch' | 'neon' | 'cinematic' | 'classic';
+  motionProfile?: string;
+  motionParams?: MotionParams;
+  backgroundColor?: string;
+  cssDecorations?: string[];
 }
 
 export const CTACard: React.FC<CTACardProps> = ({
@@ -48,10 +60,55 @@ export const CTACard: React.FC<CTACardProps> = ({
   particleType = 'glow',
   colorMood = '',
   headingStartFrame = 0,
+  accentColor2 = '#a855f7',
+  backgroundVariant = 'mesh-aurora',
+  useWeb3Background = true,
+  overlayOpacity = 0.12,
+  decorationStyle = 'cyber-grid',
+  textEffect = 'neon',
+  motionProfile = 'cta_pulse_arrow',
+  motionParams = {},
+  backgroundColor,
+  cssDecorations = [],
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const currentTime = frame / fps;
+
+  if (motionProfile) {
+    const pulse = spring({frame, fps, config: {damping: 10, stiffness: 120}});
+    const ring = interpolate(frame % 45, [0, 45], [1, 1.25]);
+    const pulseScale = cssDecorations.includes('pulse-button')
+      ? 0.95 + pulse * 0.12
+      : 0.95 + pulse * 0.08;
+    return (
+      <MotionSlideShell
+        width={width}
+        height={height}
+        motionProfile={motionProfile}
+        imagePath={imagePath}
+        backgroundColor={backgroundColor}
+        cssDecorations={cssDecorations}
+        slideRole="cta"
+      >
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', zIndex: 10,
+        }}>
+          <div style={{fontSize: 52, fontWeight: 800, color: '#f0f6fc', marginBottom: 40, opacity: pulse}}>{heading}</div>
+          <div style={{
+            position: 'relative', padding: '22px 56px', borderRadius: 12,
+            background: 'linear-gradient(135deg, #238636, #2ea043)',
+            fontSize: 36, fontWeight: 800, color: '#fff',
+            transform: `scale(${pulseScale})`,
+            boxShadow: `0 0 0 ${ring * 8}px #3fb95044`,
+          }}>
+            {ctaText}
+          </div>
+        </div>
+      </MotionSlideShell>
+    );
+  }
 
   // 标题入场 (同步音频时轨)
   const titleSpring = spring({
@@ -114,9 +171,14 @@ export const CTACard: React.FC<CTACardProps> = ({
         colors={colors} 
         imagePath={imagePath} 
         accentColor={accentColor}
+        accentColor2={accentColor2}
         cameraPan={cameraPan}
         particleType={particleType}
+        decorationStyle={decorationStyle}
         colorMood={colorMood}
+        backgroundVariant={backgroundVariant}
+        useWeb3Background={useWeb3Background}
+        overlayOpacity={overlayOpacity}
       />
 
       {/* 主内容居中 */}

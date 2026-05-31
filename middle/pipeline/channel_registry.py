@@ -87,6 +87,15 @@ def new_account_id() -> str:
     return f"acc_{uuid.uuid4().hex[:12]}"
 
 
+def stable_account_id(site_code: str, channel_id: str) -> str:
+    """Deterministic account id for a site+channel slot (UI save / Cookie profile path)."""
+    import re
+
+    safe_site = re.sub(r"[^a-zA-Z0-9_-]", "_", (site_code or "site").strip())[:40]
+    safe_ch = re.sub(r"[^a-zA-Z0-9_-]", "_", (channel_id or "ch").strip())[:24]
+    return f"acc_{safe_site}_{safe_ch}"
+
+
 def parse_sites(raw: list[Any] | None, themes: list[Theme] | None = None) -> list[Site]:
     items = raw if raw else DEFAULT_SITES
     sites: list[Site] = []

@@ -1,0 +1,15 @@
+{
+  "heading": "今天这个 GitHub 项目",
+  "subheading": "Star 正在暴涨",
+  "motionProfile": "tiktok_word_pop",
+  "motionParams": {"wordsPerPageMs": 800, "staggerFrames": 4},
+  "layoutStyle": "top-heavy",
+  "useWeb3Background": false,
+  "sentences": [
+    {"text": "今天 ", "start": 0, "end": 0.35},
+    {"text": "这个 ", "start": 0.35, "end": 0.7},
+    {"text": "GitHub ", "start": 0.7, "end": 1.1},
+    {"text": "项目 ", "start": 1.1, "end": 1.5},
+    {"text": "别划走 ", "start": 1.5, "end": 2.2}
+  ]
+}

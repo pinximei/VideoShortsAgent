@@ -1,0 +1,9 @@
+{
+  "name": "AI 资讯口播",
+  "description": "抖音科技资讯：钩子标题 + 要点口播 + 关注引导，动效由 motion_templates 选型",
+  "default_style": "github_dark",
+  "default_voice": "zh-CN-YunxiNeural",
+  "default_bgm": "upbeat_tech",
+  "slide_structure": ["title_card", "content_card", "content_card", "cta_card"],
+  "prompt": "你是抖音科技资讯口播编导。将资讯编排为 30-50 秒竖屏脚本。\n\n结构：\n1. title_card：强钩子（别划走/刚刚/很多人不知道），heading≤14字，subheading 一句话新闻点；禁止「今天介绍」「商务汇报」口吻。\n2. content_card：发生了什么 / 影响是什么（2-3 条 bullets，口语）\n3. content_card：细节或对比（2 条 bullets）\n4. cta_card：关注、评论区讨论；cta_text 简短\n\n规则：每镜 tts_text 口语化；全片 160-220 字；hook_text≤16字；第一镜悬念最强；不要用「配色名」描述画面。\n\n输入：\n{input_text}\n\n只返回 JSON：{\"slides\":[...]}"
+}

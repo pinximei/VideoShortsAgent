@@ -30,7 +30,7 @@ def write_publish_pack_templates(brief: VideoBrief, output_dir: Path) -> Path:
     _write_text(output_dir / "brief.json", json.dumps(brief.to_dict(), ensure_ascii=False, indent=2))
     _write_text(output_dir / "script.txt", script_text(brief))
 
-    douyin_title = f"{brief.hook}｜{brief.title}"[:55]
+    douyin_title = f"{brief.hook}｜{brief.title}"[:55] if brief.title else brief.hook[:55]
     _write_text(publish / "douyin_title.txt", douyin_title)
     _write_text(publish / "douyin_tags.txt", " ".join(f"#{t}" for t in brief.tags[:5]))
 
@@ -38,7 +38,11 @@ def write_publish_pack_templates(brief: VideoBrief, output_dir: Path) -> Path:
     _write_text(publish / "xhs_title.txt", xhs_title)
     _write_text(publish / "xhs_body.txt", script_text(brief)[:900])
 
-    toutiao = f"{brief.title}\n\n" + "\n".join(f"· {p}" for p in brief.talking_points) + f"\n\n{brief.cta}"
+    toutiao = (
+        f"{brief.hook}\n\n{brief.title}\n\n"
+        + "\n".join(f"· {p}" for p in brief.talking_points)
+        + f"\n\n{brief.cta}"
+    )
     _write_text(publish / "toutiao_micro.txt", toutiao[:2000])
 
     douban = (

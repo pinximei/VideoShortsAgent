@@ -7,6 +7,10 @@ import {
 } from 'remotion';
 import {SlideBackground} from './SlideBackground';
 import {CaptionOverlay} from './CaptionOverlay';
+import {MotionSlideShell} from '../motion/decorations/MotionSlideShell';
+import {AnimatedHeading} from '../motion/text/AnimatedHeading';
+import {TikTokActiveCaption} from '../motion/text/TikTokActiveCaption';
+import type {MotionParams} from '../motion/types';
 
 interface Sentence {
   text: string;
@@ -31,6 +35,15 @@ interface TitleCardProps {
   layoutStyle?: 'center' | 'split-left' | 'split-right' | 'top-heavy';
   colorMood?: string;
   headingStartFrame?: number;
+  accentColor2?: string;
+  backgroundVariant?: string;
+  useWeb3Background?: boolean;
+  overlayOpacity?: number;
+  motionProfile?: string;
+  motionParams?: MotionParams;
+  backgroundColor?: string;
+  cssDecorations?: string[];
+  githubDailyStyleId?: string;
 }
 
 export const TitleCard: React.FC<TitleCardProps> = ({
@@ -50,10 +63,58 @@ export const TitleCard: React.FC<TitleCardProps> = ({
   layoutStyle = 'center',
   colorMood = '',
   headingStartFrame = 0,
+  accentColor2 = '#a855f7',
+  backgroundVariant = 'mesh-aurora',
+  useWeb3Background = true,
+  overlayOpacity = 0.12,
+  motionProfile = 'github_daily_hook',
+  motionParams = {},
+  backgroundColor,
+  cssDecorations = [],
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const currentTime = frame / fps;
+
+  // 动效档案驱动（v2）：按词弹射 / TikTok 高亮，锐背景
+  if (motionProfile) {
+    const wordsFromSentences =
+      sentences.length > 0
+        ? sentences.map((s) => ({text: s.text + ' ', start: s.start, end: s.end}))
+        : [];
+    return (
+      <MotionSlideShell
+        width={width}
+        height={height}
+        motionProfile={motionProfile}
+        imagePath={imagePath}
+        backgroundColor={backgroundColor}
+        cssDecorations={cssDecorations}
+        slideRole="title"
+      >
+        <AnimatedHeading
+          text={heading}
+          subtext={subheading}
+          profile={motionProfile}
+          params={motionParams}
+          layout={layoutStyle === 'top-heavy' ? 'top-heavy' : 'center'}
+          cssDecorations={cssDecorations}
+        />
+        {motionProfile.includes('tiktok') && wordsFromSentences.length > 0 && (
+          <TikTokActiveCaption
+            words={wordsFromSentences}
+            profile={motionProfile}
+            wordsPerPageMs={motionParams.wordsPerPageMs ?? 1000}
+          />
+        )}
+        {(!motionProfile.includes('tiktok') || wordsFromSentences.length === 0) && (
+          <div style={{position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none'}}>
+            <CaptionOverlay sentences={sentences} style={captionStyle} accentColor={accentColor} />
+          </div>
+        )}
+      </MotionSlideShell>
+    );
+  }
 
   // ==== Shared Springs ====
   const entryFrame = Math.max(0, frame - headingStartFrame);
@@ -243,16 +304,20 @@ export const TitleCard: React.FC<TitleCardProps> = ({
         colors={colors} 
         imagePath={imagePath} 
         accentColor={accentColor}
+        accentColor2={accentColor2}
         cameraPan={cameraPan}
         particleType={particleType}
         decorationStyle={decorationStyle}
         colorMood={colorMood}
+        backgroundVariant={backgroundVariant}
+        useWeb3Background={useWeb3Background}
+        overlayOpacity={overlayOpacity}
       />
 
-      {/* Vignette */}
+      {/* Vignette（轻，避免画面发糊发灰） */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-        background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.7) 100%)',
+        background: 'radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.38) 100%)',
         pointerEvents: 'none',
       }} />
 

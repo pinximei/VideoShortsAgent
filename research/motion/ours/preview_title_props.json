@@ -1,0 +1,15 @@
+{
+  "heading": "别划走 刚刚发生的事",
+  "subheading": "AI 资讯一分钟讲清",
+  "motionProfile": "tiktok_word_pop",
+  "motionParams": {"wordsPerPageMs": 800, "staggerFrames": 4},
+  "layoutStyle": "top-heavy",
+  "useWeb3Background": false,
+  "sentences": [
+    {"text": "别划走 ", "start": 0, "end": 0.35},
+    {"text": "刚刚 ", "start": 0.35, "end": 0.7},
+    {"text": "发生的事 ", "start": 0.7, "end": 1.2},
+    {"text": "很多人 ", "start": 1.2, "end": 1.6},
+    {"text": "还不知道 ", "start": 1.6, "end": 2.2}
+  ]
+}

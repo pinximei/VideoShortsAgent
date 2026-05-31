@@ -35,6 +35,41 @@ async function load() {
   }
 }
 
+const publishing = ref(false);
+
+async function publisherRun(ch: string, dryRun: boolean) {
+  const bind = bindingFor(ch);
+  if (!bind?.account_id) {
+    msg.value = `渠道 ${ch} 无冻结绑定账号`;
+    return;
+  }
+  if (ch !== "douyin" && ch !== "xhs") {
+    msg.value = "头条/豆瓣请下载文案后手工发布";
+    return;
+  }
+  const label = dryRun ? "试跑发布脚本（不上传）" : "真实发布到平台";
+  if (
+    !dryRun &&
+    !window.confirm(
+      `确认${label}？\n渠道 ${ch}\n账号 ${bind.label} (${bind.account_id})\n发错号无法自动撤销。`
+    )
+  ) {
+    return;
+  }
+  publishing.value = true;
+  try {
+    const res = await api.publisherPublish(id.value, ch, bind.account_id, dryRun);
+    msg.value = dryRun
+      ? `试跑完成：${(res.message as string) || "ok"}`
+      : `发布结果：${(res.message as string) || (res.ok ? "ok" : "failed")}`;
+    await load();
+  } catch (e) {
+    msg.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    publishing.value = false;
+  }
+}
+
 async function mark(ch: string) {
   const bindings = job.value?.publish_bindings as
     | { channels?: Record<string, { account_id: string; label: string }> }
@@ -159,9 +194,44 @@ onMounted(async () => {
   </div>
 
   <div v-if="job" class="panel">
-    <div class="panel-title">发布状态（按赛道账号）</div>
+    <div class="panel-title">发布（Playwright 固定脚本）</div>
+    <p class="muted">
+      抖音/小红书：先在本机「渠道配置」登录 Cookie，再试跑或真实发布。头条/豆瓣仅文案外链。
+    </p>
     <div class="row-actions">
       <template v-for="c in channels" :key="c.id">
+        <template v-if="c.id === 'douyin' || c.id === 'xhs'">
+          <button
+            class="btn btn-ghost btn-sm"
+            :disabled="publishing || !bindingFor(c.id) || (job.published as Record<string, boolean>)?.[c.id]"
+            @click="publisherRun(c.id, true)"
+          >
+            试跑 {{ c.label }}
+          </button>
+          <button
+            class="btn btn-primary btn-sm"
+            :disabled="publishing || !bindingFor(c.id) || (job.published as Record<string, boolean>)?.[c.id]"
+            @click="publisherRun(c.id, false)"
+          >
+            发布 {{ c.label }}
+          </button>
+        </template>
+        <a
+          v-if="publishFile(c.id)"
+          :href="publishFile(c.id)!.url"
+          target="_blank"
+          rel="noreferrer"
+          class="btn btn-ghost btn-sm"
+          >{{ c.label }}文案</a
+        >
+      </template>
+    </div>
+  </div>
+
+  <div v-if="job" class="panel">
+    <div class="panel-title">外站统计（标记已发）</div>
+    <div class="row-actions">
+      <template v-for="c in channels" :key="'m-' + c.id">
         <button
           class="btn btn-ghost btn-sm"
           :disabled="(job.published as Record<string, boolean>)?.[c.id] || !bindingFor(c.id)"
@@ -169,18 +239,10 @@ onMounted(async () => {
         >
           {{
             (job.published as Record<string, boolean>)?.[c.id]
-              ? `✓ ${accountLabel(c.id)}`
-              : `标记 ${accountLabel(c.id)}`
+              ? `✓ 已标记 ${accountLabel(c.id)}`
+              : `标记已发 ${accountLabel(c.id)}`
           }}
         </button>
-        <a
-          v-if="publishFile(c.id)"
-          :href="publishFile(c.id)!.url"
-          target="_blank"
-          rel="noreferrer"
-          class="btn btn-ghost btn-sm"
-          >文案</a
-        >
       </template>
     </div>
   </div>

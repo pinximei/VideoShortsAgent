@@ -1,0 +1,99 @@
+{
+  "approved": true,
+  "overall_score": 99.7,
+  "rounds": 12,
+  "pass_count": 12,
+  "results": [
+    {
+      "round": 1,
+      "dimension": "视觉层次",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 2,
+      "dimension": "色彩对比度",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 3,
+      "dimension": "字体与排版",
+      "score": 96.0,
+      "passed": true,
+      "issues": [
+        {
+          "severity": "warn",
+          "message": "缺少展示用字体 token",
+          "fix": "增加 --vsa-font-display 用于标题",
+          "file": "styles/theme.css"
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "dimension": "间距节奏",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 5,
+      "dimension": "组件一致性",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 6,
+      "dimension": "图标体系",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 7,
+      "dimension": "状态与反馈",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 8,
+      "dimension": "主操作突出",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 9,
+      "dimension": "导航与侧栏",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 10,
+      "dimension": "卡片与景深",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 11,
+      "dimension": "动效克制",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 12,
+      "dimension": "品牌识别",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    }
+  ]
+}

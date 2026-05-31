@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = ["vsa-core", "vsa-cli", "vsa-gui"]
+default-members = ["vsa-gui"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["pinximei"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

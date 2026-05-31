@@ -15,6 +15,7 @@ from .channel_registry import (
     parse_channel_accounts,
     parse_sites,
     site_by_code,
+    stable_account_id,
     validate_account_payload,
 )
 from .config import PipelineConfig, load_config
@@ -88,8 +89,9 @@ def replace_accounts_for_slot(
         raw = dict(raw)
         raw["site_code"] = site_code
         raw["channel_id"] = channel_id
-        if not raw.get("id"):
-            raw["id"] = new_account_id()
+        rid = str(raw.get("id") or "").strip()
+        if not rid or rid.startswith("tmp_"):
+            raw["id"] = stable_account_id(site_code, channel_id)
         if i == 0 and "is_primary" not in raw:
             raw["is_primary"] = True
         new_rows.append(validate_account_payload(raw, cfg.sites))

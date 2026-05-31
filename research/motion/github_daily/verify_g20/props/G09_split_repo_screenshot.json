@@ -1,0 +1,33 @@
+{
+  "heading": "左文右图 仓库拆解",
+  "subheading": "每天一个 GitHub 项目",
+  "motionProfile": "product_split_frame",
+  "motionParams": {
+    "wordsPerPageMs": 800,
+    "staggerFrames": 5
+  },
+  "layoutStyle": "top-heavy",
+  "useWeb3Background": false,
+  "backgroundColor": "#0d1117",
+  "cssDecorations": [
+    "image-right-panel"
+  ],
+  "githubDailyStyleId": "G09_split_repo_screenshot",
+  "sentences": [
+    {
+      "text": "今天 ",
+      "start": 0,
+      "end": 0.4
+    },
+    {
+      "text": "这个 ",
+      "start": 0.4,
+      "end": 0.8
+    },
+    {
+      "text": "项目 ",
+      "start": 0.8,
+      "end": 1.2
+    }
+  ]
+}

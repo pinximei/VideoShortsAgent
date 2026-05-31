@@ -1,0 +1,33 @@
+{
+  "heading": "每天一个优质项目",
+  "subheading": "每天一个 GitHub 项目",
+  "motionProfile": "minimal_headline",
+  "motionParams": {
+    "wordsPerPageMs": 800,
+    "staggerFrames": 5
+  },
+  "layoutStyle": "top-heavy",
+  "useWeb3Background": false,
+  "backgroundColor": "#f5f5f0",
+  "cssDecorations": [
+    "plain-white-bg"
+  ],
+  "githubDailyStyleId": "G03_minimal_white_series",
+  "sentences": [
+    {
+      "text": "今天 ",
+      "start": 0,
+      "end": 0.4
+    },
+    {
+      "text": "这个 ",
+      "start": 0.4,
+      "end": 0.8
+    },
+    {
+      "text": "项目 ",
+      "start": 0.8,
+      "end": 1.2
+    }
+  ]
+}

@@ -3,11 +3,14 @@ import {
   useCurrentFrame,
   useVideoConfig,
   interpolate,
-  spring,
   Img,
   Video,
   staticFile,
 } from 'remotion';
+import {
+  Web3AnimatedBackground,
+  type BackgroundVariant,
+} from '../backgrounds/Web3AnimatedBackground';
 
 /**
  * SlideBackground - 通用幻灯片背景（终极版）
@@ -17,10 +20,14 @@ interface SlideBackgroundProps {
   imagePath?: string;
   overlayOpacity?: number;
   accentColor?: string;
+  accentColor2?: string;
   cameraPan?: string;
   particleType?: string;
   decorationStyle?: string;
   colorMood?: string;
+  /** Web3 母版：mesh-aurora / liquid-orbs 等，优先于旧粒子层 */
+  backgroundVariant?: BackgroundVariant | string;
+  useWeb3Background?: boolean;
 }
 
 function seededRandom(seed: number): number {
@@ -72,20 +79,75 @@ const MOOD_PALETTES: Record<string, string[]> = {
   'cyberpunk': ['#1a0b2e', '#2c1b4d', '#00e5ff'],
 };
 
+const WEB3_VARIANTS = new Set([
+  'mesh-aurora', 'liquid-orbs', 'neon-grid', 'plasma-wave',
+  'starfield-warp', 'duotone-flow', 'hex-tunnel', 'gradient-mesh',
+]);
+
 export const SlideBackground: React.FC<SlideBackgroundProps> = ({
   colors = ['#0a0a0f', '#1a1a2e'],
   imagePath,
-  overlayOpacity = 0.25,
+  overlayOpacity = 0.14,
   accentColor = '#00e5c8',
+  accentColor2 = '#a855f7',
   cameraPan = 'zoom-in',
   particleType = 'glow',
   decorationStyle = 'none',
   colorMood = '',
+  backgroundVariant = 'mesh-aurora',
+  useWeb3Background = true,
 }) => {
   const frame = useCurrentFrame();
-  const {fps, width, height} = useVideoConfig();
+  const {width, height} = useVideoConfig();
 
   const activeColors = MOOD_PALETTES[colorMood.toLowerCase()] || colors;
+  const variant =
+    backgroundVariant && WEB3_VARIANTS.has(backgroundVariant)
+      ? (backgroundVariant as BackgroundVariant)
+      : 'mesh-aurora';
+
+  if (useWeb3Background !== false) {
+    const imgSrc = imagePath?.replace(/^\//, '');
+    return (
+      <div style={{position: 'absolute', inset: 0, overflow: 'hidden', backgroundColor: activeColors[0]}}>
+        {imgSrc && !imgSrc.toLowerCase().endsWith('.mp4') && (
+          <Img
+            src={staticFile(imgSrc)}
+            style={{position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.42}}
+          />
+        )}
+        <Web3AnimatedBackground
+          variant={variant}
+          colors={activeColors}
+          accentColor={accentColor}
+          accentColor2={accentColor2}
+          overlayOpacity={overlayOpacity}
+        />
+        {decorationStyle === 'cyber-grid' && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: `linear-gradient(${accentColor}14 1px, transparent 1px), linear-gradient(90deg, ${accentColor}14 1px, transparent 1px)`,
+              backgroundSize: '56px 56px',
+              opacity: 0.5,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+        {particleType === 'matrix' && (
+          <div style={{position: 'absolute', inset: 0, opacity: 0.35, fontFamily: 'monospace', fontSize: 12, color: accentColor, pointerEvents: 'none'}}>
+            {Array.from({length: 18}).map((_, i) => (
+              <div key={i} style={{position: 'absolute', left: `${(i * 17) % 100}%`, top: `${((frame * 2 + i * 40) % 110) - 5}%`}}>
+                {seededRandom(i + frame) > 0.5 ? '1' : '0'}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const pCount = (particleType === 'starfield') ? 80 : (particleType === 'matrix') ? 40 : 15;
   const particles = useMemo(() => generateParticles(pCount, particleType), [particleType, pCount]);
 
@@ -173,12 +235,12 @@ export const SlideBackground: React.FC<SlideBackgroundProps> = ({
 
         const pOpac = p.opacity * (0.6 + 0.4 * Math.sin(frame * 0.015 + p.phase));
 
-        if (p.type === 'ring') return <div key={i} style={{ position: 'absolute', left: `${px}%`, top: `${py}%`, width: p.size * 2, height: p.size * 2, borderRadius: '50%', border: `1px solid ${accentColor}`, opacity: pOpac * 0.6, filter: `blur(1px)` }} />
-        if (p.type === 'glow' || p.type === 'bokeh') return <div key={i} style={{ position: 'absolute', left: `${px}%`, top: `${py}%`, width: p.size, height: p.size, borderRadius: '50%', background: `radial-gradient(circle, ${p.type==='bokeh'? '#ffffff': accentColor}30, transparent 70%)`, opacity: pOpac, filter: `blur(${p.size * (p.type==='bokeh'? 0.1:0.3)}px)` }} />
+        if (p.type === 'ring') return <div key={i} style={{ position: 'absolute', left: `${px}%`, top: `${py}%`, width: p.size * 2, height: p.size * 2, borderRadius: '50%', border: `1px solid ${accentColor}`, opacity: pOpac * 0.6 }} />
+        if (p.type === 'glow' || p.type === 'bokeh') return <div key={i} style={{ position: 'absolute', left: `${px}%`, top: `${py}%`, width: p.size, height: p.size, borderRadius: '50%', background: `radial-gradient(circle, ${p.type==='bokeh'? '#ffffff': accentColor}35, transparent 72%)`, opacity: pOpac }} />
         if (p.type === 'matrix') return <div key={i} style={{ position: 'absolute', left: `${px}%`, top: `${py}%`, fontSize: p.size, color: accentColor, opacity: pOpac, fontFamily: 'monospace', textShadow: `0 0 5px ${accentColor}` }}>{Math.random()>0.5?'0':'1'}</div>
         
         // dot or starfield
-        return <div key={i} style={{ position: 'absolute', left: `${px}%`, top: `${py}%`, width: p.size, height: p.size, borderRadius: '50%', background: p.type === 'starfield' ? '#fff' : accentColor, opacity: pOpac, filter: `blur(${p.size * 0.2}px)`, boxShadow: p.type === 'starfield' ? `0 0 5px #fff` : `0 0 ${p.size * 1.2}px ${accentColor}40` }} />
+        return <div key={i} style={{ position: 'absolute', left: `${px}%`, top: `${py}%`, width: p.size, height: p.size, borderRadius: '50%', background: p.type === 'starfield' ? '#fff' : accentColor, opacity: pOpac, boxShadow: p.type === 'starfield' ? `0 0 6px #fff` : `0 0 ${p.size}px ${accentColor}50` }} />
       })}
 
       {/* Cinematic Bars Layer */}

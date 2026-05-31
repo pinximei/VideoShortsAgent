@@ -125,6 +125,9 @@ def publish_content(cfg: PipelineConfig, req: PublishRequest) -> PublishResult:
     job = JobStore(cfg.db_path).get_job(content_key_for_article(req.article_id))
     pack = _load_publish_pack(cfg, req.article_id, req.channel_id, job=job)
     if req.dry_run:
+        from pipeline.publish_guard import record_dry_run_ok
+
+        record_dry_run_ok(cfg, req.article_id, req.channel_id)
         script = get_publish_script(req.channel_id)
         return PublishResult(
             ok=True,
@@ -136,6 +139,10 @@ def publish_content(cfg: PipelineConfig, req: PublishRequest) -> PublishResult:
             steps=[{"step": s, "ok": True, "detail": "dry_run"} for s in script.fixed_steps],
             message="dry_run",
         )
+
+    from pipeline.publish_guard import assert_dry_run_before_publish
+
+    assert_dry_run_before_publish(cfg, req.article_id, req.channel_id)
 
     pool = get_pool(cfg.publisher)
     runner = pool.runner_for_batch(batch_id)

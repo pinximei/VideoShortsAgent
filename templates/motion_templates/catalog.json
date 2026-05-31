@@ -1,0 +1,2029 @@
+{
+  "version": 2,
+  "count": 100,
+  "description": "动效档案目录：每条模板绑定 motion_profile + motion_params，非配色变体。",
+  "profiles": [
+    "github_daily_hook",
+    "github_daily_bullets",
+    "tiktok_word_pop",
+    "tiktok_phrase_pages",
+    "kinetic_slam_tight",
+    "kinetic_slam_loose",
+    "flash_hook_smash",
+    "typewriter_terminal",
+    "episode_counter",
+    "glitch_hook_clean",
+    "bullet_rail_right",
+    "bullet_stagger_up",
+    "minimal_headline",
+    "cta_pulse_arrow",
+    "mono_code_rain",
+    "split_mask_reveal",
+    "glass_card_stack",
+    "marquee_ticker",
+    "shake_emphasis",
+    "product_split_frame"
+  ],
+  "templates": [
+    {
+      "id": "github_daily_hook_p01",
+      "name": "GitHub日更·钩子砸字 ·节奏1",
+      "motion_profile": "github_daily_hook",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "每天分享一个GitHub类开场：角标+按词弹射",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "github_daily_hook_p02",
+      "name": "GitHub日更·钩子砸字 ·节奏2",
+      "motion_profile": "github_daily_hook",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "每天分享一个GitHub类开场：角标+按词弹射",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "github_daily_hook_p03",
+      "name": "GitHub日更·钩子砸字 ·节奏3",
+      "motion_profile": "github_daily_hook",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "每天分享一个GitHub类开场：角标+按词弹射",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "github_daily_hook_p04",
+      "name": "GitHub日更·钩子砸字 ·节奏4",
+      "motion_profile": "github_daily_hook",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "每天分享一个GitHub类开场：角标+按词弹射",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "github_daily_hook_p05",
+      "name": "GitHub日更·钩子砸字 ·节奏5",
+      "motion_profile": "github_daily_hook",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "每天分享一个GitHub类开场：角标+按词弹射",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "github_daily_bullets_p01",
+      "name": "GitHub日更·要点滑轨 ·节奏1",
+      "motion_profile": "github_daily_bullets",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "正文要点从右侧滑入+竖线",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "github_daily_bullets_p02",
+      "name": "GitHub日更·要点滑轨 ·节奏2",
+      "motion_profile": "github_daily_bullets",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "正文要点从右侧滑入+竖线",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "github_daily_bullets_p03",
+      "name": "GitHub日更·要点滑轨 ·节奏3",
+      "motion_profile": "github_daily_bullets",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "正文要点从右侧滑入+竖线",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "github_daily_bullets_p04",
+      "name": "GitHub日更·要点滑轨 ·节奏4",
+      "motion_profile": "github_daily_bullets",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "正文要点从右侧滑入+竖线",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "github_daily_bullets_p05",
+      "name": "GitHub日更·要点滑轨 ·节奏5",
+      "motion_profile": "github_daily_bullets",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "正文要点从右侧滑入+竖线",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "tiktok_word_pop_p01",
+      "name": "抖音口播·当前词高亮 ·节奏1",
+      "motion_profile": "tiktok_word_pop",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "Remotion TikTok caption 风格逐词放大",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "spring",
+      "transition": "circleopen"
+    },
+    {
+      "id": "tiktok_word_pop_p02",
+      "name": "抖音口播·当前词高亮 ·节奏2",
+      "motion_profile": "tiktok_word_pop",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "Remotion TikTok caption 风格逐词放大",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "spring",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "tiktok_word_pop_p03",
+      "name": "抖音口播·当前词高亮 ·节奏3",
+      "motion_profile": "tiktok_word_pop",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "Remotion TikTok caption 风格逐词放大",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "spring",
+      "transition": "slideup"
+    },
+    {
+      "id": "tiktok_word_pop_p04",
+      "name": "抖音口播·当前词高亮 ·节奏4",
+      "motion_profile": "tiktok_word_pop",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "Remotion TikTok caption 风格逐词放大",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "spring",
+      "transition": "fade"
+    },
+    {
+      "id": "tiktok_word_pop_p05",
+      "name": "抖音口播·当前词高亮 ·节奏5",
+      "motion_profile": "tiktok_word_pop",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "Remotion TikTok caption 风格逐词放大",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "spring",
+      "transition": "dissolve"
+    },
+    {
+      "id": "tiktok_phrase_pages_p01",
+      "name": "抖音口播·短语分页 ·节奏1",
+      "motion_profile": "tiktok_phrase_pages",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "多词组合分页切换感",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "spring",
+      "transition": "circleopen"
+    },
+    {
+      "id": "tiktok_phrase_pages_p02",
+      "name": "抖音口播·短语分页 ·节奏2",
+      "motion_profile": "tiktok_phrase_pages",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "多词组合分页切换感",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "spring",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "tiktok_phrase_pages_p03",
+      "name": "抖音口播·短语分页 ·节奏3",
+      "motion_profile": "tiktok_phrase_pages",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "多词组合分页切换感",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "spring",
+      "transition": "slideup"
+    },
+    {
+      "id": "tiktok_phrase_pages_p04",
+      "name": "抖音口播·短语分页 ·节奏4",
+      "motion_profile": "tiktok_phrase_pages",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "多词组合分页切换感",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "spring",
+      "transition": "fade"
+    },
+    {
+      "id": "tiktok_phrase_pages_p05",
+      "name": "抖音口播·短语分页 ·节奏5",
+      "motion_profile": "tiktok_phrase_pages",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "多词组合分页切换感",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "spring",
+      "transition": "dissolve"
+    },
+    {
+      "id": "kinetic_slam_tight_p01",
+      "name": "快闪·紧砸字 ·节奏1",
+      "motion_profile": "kinetic_slam_tight",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "测评快闪极短间隔字词 spring",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "kinetic_slam_tight_p02",
+      "name": "快闪·紧砸字 ·节奏2",
+      "motion_profile": "kinetic_slam_tight",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "测评快闪极短间隔字词 spring",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "kinetic_slam_tight_p03",
+      "name": "快闪·紧砸字 ·节奏3",
+      "motion_profile": "kinetic_slam_tight",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "测评快闪极短间隔字词 spring",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "kinetic_slam_tight_p04",
+      "name": "快闪·紧砸字 ·节奏4",
+      "motion_profile": "kinetic_slam_tight",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "测评快闪极短间隔字词 spring",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "kinetic_slam_tight_p05",
+      "name": "快闪·紧砸字 ·节奏5",
+      "motion_profile": "kinetic_slam_tight",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "测评快闪极短间隔字词 spring",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "kinetic_slam_loose_p01",
+      "name": "快闪·松砸字 ·节奏1",
+      "motion_profile": "kinetic_slam_loose",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "字词弹射节奏略慢",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "kinetic_slam_loose_p02",
+      "name": "快闪·松砸字 ·节奏2",
+      "motion_profile": "kinetic_slam_loose",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "字词弹射节奏略慢",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "kinetic_slam_loose_p03",
+      "name": "快闪·松砸字 ·节奏3",
+      "motion_profile": "kinetic_slam_loose",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "字词弹射节奏略慢",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "kinetic_slam_loose_p04",
+      "name": "快闪·松砸字 ·节奏4",
+      "motion_profile": "kinetic_slam_loose",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "字词弹射节奏略慢",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "kinetic_slam_loose_p05",
+      "name": "快闪·松砸字 ·节奏5",
+      "motion_profile": "kinetic_slam_loose",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "字词弹射节奏略慢",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "flash_hook_smash_p01",
+      "name": "快闪·首帧砸屏 ·节奏1",
+      "motion_profile": "flash_hook_smash",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "首屏字符级放大砸入",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "flash_hook_smash_p02",
+      "name": "快闪·首帧砸屏 ·节奏2",
+      "motion_profile": "flash_hook_smash",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "首屏字符级放大砸入",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "flash_hook_smash_p03",
+      "name": "快闪·首帧砸屏 ·节奏3",
+      "motion_profile": "flash_hook_smash",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "首屏字符级放大砸入",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "flash_hook_smash_p04",
+      "name": "快闪·首帧砸屏 ·节奏4",
+      "motion_profile": "flash_hook_smash",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "首屏字符级放大砸入",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "flash_hook_smash_p05",
+      "name": "快闪·首帧砸屏 ·节奏5",
+      "motion_profile": "flash_hook_smash",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "首屏字符级放大砸入",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "typewriter_terminal_p01",
+      "name": "终端·打字机 ·节奏1",
+      "motion_profile": "typewriter_terminal",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "等宽光标打字",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "typewriter",
+      "transition": "circleopen"
+    },
+    {
+      "id": "typewriter_terminal_p02",
+      "name": "终端·打字机 ·节奏2",
+      "motion_profile": "typewriter_terminal",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "等宽光标打字",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "typewriter",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "typewriter_terminal_p03",
+      "name": "终端·打字机 ·节奏3",
+      "motion_profile": "typewriter_terminal",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "等宽光标打字",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "typewriter",
+      "transition": "slideup"
+    },
+    {
+      "id": "typewriter_terminal_p04",
+      "name": "终端·打字机 ·节奏4",
+      "motion_profile": "typewriter_terminal",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "等宽光标打字",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "typewriter",
+      "transition": "fade"
+    },
+    {
+      "id": "typewriter_terminal_p05",
+      "name": "终端·打字机 ·节奏5",
+      "motion_profile": "typewriter_terminal",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "等宽光标打字",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "typewriter",
+      "transition": "dissolve"
+    },
+    {
+      "id": "episode_counter_p01",
+      "name": "日更·序号冲击 ·节奏1",
+      "motion_profile": "episode_counter",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "大序号后出标题",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "episode_counter_p02",
+      "name": "日更·序号冲击 ·节奏2",
+      "motion_profile": "episode_counter",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "大序号后出标题",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "episode_counter_p03",
+      "name": "日更·序号冲击 ·节奏3",
+      "motion_profile": "episode_counter",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "大序号后出标题",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "episode_counter_p04",
+      "name": "日更·序号冲击 ·节奏4",
+      "motion_profile": "episode_counter",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "大序号后出标题",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "episode_counter_p05",
+      "name": "日更·序号冲击 ·节奏5",
+      "motion_profile": "episode_counter",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "大序号后出标题",
+      "theme": "github",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "glitch_hook_clean_p01",
+      "name": "钩子Glitch·正文稳 ·节奏1",
+      "motion_profile": "glitch_hook_clean",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "仅开场 glitch",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "glitch_hook_clean_p02",
+      "name": "钩子Glitch·正文稳 ·节奏2",
+      "motion_profile": "glitch_hook_clean",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "仅开场 glitch",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "glitch_hook_clean_p03",
+      "name": "钩子Glitch·正文稳 ·节奏3",
+      "motion_profile": "glitch_hook_clean",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "仅开场 glitch",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "glitch_hook_clean_p04",
+      "name": "钩子Glitch·正文稳 ·节奏4",
+      "motion_profile": "glitch_hook_clean",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "仅开场 glitch",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "glitch_hook_clean_p05",
+      "name": "钩子Glitch·正文稳 ·节奏5",
+      "motion_profile": "glitch_hook_clean",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "仅开场 glitch",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "title_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "bullet_rail_right_p01",
+      "name": "要点·右轨 ·节奏1",
+      "motion_profile": "bullet_rail_right",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "条目标签右滑入",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "bullet_rail_right_p02",
+      "name": "要点·右轨 ·节奏2",
+      "motion_profile": "bullet_rail_right",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "条目标签右滑入",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "bullet_rail_right_p03",
+      "name": "要点·右轨 ·节奏3",
+      "motion_profile": "bullet_rail_right",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "条目标签右滑入",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "bullet_rail_right_p04",
+      "name": "要点·右轨 ·节奏4",
+      "motion_profile": "bullet_rail_right",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "条目标签右滑入",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "bullet_rail_right_p05",
+      "name": "要点·右轨 ·节奏5",
+      "motion_profile": "bullet_rail_right",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "条目标签右滑入",
+      "theme": "github",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "bullet_stagger_up_p01",
+      "name": "要点·上浮 ·节奏1",
+      "motion_profile": "bullet_stagger_up",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "条目自下而上",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "bullet_stagger_up_p02",
+      "name": "要点·上浮 ·节奏2",
+      "motion_profile": "bullet_stagger_up",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "条目自下而上",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "bullet_stagger_up_p03",
+      "name": "要点·上浮 ·节奏3",
+      "motion_profile": "bullet_stagger_up",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "条目自下而上",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "bullet_stagger_up_p04",
+      "name": "要点·上浮 ·节奏4",
+      "motion_profile": "bullet_stagger_up",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "条目自下而上",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "bullet_stagger_up_p05",
+      "name": "要点·上浮 ·节奏5",
+      "motion_profile": "bullet_stagger_up",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "条目自下而上",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "minimal_headline_p01",
+      "name": "极简·单行标题 ·节奏1",
+      "motion_profile": "minimal_headline",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "单行呼吸 scale",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "minimal_headline_p02",
+      "name": "极简·单行标题 ·节奏2",
+      "motion_profile": "minimal_headline",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "单行呼吸 scale",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "minimal_headline_p03",
+      "name": "极简·单行标题 ·节奏3",
+      "motion_profile": "minimal_headline",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "单行呼吸 scale",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "minimal_headline_p04",
+      "name": "极简·单行标题 ·节奏4",
+      "motion_profile": "minimal_headline",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "单行呼吸 scale",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "minimal_headline_p05",
+      "name": "极简·单行标题 ·节奏5",
+      "motion_profile": "minimal_headline",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "单行呼吸 scale",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "cta_pulse_arrow_p01",
+      "name": "CTA·脉冲箭头 ·节奏1",
+      "motion_profile": "cta_pulse_arrow",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "结尾按钮脉冲",
+      "theme": "github",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "cta_pulse_arrow_p02",
+      "name": "CTA·脉冲箭头 ·节奏2",
+      "motion_profile": "cta_pulse_arrow",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "结尾按钮脉冲",
+      "theme": "github",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "cta_pulse_arrow_p03",
+      "name": "CTA·脉冲箭头 ·节奏3",
+      "motion_profile": "cta_pulse_arrow",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "结尾按钮脉冲",
+      "theme": "github",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "cta_pulse_arrow_p04",
+      "name": "CTA·脉冲箭头 ·节奏4",
+      "motion_profile": "cta_pulse_arrow",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "结尾按钮脉冲",
+      "theme": "github",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "cta_pulse_arrow_p05",
+      "name": "CTA·脉冲箭头 ·节奏5",
+      "motion_profile": "cta_pulse_arrow",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "结尾按钮脉冲",
+      "theme": "github",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "mono_code_rain_p01",
+      "name": "背景·代码雨 ·节奏1",
+      "motion_profile": "mono_code_rain",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "锐代码雨+网格",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "mono_code_rain_p02",
+      "name": "背景·代码雨 ·节奏2",
+      "motion_profile": "mono_code_rain",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "锐代码雨+网格",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "mono_code_rain_p03",
+      "name": "背景·代码雨 ·节奏3",
+      "motion_profile": "mono_code_rain",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "锐代码雨+网格",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "mono_code_rain_p04",
+      "name": "背景·代码雨 ·节奏4",
+      "motion_profile": "mono_code_rain",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "锐代码雨+网格",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "mono_code_rain_p05",
+      "name": "背景·代码雨 ·节奏5",
+      "motion_profile": "mono_code_rain",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "锐代码雨+网格",
+      "theme": "terminal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "split_mask_reveal_p01",
+      "name": "遮罩·横向揭示 ·节奏1",
+      "motion_profile": "split_mask_reveal",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "标题横向 mask 揭示",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "split_mask_reveal_p02",
+      "name": "遮罩·横向揭示 ·节奏2",
+      "motion_profile": "split_mask_reveal",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "标题横向 mask 揭示",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "split_mask_reveal_p03",
+      "name": "遮罩·横向揭示 ·节奏3",
+      "motion_profile": "split_mask_reveal",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "标题横向 mask 揭示",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "split_mask_reveal_p04",
+      "name": "遮罩·横向揭示 ·节奏4",
+      "motion_profile": "split_mask_reveal",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "标题横向 mask 揭示",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "split_mask_reveal_p05",
+      "name": "遮罩·横向揭示 ·节奏5",
+      "motion_profile": "split_mask_reveal",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "标题横向 mask 揭示",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "glass_card_stack_p01",
+      "name": "玻璃·卡片堆叠 ·节奏1",
+      "motion_profile": "glass_card_stack",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "要点玻璃卡片 stagger",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "glass_card_stack_p02",
+      "name": "玻璃·卡片堆叠 ·节奏2",
+      "motion_profile": "glass_card_stack",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "要点玻璃卡片 stagger",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "glass_card_stack_p03",
+      "name": "玻璃·卡片堆叠 ·节奏3",
+      "motion_profile": "glass_card_stack",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "要点玻璃卡片 stagger",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "glass_card_stack_p04",
+      "name": "玻璃·卡片堆叠 ·节奏4",
+      "motion_profile": "glass_card_stack",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "要点玻璃卡片 stagger",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "glass_card_stack_p05",
+      "name": "玻璃·卡片堆叠 ·节奏5",
+      "motion_profile": "glass_card_stack",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "要点玻璃卡片 stagger",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "marquee_ticker_p01",
+      "name": "跑马·顶栏 ·节奏1",
+      "motion_profile": "marquee_ticker",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "顶部 ticker 滚动",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "marquee_ticker_p02",
+      "name": "跑马·顶栏 ·节奏2",
+      "motion_profile": "marquee_ticker",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "顶部 ticker 滚动",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "marquee_ticker_p03",
+      "name": "跑马·顶栏 ·节奏3",
+      "motion_profile": "marquee_ticker",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "顶部 ticker 滚动",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "marquee_ticker_p04",
+      "name": "跑马·顶栏 ·节奏4",
+      "motion_profile": "marquee_ticker",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "顶部 ticker 滚动",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "marquee_ticker_p05",
+      "name": "跑马·顶栏 ·节奏5",
+      "motion_profile": "marquee_ticker",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "顶部 ticker 滚动",
+      "theme": "tiktok",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "shake_emphasis_p01",
+      "name": "强调·微震 ·节奏1",
+      "motion_profile": "shake_emphasis",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "关键词微震强调",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "shake_emphasis_p02",
+      "name": "强调·微震 ·节奏2",
+      "motion_profile": "shake_emphasis",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "关键词微震强调",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "shake_emphasis_p03",
+      "name": "强调·微震 ·节奏3",
+      "motion_profile": "shake_emphasis",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "关键词微震强调",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "shake_emphasis_p04",
+      "name": "强调·微震 ·节奏4",
+      "motion_profile": "shake_emphasis",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "关键词微震强调",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "shake_emphasis_p05",
+      "name": "强调·微震 ·节奏5",
+      "motion_profile": "shake_emphasis",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "关键词微震强调",
+      "theme": "kinetic",
+      "for_slide_types": [
+        "cta_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    },
+    {
+      "id": "product_split_frame_p01",
+      "name": "产品·分栏 ·节奏1",
+      "motion_profile": "product_split_frame",
+      "motion_params": {
+        "staggerFrames": 2,
+        "springDamping": 12,
+        "springStiffness": 200,
+        "wordsPerPageMs": 200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok index.tsx comment",
+      "reference": "左文右图分栏（无图则纯文）",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "circleopen"
+    },
+    {
+      "id": "product_split_frame_p02",
+      "name": "产品·分栏 ·节奏2",
+      "motion_profile": "product_split_frame",
+      "motion_params": {
+        "staggerFrames": 4,
+        "springDamping": 14,
+        "springStiffness": 160,
+        "wordsPerPageMs": 800
+      },
+      "research_status": "validated",
+      "research_ref": "research/motion/reports subtitle_motion BV196xNzDEU9",
+      "reference": "左文右图分栏（无图则纯文）",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "wipeleft"
+    },
+    {
+      "id": "product_split_frame_p03",
+      "name": "产品·分栏 ·节奏3",
+      "motion_profile": "product_split_frame",
+      "motion_params": {
+        "staggerFrames": 5,
+        "springDamping": 14,
+        "springStiffness": 140,
+        "wordsPerPageMs": 1200
+      },
+      "research_status": "validated",
+      "research_ref": "remotion-dev/template-tiktok SWITCH_CAPTIONS_EVERY_MS=1200",
+      "reference": "左文右图分栏（无图则纯文）",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "slideup"
+    },
+    {
+      "id": "product_split_frame_p04",
+      "name": "产品·分栏 ·节奏4",
+      "motion_profile": "product_split_frame",
+      "motion_params": {
+        "staggerFrames": 6,
+        "springDamping": 16,
+        "springStiffness": 110,
+        "wordsPerPageMs": 2500
+      },
+      "research_status": "validated",
+      "research_ref": "aistacknav 竖屏知识类 2-4s/info",
+      "reference": "左文右图分栏（无图则纯文）",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "fade"
+    },
+    {
+      "id": "product_split_frame_p05",
+      "name": "产品·分栏 ·节奏5",
+      "motion_profile": "product_split_frame",
+      "motion_params": {
+        "staggerFrames": 7,
+        "springDamping": 18,
+        "springStiffness": 95,
+        "wordsPerPageMs": 1400
+      },
+      "research_status": "hypothesis",
+      "research_ref": "待抖音成片样本标定",
+      "reference": "左文右图分栏（无图则纯文）",
+      "theme": "minimal",
+      "for_slide_types": [
+        "content_card"
+      ],
+      "caption_style": "fade",
+      "transition": "dissolve"
+    }
+  ]
+}

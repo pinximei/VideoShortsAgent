@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from pipeline.channel_config import get_overview, replace_accounts_for_slot
-from pipeline.channel_registry import accounts_for
+from pipeline.channel_registry import accounts_for, stable_account_id
 from pipeline.config import load_config
 
 
@@ -79,6 +79,12 @@ def test_replace_accounts_for_slot(tmp_path: Path) -> None:
     cards = overview["accounts_by_site_channel"]["ai-trends-news"]["xhs"]
     assert len(cards) == 1
     assert cards[0]["label"] == "资讯小红书"
+    assert cards[0]["id"] == stable_account_id("ai-trends-news", "xhs")
+
+
+def test_stable_account_id_deterministic() -> None:
+    assert stable_account_id("ai-trends-news", "douyin") == "acc_ai-trends-news_douyin"
+    assert stable_account_id("ai-trends-news", "douyin") == stable_account_id("ai-trends-news", "douyin")
 
 
 def test_explicit_empty_channel_accounts_not_migrated(tmp_path: Path) -> None:

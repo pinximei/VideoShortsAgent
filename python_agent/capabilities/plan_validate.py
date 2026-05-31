@@ -19,14 +19,20 @@ def validate_platform_video_block(
     block: dict[str, Any],
     *,
     broll_seconds: float | None = None,
-    max_tts_chars: int = 240,
+    max_tts_chars: int = 260,
+    feed_kind: str = "news",
 ) -> tuple[bool, str]:
     """校验单平台 douyin/xhs 块（含 clips + effects）。"""
     if not isinstance(block, dict):
         return False, "block_not_object"
     clips = block.get("clips")
-    if not isinstance(clips, list) or not (2 <= len(clips) <= 4):
-        return False, f"clips_count={len(clips) if isinstance(clips, list) else 0} need 2-4"
+    fk = (feed_kind or "news").strip().lower()
+    min_c, max_c = (3, 4) if fk == "news" else (2, 4)
+    if not isinstance(clips, list) or not (min_c <= len(clips) <= max_c):
+        return False, (
+            f"clips_count={len(clips) if isinstance(clips, list) else 0} "
+            f"need {min_c}-{max_c} for feed_kind={fk}"
+        )
 
     effects = block.get("effects")
     if not isinstance(effects, dict):
@@ -105,6 +111,7 @@ def validate_platform_copy(
     *,
     platforms: tuple[str, ...] = ("douyin", "xhs"),
     broll_seconds: float | None = None,
+    feed_kind: str = "news",
 ) -> tuple[bool, str]:
     """校验整份 platform_copy。"""
     if not isinstance(copy, dict):
@@ -115,7 +122,9 @@ def validate_platform_copy(
         if not isinstance(block, dict):
             errors.append(f"{pid}_missing")
             continue
-        ok, msg = validate_platform_video_block(pid, block, broll_seconds=broll_seconds)
+        ok, msg = validate_platform_video_block(
+            pid, block, broll_seconds=broll_seconds, feed_kind=feed_kind
+        )
         if not ok:
             errors.append(f"{pid}:{msg}")
     if errors:
@@ -126,7 +135,7 @@ def validate_platform_copy(
 def repair_prompt_note(reason: str) -> str:
     return (
         f"\n\n## 修复要求（上次校验失败：{reason}）\n"
-        "请重新输出完整 JSON。clips 必须 2~4 段；effects.preset 必填且为合法风格名；"
+        "请重新输出完整 JSON。news 必须 3~4 段 clips、apps 2~4 段；effects.preset 必填且为合法风格名；"
         "每段 start/end 在 B-roll 时长内且不重叠（允许 end 与下一段 start 相接）；"
         "口播总字数≤220；末段 transition_to_next 为 fade；pixelize/diag* 实验转场全片最多 1 次。"
     )

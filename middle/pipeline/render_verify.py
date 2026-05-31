@@ -151,6 +151,16 @@ def run_post_render_verify(
             report["effects_audit"] = {"ok": False, "error": str(exc)[:200]}
             report["ok"] = False
 
+    try:
+        from .quality_rules import capture_hook_frames
+
+        report["hook_frames"] = capture_hook_frames(task_dir, plat)
+        if not report["hook_frames"].get("ok", True):
+            report["ok"] = False
+    except Exception as exc:
+        report["hook_frames"] = {"ok": False, "error": str(exc)[:200]}
+        report["ok"] = False
+
     manifest = task_dir / "videos" / "manifest.json"
     if manifest.is_file():
         data = json.loads(manifest.read_text(encoding="utf-8"))

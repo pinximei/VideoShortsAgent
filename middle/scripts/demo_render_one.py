@@ -116,7 +116,12 @@ def main() -> int:
         print("未找到有实质正文的文章", file=sys.stderr)
         return 1
 
-    brief = build_brief(article, public_base_url=cfg.public_base_url, theme_id="ai_monetize")
+    theme_id = "ai_news"
+    for t in cfg.themes:
+        if t.id == "ai_news":
+            theme_id = "ai_news"
+            break
+    brief = build_brief(article, public_base_url=cfg.public_base_url, theme_id=theme_id)
     out_dir = cfg.output_root / str(article_id)
     out_dir.mkdir(parents=True, exist_ok=True)
 

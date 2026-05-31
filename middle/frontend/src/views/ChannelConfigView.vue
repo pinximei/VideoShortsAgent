@@ -9,6 +9,7 @@ const cards = ref<ChannelAccount[]>([]);
 const err = ref("");
 const ok = ref("");
 const saving = ref(false);
+const loginMsg = ref("");
 
 const sites = computed(() => overview.value?.sites || []);
 const channels = computed(() => overview.value?.channels || []);
@@ -84,6 +85,43 @@ function setPrimary(index: number) {
   cards.value.forEach((c, i) => {
     c.is_primary = i === index;
   });
+}
+
+async function openLogin(card: ChannelAccount) {
+  loginMsg.value = "";
+  if (!card.id || card.id.startsWith("tmp_")) {
+    loginMsg.value = "请先保存配置，获得固定 account_id 后再登录";
+    return;
+  }
+  if (card.channel_id !== "douyin" && card.channel_id !== "xhs") {
+    loginMsg.value = "头条/豆瓣请在平台网页手工登录发文";
+    return;
+  }
+  try {
+    const res = await api.publisherOpenLogin(card.id);
+    loginMsg.value = `已启动登录浏览器：${card.id}（Profile: ${(res.profile_dir as string) || "—"}）`;
+  } catch (e) {
+    loginMsg.value = e instanceof Error ? e.message : String(e);
+  }
+}
+
+async function checkLogin(card: ChannelAccount) {
+  loginMsg.value = "";
+  if (!card.id || card.id.startsWith("tmp_")) {
+    loginMsg.value = "请先保存配置";
+    return;
+  }
+  if (card.channel_id !== "douyin" && card.channel_id !== "xhs") {
+    return;
+  }
+  try {
+    const res = await api.publisherLoginCheck(card.id);
+    loginMsg.value = res.logged_in
+      ? `✓ ${card.id} 已登录`
+      : `✗ ${card.id} 未登录，请点「打开浏览器登录」`;
+  } catch (e) {
+    loginMsg.value = e instanceof Error ? e.message : String(e);
+  }
 }
 
 async function save() {
@@ -169,6 +207,7 @@ onMounted(load);
 
     <p v-if="ok" class="muted" style="color: #86efac">{{ ok }}</p>
     <p v-if="err" class="muted" style="color: #fca5a5">{{ err }}</p>
+    <p v-if="loginMsg" class="muted" style="color: #93c5fd">{{ loginMsg }}</p>
 
     <div v-if="cards.length" class="account-grid">
       <div v-for="(card, idx) in cards" :key="card.id" class="account-card">
@@ -181,9 +220,25 @@ onMounted(load);
         </div>
 
         <label class="field">
+          <span>固定账号 ID（登录/发布用）</span>
+          <input :value="card.id" readonly class="readonly" />
+        </label>
+        <label class="field">
           <span>显示名称</span>
           <input v-model="card.label" placeholder="抖音 · AI变现主号" />
         </label>
+        <div
+          v-if="card.channel_id === 'douyin' || card.channel_id === 'xhs'"
+          class="row-actions"
+          style="margin: 0.5rem 0"
+        >
+          <button type="button" class="btn btn-ghost btn-sm" @click="openLogin(card)">
+            打开浏览器登录
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" @click="checkLogin(card)">
+            检测登录
+          </button>
+        </div>
         <label class="field">
           <span>账号 ID / @handle</span>
           <input v-model="card.handle" placeholder="@your_account" />

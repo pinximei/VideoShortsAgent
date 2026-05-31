@@ -77,6 +77,10 @@ def apply_intro_cover_from_brief(
     if local is None:
         local = resolve_cover_for_task(task_dir, url)
     if local:
+        fk = str(brief.get("feed_kind") or "news").strip().lower()
+        # 资讯正文第 1 段用 cinematic B-roll；封面仅给片头 TitleCard（PH 封面常为抽象球体）
+        if fk != "news":
+            fx["cover_segment_path"] = str(local.resolve())
         rem = remotion_public_image(local, task_tag=str(brief.get("article_id") or task_dir.name))
         if rem:
             fx["intro_image_path"] = rem

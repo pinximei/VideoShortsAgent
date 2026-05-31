@@ -58,6 +58,12 @@ def assert_publish_pack_meta(task_dir: Path, cfg: PipelineConfig, *, strict: boo
 
 
 def assert_video_plans(task_dir: Path, cfg: PipelineConfig, *, strict: bool | None = None) -> None:
+    from .slides_render import is_slides_render_mode
+
+    if is_slides_render_mode(cfg):
+        slides_path = task_dir / "llm" / "slides_script.json"
+        if slides_path.is_file():
+            return
     platforms = [p.id for p in video_platforms(cfg.render_platforms)]
     for pid in platforms:
         plan_path = task_dir / "llm" / f"video_clips_{pid}.json"
@@ -67,6 +73,12 @@ def assert_video_plans(task_dir: Path, cfg: PipelineConfig, *, strict: bool | No
         clips = plan.get("clips") or []
         if len(clips) < 1:
             _fail("plan_empty", f"{pid} clips 为空")
+        brief = _load_json(task_dir / "brief.json")
+        from .quality_rules import min_clips_for_feed
+
+        need = min_clips_for_feed(str(brief.get("feed_kind") or "news"))
+        if len(clips) < need:
+            _fail("plan_too_few_clips", f"{pid} clips={len(clips)} < min {need}")
         if _strict(cfg, strict=strict):
             status = str(plan.get("render_status") or "")
             if status != "ok":
@@ -77,7 +89,9 @@ def assert_video_plans(task_dir: Path, cfg: PipelineConfig, *, strict: bool | No
 
 
 def assert_broll_ready(cfg: PipelineConfig) -> None:
-    if not cfg.render_enabled:
+    from .slides_render import is_slides_render_mode
+
+    if not cfg.render_enabled or is_slides_render_mode(cfg):
         return
     broll = (cfg.broll_template or "").strip()
     if not broll:
@@ -135,6 +149,26 @@ def assert_publish_bindings_dict(bindings: dict[str, Any] | None) -> None:
         _fail("bindings_empty", "publish_bindings.channels 为空")
 
 
+def assert_publish_quality(
+    task_dir: Path, cfg: PipelineConfig, *, strict: bool | None = None
+) -> dict[str, Any]:
+    """钩子分 + 最短时长 + 最少段数（与 quality_audit 一致）。"""
+    if not cfg.render_enabled or not _strict(cfg, strict=strict):
+        return {}
+    from .platform_presets import video_platforms
+    from .quality_rules import evaluate_task_quality
+
+    brief = _load_json(task_dir / "brief.json")
+    q = evaluate_task_quality(
+        task_dir,
+        platforms=[p.id for p in video_platforms(cfg.render_platforms)],
+        feed_kind=str(brief.get("feed_kind") or "news"),
+    )
+    if not q.get("ok"):
+        _fail("quality_rules_failed", "; ".join(q.get("issues") or [])[:400], quality=q)
+    return q
+
+
 def assert_tts_artifacts(task_dir: Path, cfg: PipelineConfig) -> None:
     """渲染后检查各平台 plan 的 tts_durations（TTS 失败会缺项）。"""
     if not cfg.render_enabled or cfg.render_skip_tts:
@@ -172,6 +206,7 @@ def assert_task_ready_for_publish(
         quick = assert_all_platform_videos(task_dir, cfg)
         report = assert_verify_report(task_dir, cfg, strict=strict)
         assert_tts_artifacts(task_dir, cfg)
+        assert_publish_quality(task_dir, cfg, strict=strict)
         return {"quick": quick, "verify": report, "bindings": brief.get("publish_bindings")}
     return {"bindings": brief.get("publish_bindings")}
 

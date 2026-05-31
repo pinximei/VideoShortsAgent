@@ -1,0 +1,18 @@
+[package]
+name = "vsa-gui"
+description = "VideoShorts Studio desktop (egui)"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "VideoShortsStudio"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+eframe = { version = "0.29", default-features = true, features = ["default_fonts", "glow"] }
+rfd = "0.14"
+vsa-core = { path = "../vsa-core" }
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"

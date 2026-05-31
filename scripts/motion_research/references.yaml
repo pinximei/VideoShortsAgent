@@ -1,0 +1,54 @@
+# 动效预研参考源（可复现下载 / 文档）
+# 运行: py -3 scripts/motion_research/run_presearch.py
+
+sources:
+  - id: remotion_tiktok_template
+    type: upstream_code
+    url: https://github.com/remotion-dev/template-tiktok
+    files:
+      - src/CaptionedVideo/index.tsx
+      - src/CaptionedVideo/Page.tsx
+      - src/CaptionedVideo/SubtitlePage.tsx
+    extracted:
+      SWITCH_CAPTIONS_EVERY_MS: 1200
+      HIGHLIGHT_COLOR: "#39E508"
+      DESIRED_FONT_SIZE: 120
+      caption_bottom_px: 350
+      enter_spring: {damping: 200, durationInFrames: 5}
+    notes: "官方 TikTok 字幕模板；combineTokens 1200=多词一页，注释建议 200=逐词"
+
+  - id: remotion_captions_api
+    type: documentation
+    url: https://www.remotion.dev/docs/captions/create-tiktok-style-captions
+    extracted:
+      combineTokensWithinMilliseconds: "控制每页词数；空格+时间间隔分页"
+
+  - id: bilibili_jianying_tutorial
+    type: video_sample
+    url: https://www.bilibili.com/video/BV196xNzDEU9/
+    local_clip: research/motion/refs/BV196xNzDEU9_p1.mp4
+    analyze_report: research/motion/reports/subtitle_motion_20260531_131722.json
+    measured:
+      estimated_switch_interval_ms: 800
+      suggested_combine_tokens_ms: 800
+
+  - id: bilibili_koubo_article
+    type: article
+    url: https://www.bilibili.com/read/cv38441883/
+    extracted_rules:
+      - "识别字幕后对重点词单独改样式/动画"
+      - "口播至少每 5 秒有一个变换（缩放/转场/画中画/文字）"
+      - "字幕是关键可看性来源，不要整段统一静态"
+
+  - id: jianying_caption_api
+    type: api_doc
+    url: https://developer.aliyun.com/article/1734954
+    extracted:
+      in_animation: "入场动画名称"
+      loop_animation: "循环动画（如 KTV 逐字）"
+      keyword_highlight: "关键词高亮"
+
+douyin_sampling:
+  script: scripts/motion_research/snapshot_douyin_search.py
+  profile: middle/data/browser/batch_b/acc_ai_news_douyin
+  status: "2026-05-31 首次截图未加载结果页，需延长等待或改创作者后台检索"

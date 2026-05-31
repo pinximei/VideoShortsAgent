@@ -69,9 +69,16 @@ def build_brief(article: dict[str, Any], *, public_base_url: str, theme_id: str 
     detail_url = f"{public_base_url.rstrip('/')}/resource/{slug}" if slug else public_base_url
 
     repl = article.get("replication_analysis") or {}
-    hook = _plain(
+    from python_agent.capabilities.opening_hook import scroll_stopping_hook
+
+    raw_hook = _plain(
         str(repl.get("value_summary") or article.get("card_value_hook") or title),
         max_len=80,
+    )
+    hook = scroll_stopping_hook(
+        title=title,
+        hook=raw_hook,
+        feed_kind=str(article.get("feed_kind") or "news"),
     )
 
     points = extract_talking_point_candidates(article, max_points=3)

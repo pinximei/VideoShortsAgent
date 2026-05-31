@@ -142,16 +142,23 @@ def brief_to_clips(brief: dict[str, Any], preset: PlatformPreset) -> list[dict[s
     brief = brief_for_platform(brief, preset)
     clips: list[dict[str, Any]] = []
 
-    hook = (brief.get("hook") or "").strip()
+    from python_agent.capabilities.opening_hook import scroll_stopping_hook, _opening_tts_line
+
+    title = str(brief.get("title") or "")
+    hook = scroll_stopping_hook(
+        title=title,
+        hook=str(brief.get("hook") or ""),
+        feed_kind=str(brief.get("feed_kind") or "news"),
+    )
     if hook:
         clips.append(
             {
-                "tts_text": hook,
-                "hook_text": hook[:20],
-                "caption_style": preset.hook_caption_style,
-                "transition_to_next": preset.hook_transition,
+                "tts_text": _opening_tts_line(hook, hook),
+                "hook_text": hook[:18],
+                "caption_style": "spring",
+                "transition_to_next": "circleopen",
                 "start": 0.0,
-                "end": 5.0,
+                "end": 8.0,
             }
         )
 

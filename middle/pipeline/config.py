@@ -37,6 +37,10 @@ class PipelineConfig:
     public_base_url: str = "https://ai-trends.news"
     render_enabled: bool = False
     render_mode: str = "pipeline"
+    render_scene: str = ""
+    render_visual_style: str = ""
+    render_bgm: str = ""
+    render_slides_image_mode: str = "search"
     default_segments: str = "0:00-0:45"
     render_platforms: list[str] = field(default_factory=lambda: ["douyin", "xhs"])
     render_use_remotion: bool = True
@@ -49,6 +53,8 @@ class PipelineConfig:
     render_verify_required: bool = True
     render_full_verify: bool = False
     pipeline_fail_closed: bool = True
+    publish_require_dry_run: bool = True
+    min_video_duration_sec: float = 34.0
     render_bookends: str = "douyin"
     render_ffmpeg_preset: str = "fast"
     llm_plan_retries: int = 2
@@ -137,6 +143,10 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         public_base_url=str(site.get("public_base_url") or "https://ai-trends.news").rstrip("/"),
         render_enabled=bool(render.get("enabled", False)),
         render_mode=str(render.get("mode") or "pipeline"),
+        render_scene=str(render.get("scene") or ""),
+        render_visual_style=str(render.get("visual_style") or ""),
+        render_bgm=str(render.get("bgm") or ""),
+        render_slides_image_mode=str(render.get("slides_image_mode") or "search"),
         default_segments=str(render.get("default_segments") or "0:00-0:45"),
         render_platforms=list(render.get("platforms") or ["douyin", "xhs"]),
         render_use_remotion=bool(render.get("use_remotion", True)),
@@ -149,7 +159,11 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         render_verify_required=bool(render.get("verify_required", True)),
         render_full_verify=bool(render.get("full_verify", False)),
         pipeline_fail_closed=bool(render.get("fail_closed", True)),
-        render_bookends=str(render.get("bookends") or "douyin"),
+        publish_require_dry_run=bool(
+            (raw.get("publisher") or {}).get("require_dry_run", True)
+        ),
+        min_video_duration_sec=float(render.get("min_duration_sec") or 34),
+        render_bookends=str(render.get("bookends") or "both"),
         render_ffmpeg_preset=str(render.get("ffmpeg_preset") or "fast"),
         llm_plan_retries=max(0, int(llm.get("plan_retries") or 2)),
         llm_enabled=bool(llm.get("enabled", True)),

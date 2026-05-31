@@ -9,6 +9,7 @@ import os
 import re
 from python_agent.llm_client import create_llm_client
 from python_agent.config import get_config
+from python_agent.template_loader import get_scene
 
 class ComposeSkill:
     """Agentic LLM 视觉导演技能"""
@@ -20,19 +21,29 @@ class ComposeSkill:
 
     def execute(self, text: str, scene_type: str, visual_style: str = "auto",
                 image_filenames: list = None,
-                image_mode: str = "search") -> dict:
+                image_mode: str = "search",
+                motion_directed: bool = False) -> dict:
         """多轮规划编排（Agentic Visual Design）"""
         
-        print(f"[ComposeSkill] 🎬 Agent 视觉导演工作流启动 (Scene: {scene_type}, Style: {visual_style})")
+        self._scene_type = scene_type
+        self._motion_directed = motion_directed
+        scene_tpl = get_scene(scene_type)
+        mode = "动效母版" if motion_directed else "视觉导演"
+        print(f"[ComposeSkill] {mode}工作流 (Scene: {scene_type}, Style: {visual_style})")
         print(f"  > 阶段 0: 分析文本，拆解全局分镜大纲与风格预设...")
-        outline_obj = self._generate_outline(text, scene_type, visual_style)
+        outline_obj = self._generate_outline(text, scene_type, visual_style, scene_tpl)
         outline = outline_obj.get("outline", [])
         if not outline:
             raise RuntimeError("无法生成分镜大纲")
             
+        default_mood = scene_tpl.get("default_style") or "tech_blue"
         global_color_mood = outline_obj.get("global_color_mood", visual_style)
         if global_color_mood == "auto" or not global_color_mood:
-            global_color_mood = "tech_blue" # fallback
+            global_color_mood = default_mood if visual_style == "auto" else visual_style
+        if scene_type == "daily_github" and not motion_directed:
+            global_color_mood = "github-daily-neon"
+        if motion_directed:
+            global_color_mood = visual_style if visual_style != "auto" else "github_dark"
 
         total = len(outline)
         print(f"  > 剧本大纲生成成功，共 {total} 镜。当集色彩预定义: {global_color_mood}")
@@ -47,8 +58,12 @@ class ComposeSkill:
 
         script = {"slides": slides_out}
 
-        print(f"  > 阶段 2 (Pass 2 - 顶级视觉导演): 根据剧本流，全局下发海量特效与转场指令...")
-        script = self._apply_visual_director_pass(script, global_color_mood, image_filenames, image_mode)
+        if motion_directed:
+            print("  > 阶段 2 跳过：动效由 motion_templates 目录选型（禁止 neon/matrix 粒子堆砌）")
+            script = self._apply_motion_layout_defaults(script, outline_obj)
+        else:
+            print(f"  > 阶段 2 (Pass 2 - 顶级视觉导演): 根据剧本流，全局下发海量特效与转场指令...")
+            script = self._apply_visual_director_pass(script, global_color_mood, image_filenames, image_mode)
 
         global_layout_style = outline_obj.get("global_layout_style", "center")
         # 统一全剧排版风格
@@ -60,10 +75,27 @@ class ComposeSkill:
         script = self._validate_script(script)
 
         total_chars = sum(len(s.get("tts_text", "")) for s in script.get("slides", []))
-        print(f"[ComposeSkill] ✅ 双脑导演编排完毕: {total} 个分镜, 总旁白 {total_chars} 字。剧情与海量张力特效全部加载。")
+        print(f"[ComposeSkill] 双脑导演编排完毕: {total} 个分镜, 总旁白 {total_chars} 字")
         return script
 
-    def _generate_outline(self, text: str, scene_type: str, visual_style: str) -> dict:
+    def _generate_outline(
+        self, text: str, scene_type: str, visual_style: str, scene_tpl: dict | None = None
+    ) -> dict:
+        scene_tpl = scene_tpl or get_scene(scene_type)
+        scene_block = ""
+        if scene_tpl:
+            structure = scene_tpl.get("slide_structure") or []
+            scene_block = (
+                f"\n【场景：{scene_tpl.get('name', scene_type)}】\n"
+                f"{scene_tpl.get('description', '')}\n"
+                f"必须按顺序产出分镜类型：{', '.join(structure) if structure else 'title_card → content_card → cta_card'}。\n"
+            )
+            if scene_type == "daily_github":
+                scene_block += (
+                    "这是「每天分享一个 GitHub 开源神器」抖音系列：第一镜 title_card 要有系列感"
+                    "（今天又发现一个/别划走/GitHub 杀疯了），中间讲痛点与亮点，末镜 cta 引导 Star 或评论区要链接。\n"
+                )
+
         style_prompt = ""
         if visual_style == "auto":
             style_prompt = "\n【全局视觉预设】\n请作为视觉总监，根据文本题材自主决定一个最完美的全局色彩情绪字典（global_color_mood，用代表性英文组合如 'cyberpunk-neon'）以及全片统一的文字排版风格（global_layout_style）。并在返回 JSON 中增加 'global_color_mood' 和 'global_layout_style' 字段。"
@@ -72,7 +104,7 @@ class ComposeSkill:
 
         prompt = f"""你是一个顶级的短视频剧本编剧兼主创策划。
 请根据以下输入文本，生成一个极具强感染力的结构化分镜大纲（3-6个分镜）。
-
+{scene_block}
 输入文本：
 {text}
 {style_prompt}
@@ -172,7 +204,8 @@ class ComposeSkill:
 7. "image_prompt" & "needs_image": {img_instruction}。若开启生图，请撰写极具《视觉张力》与《电影打光》的超长生猛提示词！
 
 【特别军令：第 0 镜的爆点原则】
-起手式必须是王炸！绝不可用 static 运镜，必须选一组攻击性极强的组合（如 scale-rotate + cinematic + cinematic-bars）。
+起手式必须是王炸！绝不可用 static 运镜，必须选一组攻击性极强的组合（如 scale-rotate + neon/glitch + glow/matrix）。
+{"【GitHub 日更系列】第一镜 text_effect 优先 neon 或 glitch；particle_type 优先 matrix 或 glow；转场 circleopen/wipeleft。" if getattr(self, "_scene_type", "") == "daily_github" else ""}
 
 请直接返回 JSON：
 {{
@@ -216,6 +249,23 @@ class ComposeSkill:
                 slide["needs_image"] = v_data.get("needs_image", False)
                 slide["visual_design"]["transition_to_next"] = slide["visual_design"].get("transition_to_next", "fade")
         
+        return script
+
+    def _apply_motion_layout_defaults(self, script: dict, outline_obj: dict) -> dict:
+        """Remotion 动效母版模式：只保留排版，不注入赛博粒子/霓虹。"""
+        layout = outline_obj.get("global_layout_style") or "top-heavy"
+        slides = script.get("slides") or []
+        for i, slide in enumerate(slides):
+            vd = dict(slide.get("visual_design") or {})
+            vd["layout_style"] = "top-heavy" if i == 0 else layout
+            vd["particle_type"] = "none"
+            vd["decoration_style"] = "none"
+            vd["text_effect"] = "classic"
+            vd["camera_pan"] = "static"
+            vd["use_web3_background"] = False
+            slide["visual_design"] = vd
+            if slide.get("type") == "title_card" and not slide.get("needs_image"):
+                slide["needs_image"] = False
         return script
 
     def _build_image_instruction(self, image_filenames: list, image_mode: str) -> str:

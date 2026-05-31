@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "series": "每天一个GitHub项目",
+  "count": 20,
+  "description": "仅允许从此 20 套风格选型；每套 = 镜序 + Remotion profile + CSS 装饰",
+  "styles": [
+    {
+      "id": "G01_cyber_hook_yellow",
+      "name": "赛博网格钩子·黄字描边",
+      "reference_style": "S01",
+      "slides": ["title_card", "content_card", "content_card", "cta_card"],
+      "title_profile": "kinetic_slam_tight",
+      "content_profile": "glass_card_stack",
+      "css": ["grid-tunnel-bg", "text-stroke-yellow", "float-icon"],
+      "bg": "#0d1117",
+      "wordsPerPageMs": 800
+    },
+    {
+      "id": "G02_chart_card_stat",
+      "name": "白卡片折线图+Star数",
+      "reference_style": "S01",
+      "slides": ["title_card", "content_card", "content_card", "cta_card"],
+      "title_profile": "minimal_headline",
+      "content_profile": "github_daily_bullets",
+      "css": ["chart-line-rise", "stat-pill-row"],
+      "bg": "#1a1033"
+    },
+    {
+      "id": "G03_minimal_white_series",
+      "name": "米白极简系列标题",
+      "reference_style": "S03",
+      "slides": ["title_card", "content_card", "content_card", "cta_card"],
+      "title_profile": "minimal_headline",
+      "content_profile": "bullet_rail_right",
+      "css": ["plain-white-bg"],
+      "bg": "#f5f5f0"
+    },
+    {
+      "id": "G04_badge_pills_intro",
+      "name": "浅灰底·徽章行+Logo头",
+      "reference_style": "S02",
+      "slides": ["title_card", "content_card", "content_card", "cta_card"],
+      "title_profile": "split_mask_reveal",
+      "content_profile": "bullet_stagger_up",
+      "css": ["repo-header", "pill-badge", "accent-orange-word"],
+      "bg": "#ececec"
+    },
+    {
+      "id": "G05_dark_top10_rank",
+      "name": "黑底Top10榜单",
+      "reference_style": "S04",
+      "slides": ["title_card", "content_card", "content_card", "cta_card"],
+      "title_profile": "episode_counter",
+      "content_profile": "tiktok_word_pop",
+      "css": ["daily-video-tag", "rank-number"],
+      "bg": "#000000",
+      "wordsPerPageMs": 1200
+    },
+    {
+      "id": "G06_tiktok_follow_caption",
+      "name": "黑底绿字跟读口播",
+      "reference_style": "S04",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "tiktok_word_pop",
+      "content_profile": "tiktok_word_pop",
+      "css": ["caption-bottom-safe"],
+      "bg": "#000000",
+      "wordsPerPageMs": 200
+    },
+    {
+      "id": "G07_hook_glitch_github",
+      "name": "Glitch钩子+GitHub角标",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "glitch_hook_clean",
+      "content_profile": "github_daily_bullets",
+      "css": ["github-badge"],
+      "bg": "#0d1117"
+    },
+    {
+      "id": "G08_terminal_readme",
+      "name": "终端风README打字",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "typewriter_terminal",
+      "content_profile": "mono_code_rain",
+      "css": ["cursor-blink"],
+      "bg": "#0a0f0a"
+    },
+    {
+      "id": "G09_split_repo_screenshot",
+      "name": "左文右仓库截图",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "product_split_frame",
+      "content_profile": "bullet_rail_right",
+      "css": ["image-right-panel"],
+      "bg": "#0d1117"
+    },
+    {
+      "id": "G10_glass_three_points",
+      "name": "玻璃卡片三点",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "github_daily_hook",
+      "content_profile": "glass_card_stack",
+      "css": ["glass-card"],
+      "bg": "#0d1117"
+    },
+    {
+      "id": "G11_kinetic_word_slam",
+      "name": "快闪按字砸入",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "flash_hook_smash",
+      "content_profile": "kinetic_slam_loose",
+      "css": [],
+      "bg": "#000000"
+    },
+    {
+      "id": "G12_phrase_pages_caption",
+      "name": "短语分页字幕",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "tiktok_phrase_pages",
+      "content_profile": "tiktok_phrase_pages",
+      "wordsPerPageMs": 1000,
+      "bg": "#000000"
+    },
+    {
+      "id": "G13_marquee_topics",
+      "name": "顶栏Topic跑马",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "marquee_ticker",
+      "content_profile": "github_daily_bullets",
+      "css": ["marquee-top"],
+      "bg": "#0d1117"
+    },
+    {
+      "id": "G14_shake_keyword",
+      "name": "关键词微震强调",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "shake_emphasis",
+      "content_profile": "bullet_stagger_up",
+      "bg": "#000000"
+    },
+    {
+      "id": "G15_star_counter_roll",
+      "name": "Star数字滚动",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "minimal_headline",
+      "content_profile": "github_daily_bullets",
+      "css": ["odometer-stars"],
+      "bg": "#0d1117"
+    },
+    {
+      "id": "G16_purple_gradient_soft",
+      "name": "柔和紫渐变（非商务蓝）",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "github_daily_hook",
+      "content_profile": "bullet_rail_right",
+      "css": ["soft-purple-gradient"],
+      "bg": "#12081f"
+    },
+    {
+      "id": "G17_code_rain_minimal",
+      "name": "代码雨+单行标题",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "mono_code_rain",
+      "content_profile": "minimal_headline",
+      "bg": "#0a0f0a"
+    },
+    {
+      "id": "G18_cta_star_pulse",
+      "name": "Star脉冲CTA",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "github_daily_hook",
+      "content_profile": "cta_pulse_arrow",
+      "css": ["pulse-button"],
+      "bg": "#0d1117"
+    },
+    {
+      "id": "G19_rank_episode_daily",
+      "name": "日更集数+大序号",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "episode_counter",
+      "content_profile": "github_daily_bullets",
+      "bg": "#000000"
+    },
+    {
+      "id": "G20_clean_badge_orange",
+      "name": "极简+橙词+徽章（大光风）",
+      "reference_style": "S02",
+      "slides": ["title_card", "content_card", "cta_card"],
+      "title_profile": "minimal_headline",
+      "content_profile": "glass_card_stack",
+      "css": ["pill-badge", "accent-orange-word"],
+      "bg": "#f0f0f0"
+    }
+  ]
+}

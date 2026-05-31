@@ -168,6 +168,12 @@ class RenderSlidesSkill:
             
         visual_props = slide.get("visual_design", {})
 
+        motion_profile = slide.get("motion_profile") or visual_props.get("motion_profile", "github_daily_hook")
+        motion_params = slide.get("motion_params") or visual_props.get("motion_params") or {}
+
+        bg = slide.get("background_color") or visual_props.get("background_color")
+        css_dec = slide.get("css_decorations") or visual_props.get("css_decorations") or []
+
         props = {
             "heading": slide.get("heading", ""),
             "subheading": slide.get("subheading", ""),
@@ -175,15 +181,18 @@ class RenderSlidesSkill:
             "ctaText": slide.get("cta_text", ""),
             "hookText": slide.get("hook_text", ""),
             "captionStyle": slide.get("caption_style", style.get("caption_style", "spring")),
-            "colors": style.get("colors", ["#0f0c29", "#302b63"]),
-            "textColor": style.get("text_color", "#ffffff"),
-            "accentColor": style.get("accent_color", "#00d2ff"),
-            "cameraPan": visual_props.get("camera_pan", "zoom-in"),
-            "particleType": visual_props.get("particle_type", "glow"),
-            "decorationStyle": visual_props.get("decoration_style", "none"),
-            "textEffect": visual_props.get("text_effect", "classic"),
+            "colors": style.get("colors", ["#0d1117", "#161b22"]),
+            "textColor": style.get("text_color", "#f0f6fc"),
+            "accentColor": style.get("accent_color", "#58a6ff"),
+            "accentColor2": "#3fb950",
             "layoutStyle": visual_props.get("layout_style", "center"),
-            "colorMood": visual_props.get("color_mood", ""),
+            "motionProfile": motion_profile,
+            "motionParams": motion_params,
+            "useWeb3Background": False,
+            "motionTemplateId": slide.get("motion_template_id", ""),
+            "githubDailyStyleId": slide.get("github_daily_style_id", ""),
+            "backgroundColor": bg,
+            "cssDecorations": css_dec,
             "headingStartFrame": heading_start_frame,
             "bulletStartFrames": bullet_start_frames,
         }
@@ -218,7 +227,7 @@ class RenderSlidesSkill:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True,
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                                     timeout=600, cwd=REMOTION_DIR, shell=True)
             if result.returncode != 0:
                 print(f"  ⚠️ Remotion 渲染失败，降级为 FFmpeg")
@@ -245,7 +254,7 @@ class RenderSlidesSkill:
                 "-crf", "18", "-profile:v", "high", "-level", "4.1",
                 "-preset", "medium",
                 output_path
-            ], capture_output=True, text=True, timeout=300)
+            ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
 
         if os.path.exists(seq_dir):
             shutil.rmtree(seq_dir, ignore_errors=True)
@@ -276,7 +285,7 @@ class RenderSlidesSkill:
             "-preset", "medium",
             "-t", str(duration), output_path
         ]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         if r.returncode != 0:
             print(f"  ⚠️ FFmpeg drawtext 失败: {r.stderr[-200:]}")
             # 超级降级：纯色块
@@ -287,7 +296,7 @@ class RenderSlidesSkill:
                 "-crf", "18", "-profile:v", "high", "-level", "4.1",
                 "-preset", "medium",
                 "-t", str(duration), output_path
-            ], capture_output=True, text=True, timeout=60)
+            ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
 
     # ========== 音频处理 ==========
 
@@ -305,7 +314,7 @@ class RenderSlidesSkill:
             "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
             "-shortest", output_path
         ]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         if r.returncode != 0:
             print(f"  ⚠️ attach_audio 失败: {r.stderr[-200:]}")
             return False
@@ -316,7 +325,7 @@ class RenderSlidesSkill:
         check = subprocess.run(
             ["ffprobe", "-v", "quiet", "-select_streams", "a",
              "-show_entries", "stream=codec_type", "-of", "csv=p=0", output_path],
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5
         )
         if "audio" not in check.stdout:
             print(f"  ⚠️ 输出视频无音频流")
@@ -333,7 +342,7 @@ class RenderSlidesSkill:
             "-c:v", "copy", "-c:a", "aac",
             "-t", str(duration), output_path
         ]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         if r.returncode != 0:
             print(f"  ⚠️ add_silent_audio 失败: {r.stderr[-150:]}")
             shutil.copy2(video_path, output_path)
@@ -349,7 +358,7 @@ class RenderSlidesSkill:
             "-preset", "medium", "-an",
             padded_path
         ]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         if r.returncode == 0 and os.path.exists(padded_path):
             os.replace(padded_path, video_path)
         else:
@@ -372,7 +381,7 @@ class RenderSlidesSkill:
             "-af", f"apad=pad_dur={pad_seconds:.3f}",
             "-shortest", output_path
         ]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         if r.returncode != 0:
             print(f"  ⚠️ attach_audio_with_pad 失败: {r.stderr[-200:]}")
             return False
@@ -383,7 +392,7 @@ class RenderSlidesSkill:
         check = subprocess.run(
             ["ffprobe", "-v", "quiet", "-select_streams", "a",
              "-show_entries", "stream=codec_type", "-of", "csv=p=0", output_path],
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5
         )
         if "audio" not in check.stdout:
             print(f"  ⚠️ 输出视频无音频流")
@@ -456,7 +465,7 @@ class RenderSlidesSkill:
             "-pix_fmt", "yuv420p", "-movflags", "+faststart",
             "-preset", "medium", output_path
         ]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
         if r.returncode != 0:
             print(f"[RenderSlidesSkill] ⚠️ xfade 拼接失败: {r.stderr[-300:]}")
 
@@ -473,7 +482,7 @@ class RenderSlidesSkill:
             "-pix_fmt", "yuv420p", "-movflags", "+faststart",
             "-preset", "medium", output_path
         ]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
         if r.returncode != 0:
             print(f"[RenderSlidesSkill] ⚠️ simple_concat 失败: {r.stderr[-200:]}")
         if os.path.exists(concat_list):
@@ -487,7 +496,7 @@ class RenderSlidesSkill:
         check = subprocess.run(
             ["ffprobe", "-v", "quiet", "-select_streams", "a",
              "-show_entries", "stream=codec_type", "-of", "csv=p=0", video_path],
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5
         )
         has_audio = "audio" in check.stdout
 
@@ -510,7 +519,7 @@ class RenderSlidesSkill:
             "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
             "-shortest", output_path
         ]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         if r.returncode != 0:
             print(f"[RenderSlidesSkill] ⚠️ BGM 混音失败: {r.stderr[-200:]}")
             shutil.copy2(video_path, output_path)
@@ -523,7 +532,7 @@ class RenderSlidesSkill:
             r = subprocess.run(
                 ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
                  "-of", "csv=p=0", path],
-                capture_output=True, text=True, timeout=10)
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
             return float(r.stdout.strip())
         except Exception:
             return 5.0
@@ -537,7 +546,7 @@ class RenderSlidesSkill:
                  "-f", "lavfi", "-i", "color=c=white:s=2x2:d=0.1:r=1",
                  "-filter_complex", "[0:v][1:v]xfade=duration=0.05:offset=0.05:easing=linear[v]",
                  "-map", "[v]", "-frames:v", "1", "-f", "null", "-"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
             )
             return result.returncode == 0
         except Exception:

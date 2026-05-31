@@ -8,6 +8,7 @@ import os
 import re
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -21,6 +22,22 @@ SENTENCE_PAUSE = 0.2
 MIN_LEAD_SILENCE = 0.3
 # 前置留白上限（秒）,切换场景后应尽快出声
 MAX_LEAD_SILENCE = 0.5
+
+
+def _safe_remove(path: str, *, retries: int = 6) -> None:
+    import time
+
+    if not path:
+        return
+    for attempt in range(retries):
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+            return
+        except PermissionError:
+            if attempt >= retries - 1:
+                raise
+            time.sleep(0.35)
 
 
 class DubbingSkill:
@@ -93,9 +110,9 @@ class DubbingSkill:
             )
             if total_duration <= 0:
                 total_duration = self._get_audio_duration(clip_audio_path)
-            for sa in sentence_audios:
-                if os.path.exists(sa["path"]):
-                    os.remove(sa["path"])
+            if sys.platform != "win32":
+                for sa in sentence_audios:
+                    _safe_remove(sa.get("path") or "")
             print(f"  → {len(sentence_audios)} 句, {total_duration:.1f}s")
             return {
                 "path": clip_audio_path,
@@ -110,7 +127,7 @@ class DubbingSkill:
 
         tts_clips: list[dict] = []
         jobs = clip_jobs
-        if len(jobs) <= 1:
+        if len(jobs) <= 1 or sys.platform == "win32":
             for job in jobs:
                 row = _one_clip(job)
                 if row:
@@ -120,6 +137,8 @@ class DubbingSkill:
             from python_agent.config import get_config
 
             workers = min(get_config().tts_clip_workers, len(jobs))
+            if sys.platform == "win32":
+                workers = 1
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
                 futs = [pool.submit(_one_clip, job) for job in jobs]
                 for fut in concurrent.futures.as_completed(futs):

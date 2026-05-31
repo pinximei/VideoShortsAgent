@@ -88,6 +88,12 @@ site:
 
 render:
   enabled: false
+  # pipeline = B-roll 切片 + ASS；slides = Remotion TitleCard/ContentCard（「每天一个 GitHub」风）
+  mode: pipeline
+  scene: daily_github
+  visual_style: tech_blue
+  bgm: upbeat_tech
+  slides_image_mode: search
   platforms: ["douyin", "xhs"]
   # 默认 Remotion 句级字幕 + 渐变（需 cd remotion_effects && npm install）
   use_remotion: true
@@ -102,7 +108,7 @@ render:
   full_verify: false
   # 任一步失败（TTS/渲染/验收/绑定）→ 任务 FAILED，禁止标记发布
   fail_closed: true
-  bookends: douyin
+  bookends: both
   ffmpeg_preset: fast
 
 llm:

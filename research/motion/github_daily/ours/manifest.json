@@ -1,0 +1,12 @@
+{
+  "video": "research/motion/github_daily/ours/preview_title_tiktok.mp4",
+  "keyframes": [
+    "research/motion/github_daily/ours/keyframes/key_00_0s.png",
+    "research/motion/github_daily/ours/keyframes/key_01_5s.png",
+    "research/motion/github_daily/ours/keyframes/key_02_10s.png",
+    "research/motion/github_daily/ours/keyframes/key_03_15s.png",
+    "research/motion/github_daily/ours/keyframes/key_04_20s.png",
+    "research/motion/github_daily/ours/keyframes/key_05_25s.png"
+  ],
+  "props": "research/motion/github_daily/ours/preview_title_props.json"
+}

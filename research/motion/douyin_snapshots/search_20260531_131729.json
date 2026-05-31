@@ -1,0 +1,8 @@
+{
+  "captured_at": "2026-05-31T13:17:42.169627+00:00",
+  "query": "AI资讯",
+  "url": "https://www.douyin.com/search/AI资讯?type=video",
+  "screenshot": "D:\\VideoShortsAgent\\research\\motion\\douyin_snapshots\\search_20260531_131729.png",
+  "items": [],
+  "note": "人工下一步：从 screenshot 挑 2-3 条对标视频，用 analyze_subtitle_motion.py 逐条拆帧"
+}

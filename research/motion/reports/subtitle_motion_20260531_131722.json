@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-05-31T13:17:22.229879+00:00",
+  "tool": "analyze_subtitle_motion.py",
+  "reports": [
+    {
+      "video": "D:\\VideoShortsAgent\\research\\motion\\refs\\BV196xNzDEU9_p1.mp4",
+      "duration_sec": 45.0,
+      "sample_fps": 5.0,
+      "frames_analyzed": 225,
+      "subtitle_band": "bottom 38% (y>62%)",
+      "motion_mean_diff": 0.0228,
+      "motion_max_diff": 0.2822,
+      "change_peaks_count": 10,
+      "estimated_switch_interval_sec": 0.8,
+      "estimated_switch_interval_ms": 800,
+      "suggested_combine_tokens_ms": 800,
+      "peak_indices": [
+        172,
+        184,
+        187,
+        190,
+        196,
+        200,
+        204,
+        208,
+        217,
+        220
+      ]
+    }
+  ]
+}

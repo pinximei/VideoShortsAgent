@@ -1,0 +1,159 @@
+{
+  "approved": false,
+  "overall_score": 92.0,
+  "rounds": 12,
+  "pass_count": 6,
+  "results": [
+    {
+      "round": 1,
+      "dimension": "视觉层次",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 2,
+      "dimension": "色彩对比度",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 3,
+      "dimension": "字体与排版",
+      "score": 80.0,
+      "passed": false,
+      "issues": [
+        {
+          "severity": "warn",
+          "message": "未启用字体特性（kerning/tabular）",
+          "fix": "body 增加 font-feature-settings: 'kern', 'liga'",
+          "file": "styles/theme.css"
+        },
+        {
+          "severity": "warn",
+          "message": "缺少展示用字体 token",
+          "fix": "增加 --vsa-font-display 用于标题",
+          "file": "styles/theme.css"
+        },
+        {
+          "severity": "error",
+          "message": "界面仍使用 emoji 图标 (1 个文件)",
+          "fix": "改用 components/icons/UiIcon.vue SVG 体系",
+          "file": "src\\views\\LicenseView.vue"
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "dimension": "间距节奏",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 5,
+      "dimension": "组件一致性",
+      "score": 88.0,
+      "passed": false,
+      "issues": [
+        {
+          "severity": "error",
+          "message": "缺少全局主按钮样式",
+          "fix": "在 theme.css 定义 .btn-primary",
+          "file": "styles/theme.css"
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "dimension": "图标体系",
+      "score": 76.0,
+      "passed": false,
+      "issues": [
+        {
+          "severity": "error",
+          "message": "界面仍使用 emoji 图标 (1 个文件)",
+          "fix": "改用 components/icons/UiIcon.vue SVG 体系",
+          "file": "src\\views\\LicenseView.vue"
+        },
+        {
+          "severity": "error",
+          "message": "界面仍使用 emoji 图标 (1 个文件)",
+          "fix": "改用 components/icons/UiIcon.vue SVG 体系",
+          "file": "src\\views\\LicenseView.vue"
+        }
+      ]
+    },
+    {
+      "round": 7,
+      "dimension": "状态与反馈",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 8,
+      "dimension": "主操作突出",
+      "score": 100.0,
+      "passed": true,
+      "issues": []
+    },
+    {
+      "round": 9,
+      "dimension": "导航与侧栏",
+      "score": 88.0,
+      "passed": false,
+      "issues": [
+        {
+          "severity": "error",
+          "message": "界面仍使用 emoji 图标 (1 个文件)",
+          "fix": "改用 components/icons/UiIcon.vue SVG 体系",
+          "file": "src\\views\\LicenseView.vue"
+        }
+      ]
+    },
+    {
+      "round": 10,
+      "dimension": "卡片与景深",
+      "score": 88.0,
+      "passed": false,
+      "issues": [
+        {
+          "severity": "error",
+          "message": "卡片无阴影/景深 token",
+          "fix": "增加 --vsa-shadow-sm/md 与 .card 阴影",
+          "file": "styles/theme.css"
+        }
+      ]
+    },
+    {
+      "round": 11,
+      "dimension": "动效克制",
+      "score": 96.0,
+      "passed": true,
+      "issues": [
+        {
+          "severity": "warn",
+          "message": "未尊重减弱动效偏好",
+          "fix": "theme.css 增加 @media (prefers-reduced-motion)",
+          "file": "styles/theme.css"
+        }
+      ]
+    },
+    {
+      "round": 12,
+      "dimension": "品牌识别",
+      "score": 88.0,
+      "passed": false,
+      "issues": [
+        {
+          "severity": "error",
+          "message": "界面仍使用 emoji 图标 (1 个文件)",
+          "fix": "改用 components/icons/UiIcon.vue SVG 体系",
+          "file": "src\\views\\LicenseView.vue"
+        }
+      ]
+    }
+  ]
+}

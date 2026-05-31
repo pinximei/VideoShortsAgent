@@ -40,3 +40,10 @@ test_audio.wav
 
 # Large media (keep test_video if user provides one)
 !test_video.*
+middle/config.yaml
+
+# Motion research: keep manifests/keyframes; skip bulk video captures in git
+research/motion/github_daily/captures/**/*.png
+research/motion/github_daily/verify_g20/**/*.mp4
+research/motion/github_daily/ours/*.mp4
+_py_test.py

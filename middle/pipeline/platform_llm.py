@@ -17,11 +17,13 @@ _root = repo_root()
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
+from python_agent.capabilities.opening_hook import OPENING_HOOK_RULES, enforce_opening_hook_on_copy
 from python_agent.capabilities.registry import llm_capabilities_section, save_catalog_snapshot
 
 SYSTEM_PROMPT = """你是多平台内容运营与短视频剪辑策划专家。
 根据站内文章生成各平台可发布终稿，并为抖音/小红书规划视频分镜与特效参数。
 特效与样式必须从文末「VSA 能力目录」中选择合法值，不得自造字段。
+开篇前 3～8 秒必须抓住注意力（悬念/反差/数字/利益），禁止「大家好」「今天介绍」式开场。
 只返回 JSON。"""
 
 USER_TEMPLATE = """## 原文信息
@@ -65,16 +67,18 @@ feed：{feed_kind}
     "title": "40字内标题",
     "body": "900字内笔记",
     "video_script": "60秒口播稿",
-    "effects": {{ "preset": "情感", "gradient": false, "intro_card": false, "outro_card": true }},
+    "effects": {{ "preset": "情感", "gradient": false, "intro_card": true, "outro_card": true }},
     "clips": [{{"start": 0, "end": 10, "hook_text": "...", "tts_text": "...", "caption_style": "fade", "transition_to_next": "dissolve"}}]
   }},
   "toutiao": {{ "title": "...", "body": "微头条短文" }},
   "douban": {{ "title": "...", "body": "豆瓣笔记" }}
 }}
 
-视频 clips：2~4 段；口播总字数≤220；段间转场 0.2~0.3 秒；start/end 在 B-roll 时长内且各段 start 应错开。
+视频 clips：feed_kind=news 时**必须 3~4 段**、apps 时 2~4 段；口播总字数 180~260；段间转场 0.2~0.3 秒；start/end 在 B-roll 时长内且各段 start 应错开。
 每段 `hook_text` 为屏上短字幕（≤24 字）；正文段可用要点式 hook_text。
 **effects.preset 必填**；按 feed_kind 选 preset（见能力目录）；pixelize/diag* 实验转场全片最多 1 次。
+
+{opening_hook_rules}
 
 {capabilities_section}"""
 
@@ -113,6 +117,7 @@ def generate_platform_copy(
         theme_id=brief.theme_id or "default",
         theme_label=theme_label,
         broll_section=broll_section,
+        opening_hook_rules=OPENING_HOOK_RULES,
         capabilities_section=llm_capabilities_section(feed_kind=brief.feed_kind),
     )
     if getattr(brief, "cover_image_url", ""):
@@ -147,7 +152,16 @@ def generate_platform_copy(
         from python_agent.capabilities.clip_text import enrich_apps_platform_copy
 
         copy = enrich_apps_platform_copy(copy, feed_kind=brief.feed_kind)
-        ok, msg = validate_platform_copy(copy, broll_seconds=broll_seconds)
+        copy = enforce_opening_hook_on_copy(
+            copy,
+            brief_hook=brief.hook,
+            title=brief.title,
+            feed_kind=brief.feed_kind,
+            talking_points=brief.talking_points,
+        )
+        ok, msg = validate_platform_copy(
+            copy, broll_seconds=broll_seconds, feed_kind=brief.feed_kind
+        )
         if ok:
             return copy
         last_err = msg
@@ -217,6 +231,25 @@ def write_fallback_video_plans(brief: VideoBrief, output_dir: Path, cfg: Pipelin
             feed_kind=brief.feed_kind,
             bookends=cfg.render_bookends,
         )
+        copy_stub = {
+            platform: {
+                "clips": clips,
+                "effects": effects,
+                "title": brief_dict.get("title") or "",
+            }
+        }
+        copy_stub = enforce_opening_hook_on_copy(
+            copy_stub,
+            brief_hook=str(brief_dict.get("hook") or ""),
+            title=str(brief_dict.get("title") or ""),
+            feed_kind=str(brief_dict.get("feed_kind") or "news"),
+            talking_points=brief_dict.get("talking_points") or [],
+        )
+        block = copy_stub.get(platform) or {}
+        clips = block.get("clips") or clips
+        effects = block.get("effects") or effects
+        if broll_seconds and broll_seconds > 0:
+            sync_broll_timings_to_clips(clips, float(broll_seconds))
         save_video_clips_plan(
             output_dir,
             platform,
@@ -328,10 +361,13 @@ def _write_from_llm(brief: VideoBrief, output_dir: Path, copy: dict[str, Any]) -
     _write_text(publish / "xhs_title.txt", str(xhs.get("title") or brief.hook)[:60])
     _write_text(publish / "xhs_body.txt", str(xhs.get("body") or script)[:2000])
 
+    from python_agent.capabilities.opening_hook import scroll_stopping_hook, _lead_paragraph
+
+    hook_line = scroll_stopping_hook(title=brief.title, hook=brief.hook, feed_kind=brief.feed_kind)
     tt_body = str(tt.get("body") or "")
     if not tt_body:
         tt_body = f"{brief.title}\n\n" + "\n".join(f"· {p}" for p in brief.talking_points) + f"\n\n{brief.cta}"
-    _write_text(publish / "toutiao_micro.txt", tt_body[:2500])
+    _write_text(publish / "toutiao_micro.txt", _lead_paragraph(hook_line, tt_body)[:2500])
 
     db_body = str(db.get("body") or "")
     if not db_body:

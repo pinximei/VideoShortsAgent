@@ -269,8 +269,16 @@ class RenderSkill:
         """渲染多个片段并拼接"""
         from python_agent.config import get_config
         MAX_TOTAL_DURATION = get_config().max_video_duration
+        bookend_reserve = 0.0
+        if effects:
+            if effects.get("intro_card"):
+                bookend_reserve += 2.2
+            if effects.get("outro_card"):
+                bookend_reserve += 2.0
+        max_content_duration = max(24.0, MAX_TOTAL_DURATION - bookend_reserve)
         print(f"[RenderSkill] 多片段模式: {len(clips)} 个片段"
-              f"{f', {len(tts_clips)} 个 TTS' if tts_clips else ''}")
+              f"{f', {len(tts_clips)} 个 TTS' if tts_clips else ''}"
+              f"（正文上限 {max_content_duration:.0f}s，片头片尾预留 {bookend_reserve:.1f}s）")
 
         # 清理旧的中间文件（避免上次残留文件干扰）
         import glob
@@ -278,21 +286,6 @@ class RenderSkill:
                         "caption_overlay_*.webm", "gradient_overlay_*.webm", "subtitle_*.ass"]:
             for old_file in glob.glob(os.path.join(output_dir, pattern)):
                 os.remove(old_file)
-
-        # 硬限制：总时长截断
-        cumulative_duration = 0.0
-        valid_clip_count = len(clips)
-        for i, clip in enumerate(clips):
-            tts_clip = _tts_for_index(i)
-            dur = tts_clip["duration"] if tts_clip else (float(clip["end"]) - float(clip["start"]))
-            cumulative_duration += dur
-            if cumulative_duration > MAX_TOTAL_DURATION:
-                valid_clip_count = i
-                print(f"[RenderSkill] ⚠️ 总时长 {cumulative_duration:.0f}s 超限，只保留前 {i} 个片段")
-                break
-        clips = clips[:valid_clip_count]
-        if tts_clips:
-            tts_clips = tts_clips[:valid_clip_count]
 
         def _tts_for_index(idx: int) -> dict | None:
             if not tts_clips:
@@ -303,6 +296,24 @@ class RenderSkill:
             if idx < len(tts_clips) and "index" not in tts_clips[idx]:
                 return tts_clips[idx]
             return None
+
+        # 硬限制：总时长截断
+        cumulative_duration = 0.0
+        valid_clip_count = len(clips)
+        for i, clip in enumerate(clips):
+            tts_clip = _tts_for_index(i)
+            dur = tts_clip["duration"] if tts_clip else (float(clip["end"]) - float(clip["start"]))
+            cumulative_duration += dur
+            if cumulative_duration > max_content_duration:
+                valid_clip_count = i
+                print(
+                    f"[RenderSkill] ⚠️ 正文时长 {cumulative_duration:.0f}s 超限，"
+                    f"只保留前 {i} 个片段（已为片头片尾预留 {bookend_reserve:.1f}s）"
+                )
+                break
+        clips = clips[:valid_clip_count]
+        if tts_clips:
+            tts_clips = tts_clips[:valid_clip_count]
 
         segment_paths = []
         for i, clip in enumerate(clips):
@@ -332,11 +343,19 @@ class RenderSkill:
             ass_path = os.path.join(output_dir, f"subtitle_{i}.ass")
             segment_path = os.path.join(output_dir, f"segment_{i}.mp4")
 
-            # 裁剪（静音）
-            self._clip_video(
-                video_path, start, end, clip_path, silent=silent,
-                x264_preset=self._x264_preset(effects),
-            )
+            cover_path = (effects or {}).get("cover_segment_path") if i == 0 else None
+            if cover_path and os.path.isfile(str(cover_path)):
+                self._clip_from_cover_image(
+                    str(cover_path),
+                    target_duration,
+                    clip_path,
+                    x264_preset=self._x264_preset(effects),
+                )
+            else:
+                self._clip_video(
+                    video_path, start, end, clip_path, silent=silent,
+                    x264_preset=self._x264_preset(effects),
+                )
 
             # 裁剪结果检查
             if not os.path.exists(clip_path) or os.path.getsize(clip_path) < 1024:
@@ -395,22 +414,51 @@ class RenderSkill:
         bookend_suffix: list[str] = []
         remotion_on = (effects or {}).get("use_remotion", True) and self._remotion_available
         if remotion_on:
-            colors = (effects or {}).get("gradient_colors") or ["#667eea", "#764ba2"]
+            fk_intro = str((effects or {}).get("feed_kind") or "news").strip().lower()
+            colors = (effects or {}).get("gradient_colors") or (
+                ["#0f172a", "#1e293b"] if fk_intro == "news" else ["#667eea", "#764ba2"]
+            )
             if not isinstance(colors, list) or len(colors) < 2:
-                colors = ["#0f0c29", "#302b63"]
+                colors = ["#0f172a", "#1e293b"] if fk_intro == "news" else ["#0f0c29", "#302b63"]
             cap = (effects or {}).get("caption_style", "spring")
             if (effects or {}).get("intro_card"):
                 intro_path = os.path.join(output_dir, "segment_intro.mp4")
+                intro_motion = (effects or {}).get("motion_profile") or "tiktok_word_pop"
+                intro_params = (effects or {}).get("motion_params") or {}
+                if fk_intro == "news" and not (effects or {}).get("motion_profile"):
+                    try:
+                        from python_agent.motion_templates import pick_intro_template
+                        tpl = pick_intro_template({
+                            "feed_kind": "news",
+                            "title": (effects or {}).get("intro_heading"),
+                            "article_id": (effects or {}).get("article_id"),
+                        })
+                        intro_motion = tpl.get("motion_profile", intro_motion)
+                        intro_params = tpl.get("motion_params") or intro_params
+                    except Exception:
+                        pass
                 intro_props: dict = {
                         "heading": str((effects or {}).get("intro_heading") or "")[:80],
                         "subheading": str((effects or {}).get("intro_subheading") or "")[:80],
                         "captionStyle": cap,
                         "colors": colors,
                         "accentColor": colors[0],
-                        "layoutStyle": "split-left" if (effects or {}).get("intro_image_path") else "center",
+                        "layoutStyle": "top-heavy" if fk_intro == "news" else (
+                            "split-left" if (effects or {}).get("intro_image_path") else "center"
+                        ),
+                        "motionProfile": intro_motion,
+                        "motionParams": intro_params,
+                        "useWeb3Background": False,
                     }
-                if (effects or {}).get("intro_image_path"):
-                    intro_props["imagePath"] = effects["intro_image_path"]
+                img_path = (effects or {}).get("intro_image_path")
+                # 资讯：PH 封面常为抽象球体，片头只用深色底+标题，避免 0s 重复「蓝球」
+                if img_path and fk_intro != "news":
+                    intro_props["imagePath"] = img_path
+                elif img_path and fk_intro == "news":
+                    intro_props["layoutStyle"] = "top-heavy"
+                    intro_props["subheading"] = str(
+                        (effects or {}).get("intro_subheading") or intro_props.get("subheading") or ""
+                    )[:80]
                 self._render_remotion_composition_mp4(
                     "TitleCard",
                     intro_props,
@@ -470,6 +518,32 @@ class RenderSkill:
                 os.remove(path)
 
     # ========== FFmpeg 操作 ==========
+
+    def _clip_from_cover_image(
+        self,
+        image_path: str,
+        duration: float,
+        output_path: str,
+        *,
+        x264_preset: str = "medium",
+    ) -> None:
+        """第 1 段正文：用文章封面图做 Ken Burns 背景（替代 B-roll 彩条）。"""
+        dur = max(1.0, float(duration))
+        vf = (
+            "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
+            f"zoompan=z='min(zoom+0.0005,1.05)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,"
+            "eq=brightness=0.02:saturation=1.05"
+        )
+        cmd = [
+            "ffmpeg", "-y", "-loop", "1", "-i", image_path,
+            "-t", str(dur), "-vf", vf, "-an",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-crf", "18", "-profile:v", "high", "-level", "4.1",
+            "-movflags", "+faststart", "-preset", x264_preset,
+            output_path,
+        ]
+        if not self._run_cmd_returns_ok(cmd, "封面图片段", timeout=120):
+            self._clip_video(image_path, 0, dur, output_path, silent=True, x264_preset=x264_preset)
 
     def _clip_video(self, input_path: str, start: float, end: float,
                     output_path: str, silent: bool = False, pad_duration: float = 0,
@@ -611,17 +685,18 @@ class RenderSkill:
                     f"Bullet,,0,0,0,,{{\\fad(200,150)}}{b_text}"
                 )
 
+        # 竖屏 1080×1920（此前误用 1920×1080 会导致字幕错位与底部花屏）
         ass_content = f"""[Script Info]
 Title: VideoShortsAgent Subtitle
 ScriptType: v4.00+
-PlayResX: 1920
-PlayResY: 1080
+PlayResX: 1080
+PlayResY: 1920
 WrapStyle: 0
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Hook,Microsoft YaHei,64,&H00FFFFFF,&H000000FF,&H00000000,&HC0000000,-1,0,0,0,100,100,3,0,1,3,3,2,40,40,80,1
-Style: Bullet,Microsoft YaHei,42,&H00FFFFFF,&H000000FF,&H00000000,&HA0000000,-1,0,0,0,100,100,0,0,1,2,2,2,60,60,200,1
+Style: Hook,Microsoft YaHei,56,&H00FFFFFF,&H000000FF,&H00000000,&HC0000000,-1,0,0,0,100,100,3,0,1,3,3,2,48,48,160,1
+Style: Bullet,Microsoft YaHei,38,&H00FFFFFF,&H000000FF,&H00000000,&HA0000000,-1,0,0,0,100,100,0,0,1,2,2,2,56,56,280,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -977,6 +1052,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 t = default_transition
             t = resolve_transition(t, default="fade")
             if t not in valid:
+                t = "fade"
+            # 模板 B-roll / 资讯：段间禁用 circleopen/wipe/pixelize，防止 8s 色条残影
+            fk = str((effects or {}).get("feed_kind") or "news").strip().lower()
+            if fk == "news" and t not in ("fade", "dissolve"):
                 t = "fade"
             transitions.append(t)
         return transitions

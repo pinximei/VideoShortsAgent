@@ -1,0 +1,31 @@
+{
+  "heading": "一分钟讲清",
+  "subheading": "每天一个 GitHub 项目",
+  "motionProfile": "tiktok_phrase_pages",
+  "motionParams": {
+    "wordsPerPageMs": 1000,
+    "staggerFrames": 5
+  },
+  "layoutStyle": "top-heavy",
+  "useWeb3Background": false,
+  "backgroundColor": "#000000",
+  "cssDecorations": [],
+  "githubDailyStyleId": "G12_phrase_pages_caption",
+  "sentences": [
+    {
+      "text": "今天 ",
+      "start": 0,
+      "end": 0.4
+    },
+    {
+      "text": "这个 ",
+      "start": 0.4,
+      "end": 0.8
+    },
+    {
+      "text": "项目 ",
+      "start": 0.8,
+      "end": 1.2
+    }
+  ]
+}

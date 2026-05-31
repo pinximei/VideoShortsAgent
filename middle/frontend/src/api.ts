@@ -134,6 +134,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ account_id }),
     }),
+  publisherOpenLogin: (account_id: string) =>
+    request<Record<string, unknown>>("/api/v1/publisher/open-login", {
+      method: "POST",
+      body: JSON.stringify({ account_id }),
+    }),
   llmSettings: () => request<LlmSettings>("/api/v1/settings/llm"),
   saveLlmSettings: (body: {
     api_key?: string;

@@ -337,6 +337,46 @@ def publisher_login_check_api(body: PublisherLoginCheckBody):
         raise HTTPException(500, f"{type(e).__name__}: {e}") from e
 
 
+@app.post("/api/v1/publisher/open-login")
+def publisher_open_login_api(body: PublisherLoginCheckBody):
+    """本机弹出有界面浏览器，按固定 account_id 登录；Cookie 写入 data/browser/{batch}/{id}/。"""
+    import subprocess
+    import sys
+
+    cfg = get_cfg()
+    acc = next((a for a in cfg.channel_accounts if a.id == body.account_id), None)
+    if not acc:
+        raise HTTPException(404, "account not found")
+    if acc.channel_id not in ("douyin", "xhs"):
+        raise HTTPException(400, "only douyin/xhs support browser login profile")
+    root = Path(__file__).resolve().parents[1]
+    script = root / "scripts" / "open_platform_login.py"
+    if not script.is_file():
+        raise HTTPException(500, "open_platform_login.py missing")
+    cfg_path = cfg.config_path or (root / "config.yaml")
+    cmd = [sys.executable, str(script), "--account-id", body.account_id, "--config", str(cfg_path)]
+    subprocess.Popen(
+        cmd,
+        cwd=str(root),
+        creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0),
+    )
+    from publisher.profiles import account_profile_dir
+
+    batch = cfg.publisher.batch_for_site(acc.site_code) if acc.site_code else None
+    batch_id = acc.batch_id or (batch.batch_id if batch else "")
+    prof = account_profile_dir(cfg.data_dir, batch_id, acc.id) if batch_id else None
+    return _envelope(
+        {
+            "started": True,
+            "account_id": body.account_id,
+            "channel_id": acc.channel_id,
+            "batch_id": batch_id,
+            "profile_dir": str(prof) if prof else None,
+            "hint": "在弹出的终端/浏览器完成登录后按 Enter 关闭；再用 login-check 验证",
+        }
+    )
+
+
 @app.get("/api/v1/themes")
 def list_themes():
     cfg = get_cfg()

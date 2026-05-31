@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .config import PipelineConfig
 from .models import VideoBrief
-from .vsa import render_legacy_clip, render_task_videos
+from .vsa import render_task_videos
 
 
 def render_pipeline_videos(
@@ -34,4 +34,8 @@ def render_douyin_pack(
             return None
         primary = result.get("primary_video")
         return Path(primary) if primary and Path(primary).is_file() else None
-    return render_legacy_clip(cfg, output_dir)
+    result = render_task_videos(cfg, output_dir)
+    if not result:
+        return None
+    primary = result.get("primary_video")
+    return Path(primary) if primary and Path(primary).is_file() else None

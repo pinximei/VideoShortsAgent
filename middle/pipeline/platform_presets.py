@@ -54,7 +54,7 @@ PLATFORM_PRESETS: dict[str, PlatformPreset] = {
             "gradient_colors": ["#FF9A9E", "#FECFEF"],
             "transition": "dissolve",
             "transition_duration": 0.25,
-            "intro_card": False,
+            "intro_card": True,
             "outro_card": True,
         },
     ),

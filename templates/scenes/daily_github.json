@@ -1,0 +1,14 @@
+{
+  "name": "📦 每天一个 GitHub",
+  "description": "抖音「每天分享一个 GitHub」风格：极客开场、要点卡片、Star/链接引导",
+  "default_style": "github_dark",
+  "default_voice": "zh-CN-YunxiNeural",
+  "default_bgm": "upbeat_tech",
+  "slide_structure": [
+    "title_card",
+    "content_card",
+    "content_card",
+    "cta_card"
+  ],
+  "prompt": "你是一个专业的短视频内容编排专家，擅长「每天分享一个 GitHub 开源神器」类抖音账号。\n\n将以下资讯/开源项目信息编排为一个 30-55 秒的竖屏短视频脚本。\n\n结构要求：\n1. title_card: 开场必须像「今天又发现一个宝藏仓库」——可用「第N个」「别划走」「GitHub 上杀疯了」等句式；heading ≤12 字；subheading 写项目名或一句话定位；禁止平淡的「今天介绍」。\n2. content_card: 它解决什么痛点 / 为什么火（1-2 条 bullets）\n3. content_card: 核心亮点（2-3 条 bullets，带数字或对比更佳）\n4. cta_card: 引导 Star、收藏、评论区要链接；cta_text 如「链接在评论区」「去 Star」\n\n{image_instruction}\n\n规则：\n- 每个 slide 必须包含 tts_text（配音），口语化、像程序员朋友安利，略带兴奋\n- 所有 slide 的 tts_text 总和 180~240 字\n- 每镜 tts_text 30~65 字\n- hook_text 为屏上角标/短字幕（≤18 字），第一镜要有强烈悬念\n- caption_style 优先 spring（开场）与 typewriter（正文要点）\n- transition_to_next 优先 circleopen、wipeleft、slideup（最后一镜不需要）\n- 语气：极客、干脆、有「每天一个」系列感\n\n输入文本：\n{input_text}\n\n请只返回纯 JSON 对象，不要使用 markdown 代码块。\n返回格式：\n{\"slides\": [{\"type\": \"title_card\", \"heading\": \"短爆标题\", \"subheading\": \"项目/产品副标\", \"hook_text\": \"角标\", \"tts_text\": \"配音\", \"caption_style\": \"spring\", \"transition_to_next\": \"circleopen\"}, {\"type\": \"content_card\", \"heading\": \"段落标题\", \"bullets\": [\"要点1\", \"要点2\"], \"hook_text\": \"短字幕\", \"tts_text\": \"配音\", \"caption_style\": \"typewriter\", \"transition_to_next\": \"wipeleft\"}, {\"type\": \"cta_card\", \"heading\": \"去试试\", \"cta_text\": \"Star / 评论区\", \"hook_text\": \"短字幕\", \"tts_text\": \"配音\", \"caption_style\": \"spring\"}]}"
+}

@@ -1,0 +1,33 @@
+{
+  "heading": "今天这个你必须要知道",
+  "subheading": "每天一个 GitHub 项目",
+  "motionProfile": "tiktok_word_pop",
+  "motionParams": {
+    "wordsPerPageMs": 200,
+    "staggerFrames": 5
+  },
+  "layoutStyle": "top-heavy",
+  "useWeb3Background": false,
+  "backgroundColor": "#000000",
+  "cssDecorations": [
+    "caption-bottom-safe"
+  ],
+  "githubDailyStyleId": "G06_tiktok_follow_caption",
+  "sentences": [
+    {
+      "text": "今天 ",
+      "start": 0,
+      "end": 0.4
+    },
+    {
+      "text": "这个 ",
+      "start": 0.4,
+      "end": 0.8
+    },
+    {
+      "text": "项目 ",
+      "start": 0.8,
+      "end": 1.2
+    }
+  ]
+}

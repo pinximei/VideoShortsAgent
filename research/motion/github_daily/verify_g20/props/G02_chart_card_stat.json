@@ -1,0 +1,34 @@
+{
+  "heading": "Star 暴涨 开源神器",
+  "subheading": "每天一个 GitHub 项目",
+  "motionProfile": "minimal_headline",
+  "motionParams": {
+    "wordsPerPageMs": 800,
+    "staggerFrames": 5
+  },
+  "layoutStyle": "top-heavy",
+  "useWeb3Background": false,
+  "backgroundColor": "#1a1033",
+  "cssDecorations": [
+    "chart-line-rise",
+    "stat-pill-row"
+  ],
+  "githubDailyStyleId": "G02_chart_card_stat",
+  "sentences": [
+    {
+      "text": "今天 ",
+      "start": 0,
+      "end": 0.4
+    },
+    {
+      "text": "这个 ",
+      "start": 0.4,
+      "end": 0.8
+    },
+    {
+      "text": "项目 ",
+      "start": 0.8,
+      "end": 1.2
+    }
+  ]
+}

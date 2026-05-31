@@ -7,6 +7,10 @@ import {
 } from 'remotion';
 import {SlideBackground} from './SlideBackground';
 import {CaptionOverlay} from './CaptionOverlay';
+import {MotionSlideShell} from '../motion/decorations/MotionSlideShell';
+import {AnimatedBullets} from '../motion/text/AnimatedBullets';
+import {TikTokActiveCaption} from '../motion/text/TikTokActiveCaption';
+import type {MotionParams} from '../motion/types';
 
 interface Sentence {
   text: string;
@@ -34,6 +38,14 @@ interface ContentCardProps {
   bulletStartFrames?: number[];
   /** hud：透明底，仅叠要点条（用于 B-roll 正片） */
   overlayMode?: 'full' | 'hud';
+  accentColor2?: string;
+  backgroundVariant?: string;
+  useWeb3Background?: boolean;
+  overlayOpacity?: number;
+  motionProfile?: string;
+  motionParams?: MotionParams;
+  backgroundColor?: string;
+  cssDecorations?: string[];
 }
 
 export const ContentCard: React.FC<ContentCardProps> = ({
@@ -55,11 +67,52 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   headingStartFrame = 0,
   bulletStartFrames = [],
   overlayMode = 'full',
+  accentColor2 = '#a855f7',
+  backgroundVariant = 'mesh-aurora',
+  useWeb3Background = true,
+  overlayOpacity = 0.12,
+  motionProfile = 'github_daily_bullets',
+  motionParams = {},
+  backgroundColor,
+  cssDecorations = [],
 }) => {
   const hud = overlayMode === 'hud';
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const currentTime = frame / fps;
+
+  if (!hud && motionProfile) {
+    return (
+      <MotionSlideShell
+        width={width}
+        height={height}
+        motionProfile={motionProfile}
+        imagePath={imagePath}
+        backgroundColor={backgroundColor}
+        cssDecorations={cssDecorations}
+        slideRole="content"
+      >
+        <AnimatedBullets
+          heading={heading}
+          bullets={bullets}
+          profile={motionProfile}
+          params={motionParams}
+          bulletStartFrames={bulletStartFrames}
+        />
+        {motionProfile.includes('tiktok') && sentences.length > 0 ? (
+          <TikTokActiveCaption
+            words={sentences.map((s) => ({text: s.text + ' ', start: s.start, end: s.end}))}
+            profile={motionProfile}
+            wordsPerPageMs={motionParams.wordsPerPageMs ?? 1000}
+          />
+        ) : (
+          <div style={{position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none'}}>
+            <CaptionOverlay sentences={sentences} style={captionStyle} accentColor={accentColor} />
+          </div>
+        )}
+      </MotionSlideShell>
+    );
+  }
 
   // Heading Entry
   const headingSpring = spring({
@@ -112,10 +165,14 @@ export const ContentCard: React.FC<ContentCardProps> = ({
         colors={colors} 
         imagePath={imagePath} 
         accentColor={accentColor}
+        accentColor2={accentColor2}
         cameraPan={cameraPan}
         particleType={particleType}
         decorationStyle={decorationStyle}
         colorMood={colorMood}
+        backgroundVariant={backgroundVariant}
+        useWeb3Background={useWeb3Background}
+        overlayOpacity={overlayOpacity}
       />
       )}
 

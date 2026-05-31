@@ -139,6 +139,11 @@ def render_task_videos(
     if not cfg.render_enabled:
         return None
 
+    from .slides_render import is_slides_render_mode, render_task_slides_videos
+
+    if is_slides_render_mode(cfg):
+        return render_task_slides_videos(cfg, task_dir, platforms=platforms)
+
     task_dir = task_dir.resolve()
     brief = load_brief(task_dir)
     presets = video_platforms(platforms or cfg.render_platforms)
