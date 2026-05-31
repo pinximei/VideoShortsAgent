@@ -7,7 +7,10 @@
 
 ## 与画面模板关系
 
-每套 Vxx 可通过 `reference_motion` 与 Gxx 配对；也可独立哈希选型。
+**必读**：`docs/VOICE_AND_MOTION_HOW_THEY_COMBINE.md`（G=画面，V=声音，组合规则）。
+
+每套 Vxx 可通过 `reference_motion` 与 Gxx **推荐配对**；也可独立哈希选型。  
+TTS 三维：`tts_voice`（音色）、`edge_tts_rate`（语速）、`edge_tts_pitch`（音调）、`sentence_pause_sec`（句停顿）。
 
 | ID | 名称 | TTS rate | 句停顿 | 目标 WPM | 钩子 |
 |----|------|----------|--------|----------|------|

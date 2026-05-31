@@ -55,7 +55,7 @@ EFFECT_SELECTION_RULES = """
 ### 特效选型规则（必须遵守）
 1. **必须**为每个视频平台填写 `effects.preset`（科技/情感/叙事/活力/严肃之一），不要只写零散字段。
 2. **feed_kind=news**（资讯）：`render.mode=slides` 时走 `ai_news` 场景 + `motion_templates` 目录（tiktok/kinetic 档案，非配色变体）；勿规划 B-roll；`render.mode=pipeline` 时片头可带 `motion_profile`，勿用商务蓝渐变铺满。
-3. **口播/语速**：`templates/voice_content_20/catalog.json` 共 20 套（V01–V20）；`platform_llm` 与 `ComposeSkill` 注入语速/字数/钩子约束；`DubbingSkill` 使用 `edge_tts_rate` 与 `sentence_pause_sec`。
+3. **口播/声音（V01–V20）**：`voice_content_20` 管音色/语速/音调/句停顿/文案；**画面（G01–G20）** 见 `github_daily_20`。组合说明 `docs/VOICE_AND_MOTION_HOW_THEY_COMBINE.md`。`DubbingSkill` 使用 `tts_voice`、`tts_rate`、`tts_pitch`。
 3. **feed_kind=apps**（应用/变现）：优先 preset=科技 或 活力；字幕默认 ASS（`caption_remotion` 由系统关闭）；抖音可开 `intro_card`；正文段可填 `bullets`（≤4 条）；`gradient` 建议 false。
 4. **段角色**：第 1 段=钩子（spring + circleopen/slideup，前 3～8 秒）；中间段=正文；**最后一段** `transition_to_next` 必须为 fade 或 dissolve。
 5. **禁止**使用目录外的转场名；禁止 pixelize/diag* 连续出现超过 1 次。

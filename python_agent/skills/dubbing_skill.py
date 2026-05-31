@@ -43,11 +43,21 @@ def _safe_remove(path: str, *, retries: int = 6) -> None:
 class DubbingSkill:
     """中文配音技能（句级精确同步）"""
 
-    def __init__(self, voice: str = DEFAULT_VOICE, *, tts_rate: str = "+0%", sentence_pause: float | None = None):
+    def __init__(
+        self,
+        voice: str = DEFAULT_VOICE,
+        *,
+        tts_rate: str = "+0%",
+        tts_pitch: str = "+0Hz",
+        sentence_pause: float | None = None,
+    ):
         self.voice = voice
         self.tts_rate = (tts_rate or "+0%").strip()
+        self.tts_pitch = (tts_pitch or "+0Hz").strip()
         self.sentence_pause = sentence_pause if sentence_pause is not None else SENTENCE_PAUSE
-        print(f"[DubbingSkill] 语音: {self.voice} rate={self.tts_rate} OK")
+        print(
+            f"[DubbingSkill] 语音: {self.voice} rate={self.tts_rate} pitch={self.tts_pitch} OK"
+        )
 
     def execute(self, analysis: dict, output_dir: str, voice: str = "") -> dict:
         """执行 TTS 生成（按句分段，精确计时）
@@ -309,7 +319,11 @@ class DubbingSkill:
         try:
             run_async(
                 synthesize_batch_sequential(
-                    items, voice=self.voice, cache_dir=cache_dir, rate=self.tts_rate,
+                    items,
+                    voice=self.voice,
+                    cache_dir=cache_dir,
+                    rate=self.tts_rate,
+                    pitch=self.tts_pitch,
                 )
             )
         except RuntimeError as exc:
@@ -334,7 +348,12 @@ class DubbingSkill:
         cache_dir = self._tts_cache_dir(os.path.dirname(output_path) or ".")
         run_async(
             synthesize_to_file(
-                text, self.voice, output_path, cache_dir=cache_dir, rate=self.tts_rate,
+                text,
+                self.voice,
+                output_path,
+                cache_dir=cache_dir,
+                rate=self.tts_rate,
+                pitch=self.tts_pitch,
             )
         )
 

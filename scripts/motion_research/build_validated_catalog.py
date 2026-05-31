@@ -7,7 +7,17 @@ import statistics
 from datetime import datetime, timezone
 from pathlib import Path
 
+import sys
+
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from python_agent.tts_params import (  # noqa: E402
+    GITHUB_DAILY_TTS_BASELINE,
+    pitch_from_subtitle_ms,
+    pause_from_subtitle_ms,
+    rate_from_measured_wpm,
+    rate_from_subtitle_ms,
+)
 CATALOG = ROOT / "templates" / "voice_content_20" / "catalog.json"
 MEDIA = ROOT / "research" / "voice_content" / "measured_analysis.json"
 VAD = ROOT / "research" / "voice_content" / "vad_analysis.json"
@@ -22,15 +32,7 @@ def _load(p: Path) -> dict:
 
 
 def rate_from_wpm(wpm: int | None) -> str:
-    if wpm is None:
-        return "+10%"
-    if wpm >= 280:
-        return "+18%"
-    if wpm >= 240:
-        return "+12%"
-    if wpm >= 200:
-        return "+8%"
-    return "+5%"
+    return rate_from_measured_wpm(wpm)
 
 
 def main() -> int:
@@ -61,12 +63,16 @@ def main() -> int:
     for vid, pa in phash.items():
         if vid in seen:
             continue
+        sub_ms = pa.get("subtitle_switch_ms")
         measured_rows.append(
             {
                 "video_id": vid,
-                "subtitle_switch_ms": pa.get("subtitle_switch_ms"),
+                "subtitle_switch_ms": sub_ms,
                 "method": pa.get("method", "phash_bottom_band"),
                 "phash_only": True,
+                "edge_tts_rate": rate_from_subtitle_ms(int(sub_ms)) if sub_ms else None,
+                "edge_tts_pitch": pitch_from_subtitle_ms(int(sub_ms) if sub_ms else None),
+                "sentence_pause_sec": pause_from_subtitle_ms(int(sub_ms) if sub_ms else None),
             }
         )
 
@@ -92,8 +98,20 @@ def main() -> int:
         if wpm:
             st["words_per_minute"] = wpm
             st["edge_tts_rate"] = rate_from_wpm(wpm)
+            st["edge_tts_pitch"] = pitch_from_subtitle_ms(row.get("subtitle_switch_ms"))
+            st["tts_voice"] = GITHUB_DAILY_TTS_BASELINE["tts_voice"]
         elif row.get("phash_only"):
             st["validation_note"] = "phash_subtitle_timing_only"
+            st["phash_only"] = True
+            sub_ms = row.get("subtitle_switch_ms")
+            if sub_ms:
+                st["subtitle_switch_ms"] = sub_ms
+                st["edge_tts_rate"] = row.get("edge_tts_rate") or rate_from_subtitle_ms(int(sub_ms))
+                st["edge_tts_pitch"] = row.get("edge_tts_pitch") or pitch_from_subtitle_ms(int(sub_ms))
+                st["sentence_pause_sec"] = row.get("sentence_pause_sec") or pause_from_subtitle_ms(
+                    int(sub_ms)
+                )
+            st["tts_voice"] = GITHUB_DAILY_TTS_BASELINE["tts_voice"]
         gap = row.get("cue_gap_median_sec")
         if gap:
             st["sentence_pause_sec"] = round(max(0.1, min(0.35, gap * 0.4)), 2)
@@ -105,6 +123,7 @@ def main() -> int:
             st["speech_ratio"] = vad_row["speech_ratio"]
         mapping.append({"style_id": st["id"], "video_id": row.get("video_id"), "wpm": wpm})
 
+    catalog["tts_baseline"] = dict(GITHUB_DAILY_TTS_BASELINE)
     catalog["catalog_status"] = (
         f"PARTIAL_VALIDATED_{sum(1 for s in styles if s.get('validated'))}_of_{len(styles)}"
     )

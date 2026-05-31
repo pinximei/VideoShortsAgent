@@ -131,9 +131,12 @@ def render_slides_video(
     )
 
     voice_style: dict = {}
+    preset = get_platform_preset(platform_id)
     if is_voice_style_brief(brief_dict):
         voice_style = pick_voice_content_style(brief_dict)
-        brief_dict = apply_voice_style_to_brief(brief_dict, voice_style)
+        brief_dict = apply_voice_style_to_brief(
+            brief_dict, voice_style, platform_voice=preset.voice
+        )
         save_voice_style(task_dir, voice_style)
 
     compose_text = brief_to_compose_text(brief_dict)
@@ -187,13 +190,14 @@ def render_slides_video(
         output_dir=str(work / "images"),
     )
 
-    preset = get_platform_preset(platform_id)
-    voice = preset.voice
-    tts_rate = str(brief_dict.get("tts_rate") or "+10%")
+    voice = str(brief_dict.get("tts_voice") or preset.voice)
+    tts_rate = str(brief_dict.get("tts_rate") or "+12%")
+    tts_pitch = str(brief_dict.get("tts_pitch") or "+0Hz")
     sent_pause = brief_dict.get("sentence_pause_sec")
     dubbing = DubbingSkill(
         voice=voice,
         tts_rate=tts_rate,
+        tts_pitch=tts_pitch,
         sentence_pause=float(sent_pause) if sent_pause is not None else None,
     )
     tts_input = [{"tts_text": s.get("tts_text", "")} for s in slides]

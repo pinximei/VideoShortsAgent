@@ -8,7 +8,7 @@
       "id": "V01_burst_hook_fast",
       "name": "爆款快钩子",
       "reference_motion": "G01",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+14%",
       "sentence_pause_sec": 0.12,
       "words_per_minute": 280,
       "subtitle_switch_ms": 750,
@@ -35,14 +35,17 @@
       "outline_hint": "第1镜3秒钩子→项目名+数字→2个痛点→Star/关注",
       "validated": true,
       "validation_note": "phash_bottom_band",
-      "measured_ref": "7618932620755291433"
+      "measured_ref": "7618932620755291433",
+      "phash_only": true,
+      "edge_tts_pitch": "+10Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V02_tiktok_follow_punch",
       "name": "跟读短句连击",
       "reference_motion": "G06",
-      "edge_tts_rate": "+10%",
-      "sentence_pause_sec": 0.15,
+      "edge_tts_rate": "+16%",
+      "sentence_pause_sec": 0.12,
       "words_per_minute": 240,
       "subtitle_switch_ms": 500,
       "total_chars": [
@@ -67,14 +70,17 @@
       "tone": "口语、短句、每句≤12字",
       "validated": true,
       "validation_note": "phash_bottom_band",
-      "measured_ref": "7641485803578789172"
+      "measured_ref": "7641485803578789172",
+      "phash_only": true,
+      "edge_tts_pitch": "+10Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V03_top10_listing",
       "name": "榜单枚举口播",
       "reference_motion": "G05",
-      "edge_tts_rate": "+14%",
-      "sentence_pause_sec": 0.18,
+      "edge_tts_rate": "+16%",
+      "sentence_pause_sec": 0.12,
       "words_per_minute": 260,
       "subtitle_switch_ms": 500,
       "total_chars": [
@@ -85,14 +91,17 @@
       "tone": "序号感、排比",
       "validated": true,
       "validation_note": "phash_bottom_band",
-      "measured_ref": "7642198364225948962"
+      "measured_ref": "7642198364225948962",
+      "phash_only": true,
+      "edge_tts_pitch": "+10Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V04_minimal_calm",
       "name": "极简慢讲系列感",
       "reference_motion": "G03",
-      "edge_tts_rate": "+5%",
-      "sentence_pause_sec": 0.28,
+      "edge_tts_rate": "+16%",
+      "sentence_pause_sec": 0.12,
       "words_per_minute": 200,
       "subtitle_switch_ms": 500,
       "total_chars": [
@@ -103,14 +112,17 @@
       "tone": "平静、可信、少形容词",
       "validated": true,
       "validation_note": "phash_bottom_band",
-      "measured_ref": "7642633512055475313"
+      "measured_ref": "7642633512055475313",
+      "phash_only": true,
+      "edge_tts_pitch": "+10Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V05_badge_authority",
       "name": "数据徽章权威感",
       "reference_motion": "G04",
-      "edge_tts_rate": "+5%",
-      "sentence_pause_sec": 0.22,
+      "edge_tts_rate": "+12%",
+      "sentence_pause_sec": 0.16,
       "words_per_minute": 188,
       "subtitle_switch_ms": 1500,
       "total_chars": [
@@ -122,14 +134,17 @@
       "validated": true,
       "validation_note": "phash_bottom_band",
       "measured_ref": "7643043013397623478",
-      "speech_ratio": 0.995
+      "speech_ratio": 0.995,
+      "phash_only": true,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V06_chart_story",
       "name": "数据故事弧线",
       "reference_motion": "G02",
-      "edge_tts_rate": "+18%",
-      "sentence_pause_sec": 0.2,
+      "edge_tts_rate": "+16%",
+      "sentence_pause_sec": 0.12,
       "words_per_minute": 290,
       "subtitle_switch_ms": 500,
       "total_chars": [
@@ -141,7 +156,10 @@
       "validated": true,
       "validation_note": "phash_bottom_band",
       "measured_ref": "7641861418416901414",
-      "speech_ratio": 0.98
+      "speech_ratio": 0.98,
+      "phash_only": true,
+      "edge_tts_pitch": "+10Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V07_glitch_tease",
@@ -160,13 +178,15 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1iF411k7cu",
-      "speech_ratio": 0.995
+      "speech_ratio": 0.995,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V08_terminal_dev",
       "name": "程序员终端口吻",
       "reference_motion": "G08",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+8%",
       "sentence_pause_sec": 0.25,
       "words_per_minute": 290,
       "subtitle_switch_ms": 1000,
@@ -179,13 +199,15 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1DFvKzgEDE",
-      "speech_ratio": 0.98
+      "speech_ratio": 0.98,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V09_split_demo",
       "name": "边讲边演示",
       "reference_motion": "G09",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+12%",
       "sentence_pause_sec": 0.2,
       "words_per_minute": 320,
       "total_chars": [
@@ -197,13 +219,15 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1hS4y1S7wL",
-      "speech_ratio": 0.688
+      "speech_ratio": 0.688,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V10_glass_three_points",
       "name": "三点结构化",
       "reference_motion": "G10",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+12%",
       "sentence_pause_sec": 0.24,
       "words_per_minute": 334,
       "total_chars": [
@@ -215,13 +239,15 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1YQ3nztEuL",
-      "speech_ratio": 1.0
+      "speech_ratio": 1.0,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V11_word_slam_energy",
       "name": "高能量砸字口播",
       "reference_motion": "G11",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+14%",
       "sentence_pause_sec": 0.1,
       "words_per_minute": 361,
       "subtitle_switch_ms": 400,
@@ -234,13 +260,15 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1aGVQ6AE3s",
-      "speech_ratio": 0.943
+      "speech_ratio": 0.943,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V12_phrase_pages",
       "name": "短语分页口播",
       "reference_motion": "G12",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+14%",
       "sentence_pause_sec": 0.3,
       "words_per_minute": 369,
       "subtitle_switch_ms": 1000,
@@ -253,13 +281,15 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1R8Vn6JEWH",
-      "speech_ratio": 1.0
+      "speech_ratio": 1.0,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V13_marquee_news",
       "name": "资讯快报体",
       "reference_motion": "G13",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+14%",
       "sentence_pause_sec": 0.16,
       "words_per_minute": 369,
       "total_chars": [
@@ -271,13 +301,15 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1aJQGBSEit",
-      "speech_ratio": 1.0
+      "speech_ratio": 1.0,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V14_shake_keyword",
       "name": "关键词重复强调",
       "reference_motion": "G14",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+14%",
       "sentence_pause_sec": 0.18,
       "words_per_minute": 373,
       "total_chars": [
@@ -289,13 +321,15 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1ySLc6QEcB",
-      "speech_ratio": 0.991
+      "speech_ratio": 0.991,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V15_star_odometer",
       "name": "Star数滚动叙事",
       "reference_motion": "G15",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+14%",
       "sentence_pause_sec": 0.2,
       "words_per_minute": 378,
       "total_chars": [
@@ -307,13 +341,15 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1b9VS64E1s",
-      "speech_ratio": 1.0
+      "speech_ratio": 1.0,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V16_soft_purple_story",
       "name": "柔和叙事种草",
       "reference_motion": "G16",
-      "edge_tts_rate": "+18%",
+      "edge_tts_rate": "+14%",
       "sentence_pause_sec": 0.26,
       "words_per_minute": 379,
       "total_chars": [
@@ -325,7 +361,9 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV1XNVS6FEJG",
-      "speech_ratio": 1.0
+      "speech_ratio": 1.0,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V17_code_rain_hook",
@@ -343,7 +381,9 @@
       "validated": true,
       "validation_note": "dashscope_paraformer_v2",
       "measured_ref": "BV14qh8ztEhv",
-      "speech_ratio": 0.999
+      "speech_ratio": 0.999,
+      "edge_tts_pitch": "+6Hz",
+      "tts_voice": "zh-CN-YunyangNeural"
     },
     {
       "id": "V18_cta_star_push",
@@ -399,5 +439,11 @@
   ],
   "catalog_status": "PARTIAL_VALIDATED_17_of_20",
   "median_measured_wpm": 369,
-  "updated_at": "2026-05-31T23:34:25.183343+00:00"
+  "updated_at": "2026-05-31T23:39:46.451843+00:00",
+  "tts_baseline": {
+    "tts_voice": "zh-CN-YunyangNeural",
+    "edge_tts_rate": "+12%",
+    "edge_tts_pitch": "+6Hz",
+    "sentence_pause_sec": 0.16
+  }
 }

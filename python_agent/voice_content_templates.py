@@ -94,12 +94,22 @@ def voice_style_prompt_block(style: dict[str, Any]) -> str:
 """.strip()
 
 
-def apply_voice_style_to_brief(brief: dict[str, Any], style: dict[str, Any]) -> dict[str, Any]:
+def apply_voice_style_to_brief(
+    brief: dict[str, Any],
+    style: dict[str, Any],
+    *,
+    platform_voice: str = "zh-CN-YunxiNeural",
+) -> dict[str, Any]:
+    from python_agent.tts_params import resolve_tts_params
+
     out = dict(brief)
     out["voice_content_style_id"] = style.get("id")
     out["voice_content_style"] = style
-    out["tts_rate"] = style.get("edge_tts_rate", "+10%")
-    out["sentence_pause_sec"] = style.get("sentence_pause_sec", 0.2)
+    tts = resolve_tts_params(style, platform_voice=platform_voice)
+    out["tts_voice"] = tts["tts_voice"]
+    out["tts_rate"] = tts["tts_rate"]
+    out["tts_pitch"] = tts["tts_pitch"]
+    out["sentence_pause_sec"] = tts["sentence_pause_sec"]
     return out
 
 
