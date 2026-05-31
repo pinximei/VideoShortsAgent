@@ -48,6 +48,7 @@ class PipelineConfig:
     render_retry_max: int = 1
     render_verify_required: bool = True
     render_full_verify: bool = False
+    pipeline_fail_closed: bool = True
     render_bookends: str = "douyin"
     render_ffmpeg_preset: str = "fast"
     llm_plan_retries: int = 2
@@ -147,6 +148,7 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         render_retry_max=max(0, int(render.get("retry_max") or 1)),
         render_verify_required=bool(render.get("verify_required", True)),
         render_full_verify=bool(render.get("full_verify", False)),
+        pipeline_fail_closed=bool(render.get("fail_closed", True)),
         render_bookends=str(render.get("bookends") or "douyin"),
         render_ffmpeg_preset=str(render.get("ffmpeg_preset") or "fast"),
         llm_plan_retries=max(0, int(llm.get("plan_retries") or 2)),

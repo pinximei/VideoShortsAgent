@@ -39,10 +39,14 @@ def audit_task_effects(task_dir: Path, platforms: list[str] | None = None) -> di
             if not entry["preset_applied"]:
                 msg = f"{pid}:missing_preset_after_merge"
                 entry["warn"] = msg
+                entry["ok"] = False
+                report["ok"] = False
                 report["warnings"].append(msg)
         elif plan_path.is_file() and not applied_path.is_file():
             msg = f"{pid}:render_effects_missing"
             entry["warn"] = msg
+            entry["ok"] = False
+            report["ok"] = False
             report["warnings"].append(msg)
 
         report["platforms"][pid] = entry

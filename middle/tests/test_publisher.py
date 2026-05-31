@@ -1,6 +1,7 @@
 """双批次浏览器与固定脚本路由。"""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -75,7 +76,19 @@ def test_dry_run_publish_routes_batch(tmp_path: Path) -> None:
     store = JobStore(cfg.db_path)
     ck = content_key_for_article(100)
     store.upsert_discovered(content_key=ck, article_id=100, snapshot={"id": 100}, theme_id="ai_monetize")
-    store.advance(ck, status="ready_to_publish", step="await_manual_publish")
+    bindings = __import__("pipeline.publish_guard", fromlist=["build_publish_bindings"]).build_publish_bindings(
+        cfg, "ai_monetize"
+    )
+    store.update_job(
+        ck,
+        status="ready_to_publish",
+        brief_json={"publish_bindings": bindings},
+    )
+    task = cfg.output_root / "100"
+    (task / "videos").mkdir(parents=True)
+    (task / "videos" / "douyin.mp4").write_bytes(b"x" * 60_000)
+    (task / "publish").mkdir(parents=True)
+    (task / "publish" / "douyin_title.txt").write_text("title", encoding="utf-8")
 
     from publisher.runner import publish_content
 

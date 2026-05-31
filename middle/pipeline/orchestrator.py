@@ -27,6 +27,7 @@ from .models import RunStats
 from .platform_llm import write_publish_pack
 from .publish_guard import PublishGuardError, build_publish_bindings
 from .soul_client import SoulClient
+from .pipeline_gates import PipelineGateError, assert_task_ready_for_publish
 from .vsa import render_task_videos
 
 
@@ -117,6 +118,11 @@ def process_jobs(
             store.advance(ck, status=STATUS_PROCESSING, step=STEP_LLM, message="大模型生成各平台文案与分镜")
             pack_meta = write_publish_pack(brief, out_dir, cfg=cfg, article=article, broll_seconds=broll_sec)
             store.advance(ck, status=STATUS_PROCESSING, step=STEP_PACK, message="发布包已写入")
+            if cfg.render_enabled and cfg.pipeline_fail_closed:
+                from .pipeline_gates import assert_publish_pack_meta, assert_video_plans
+
+                assert_publish_pack_meta(out_dir, cfg)
+                assert_video_plans(out_dir, cfg)
 
             if cfg.render_enabled:
                 from .render_verify import run_post_render_verify
@@ -135,12 +141,21 @@ def process_jobs(
                             platforms=cfg.render_platforms,
                             full_verify=cfg.render_full_verify,
                         )
-                        if verify_report.get("ok", True) or not cfg.render_verify_required:
+                        if cfg.pipeline_fail_closed:
+                            if verify_report.get("ok") is not True:
+                                last_render_err = json.dumps(
+                                    verify_report, ensure_ascii=False
+                                )[:400]
+                            else:
+                                last_render_err = None
+                                break
+                        elif verify_report.get("ok") is True or not cfg.render_verify_required:
                             last_render_err = None
                             break
-                        last_render_err = json.dumps(
-                            verify_report, ensure_ascii=False
-                        )[:400]
+                        else:
+                            last_render_err = json.dumps(
+                                verify_report, ensure_ascii=False
+                            )[:400]
                     except Exception as rexc:
                         last_render_err = f"{type(rexc).__name__}: {str(rexc)[:200]}"
                     if attempt < attempts - 1:
@@ -154,14 +169,15 @@ def process_jobs(
                     raise RuntimeError(f"render_failed: {last_render_err}")
 
             brief_dict = brief.to_dict()
-            try:
-                brief_dict["publish_bindings"] = build_publish_bindings(cfg, theme_id)
-            except PublishGuardError as e:
-                brief_dict["publish_bindings"] = {
-                    "theme_id": theme_id,
-                    "channels": {},
-                    "warning": e.message,
-                }
+            brief_dict["publish_bindings"] = build_publish_bindings(cfg, theme_id)
+
+            assert_task_ready_for_publish(
+                cfg,
+                out_dir,
+                brief_dict=brief_dict,
+                strict=True if cfg.pipeline_fail_closed else None,
+            )
+            brief_dict["pipeline_gate"] = {"ok": True, "at": "ready"}
 
             store.advance(
                 ck,
@@ -173,6 +189,12 @@ def process_jobs(
             stats.packed += 1
             if cfg.render_enabled:
                 stats.rendered += 1
+        except (PipelineGateError, PublishGuardError) as e:
+            code = getattr(e, "code", type(e).__name__)
+            msg = getattr(e, "message", str(e))[:240]
+            store.advance(ck, status=STATUS_FAILED, step=job.get("step") or "gate", error=f"{code}: {msg}")
+            stats.failed += 1
+            stats.errors.append(f"{ck}: {code}: {msg}")
         except Exception as e:
             err = f"{type(e).__name__}: {str(e)[:240]}"
             store.advance(ck, status=STATUS_FAILED, step=job.get("step") or "error", error=err)

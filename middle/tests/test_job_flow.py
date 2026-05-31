@@ -54,8 +54,8 @@ def test_discovered_on_upsert(store: JobStore) -> None:
     assert events[0]["status"] == STATUS_DISCOVERED
 
 
-def test_success_path_reaches_ready_to_publish(tmp_path: Path) -> None:
-    cfg = PipelineConfig(data_dir=tmp_path, feed_kinds=["apps"], llm_enabled=False, render_enabled=False)
+def test_success_path_reaches_ready_to_publish(pipeline_cfg: PipelineConfig) -> None:
+    cfg = pipeline_cfg
     soul = MagicMock()
     soul.list_feed.return_value = [{"id": 10, "feed_kind": "apps", "replication_analysis": {"worth_score": 9}}]
     soul.get_article.return_value = _article()
@@ -180,8 +180,8 @@ def test_ready_jobs_not_reprocessed(tmp_path: Path) -> None:
     assert job["status"] == STATUS_READY
 
 
-def test_failed_job_retries(tmp_path: Path) -> None:
-    cfg = PipelineConfig(data_dir=tmp_path, feed_kinds=["apps"], llm_enabled=False, render_enabled=False)
+def test_failed_job_retries(pipeline_cfg: PipelineConfig) -> None:
+    cfg = pipeline_cfg
     store = JobStore(cfg.db_path)
     ck = content_key_for_article(11)
     store.upsert_discovered(content_key=ck, article_id=11, snapshot={"id": 11})

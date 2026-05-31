@@ -91,7 +91,10 @@ def validate_publish_target(
 
     bindings = bindings_from_job(job)
     if not bindings:
-        bindings = build_publish_bindings(cfg, theme_id)
+        raise PublishGuardError(
+            "bindings_missing",
+            "任务缺少冻结的 publish_bindings，请重新打包后再发布",
+        )
 
     if bindings.get("theme_id") != theme_id:
         raise PublishGuardError(

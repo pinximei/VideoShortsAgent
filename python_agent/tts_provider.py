@@ -120,6 +120,8 @@ async def synthesize_to_file(
     for provider in chain:
         try:
             result = _synthesize_one_provider(provider, text, voice, out)
+            if not result.is_file() or result.stat().st_size <= 80:
+                raise RuntimeError("tts_empty_output")
             _write_cache(text, voice, result, cdir)
             if provider != "edge":
                 print(f"[TTS] 使用 Key 后端: {provider}")

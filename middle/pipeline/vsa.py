@@ -162,16 +162,17 @@ def render_task_videos(
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    try:
-        from .render_verify import run_post_render_verify
+    from .render_verify import run_post_render_verify
 
-        run_post_render_verify(
-            task_dir,
-            platforms=cfg.render_platforms,
-            full_verify=cfg.render_full_verify,
+    verify_report = run_post_render_verify(
+        task_dir,
+        platforms=cfg.render_platforms,
+        full_verify=cfg.render_full_verify,
+    )
+    if cfg.render_enabled and verify_report.get("ok") is not True:
+        raise RuntimeError(
+            f"verify_failed: {json.dumps(verify_report, ensure_ascii=False)[:400]}"
         )
-    except Exception:
-        pass
 
     primary = task_dir / "videos" / "douyin.mp4"
     legacy = task_dir / "video.mp4"
@@ -185,4 +186,5 @@ def render_task_videos(
         "videos": videos,
         "articles": articles,
         "primary_video": str(legacy) if legacy.is_file() else None,
+        "verify": verify_report,
     }

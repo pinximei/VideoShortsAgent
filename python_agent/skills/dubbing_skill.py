@@ -73,6 +73,11 @@ class DubbingSkill:
 
         print(f"[DubbingSkill] 开始生成 TTS: {len(clips_with_tts)} 个片段")
 
+        clip_jobs: list[tuple[int, dict]] = []
+        for i, clip in enumerate(clips):
+            if (clip.get("tts_text") or "").strip():
+                clip_jobs.append((i, clip))
+
         def _one_clip(job: tuple[int, dict]) -> dict | None:
             i, clip = job
             tts_text = clip["tts_text"]
@@ -99,8 +104,12 @@ class DubbingSkill:
                 "index": i,
             }
 
+        if not clip_jobs:
+            print("[DubbingSkill] ⚠️ clips 中无 tts_text 字段")
+            return {"tts_clips": []}
+
         tts_clips: list[dict] = []
-        jobs = list(enumerate(clips_with_tts))
+        jobs = clip_jobs
         if len(jobs) <= 1:
             for job in jobs:
                 row = _one_clip(job)
@@ -121,6 +130,11 @@ class DubbingSkill:
 
         # 恢复原始语音设置
         self.voice = original_voice
+
+        if len(tts_clips) < len(clip_jobs):
+            raise RuntimeError(
+                f"tts_partial_failure: {len(tts_clips)}/{len(clip_jobs)} clips synthesized"
+            )
 
         print(f"\n[DubbingSkill] ✅ 完成: {len(tts_clips)} 个 TTS 音频（句级精确计时）")
         return {"tts_clips": tts_clips}
@@ -209,14 +223,16 @@ class DubbingSkill:
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             if r.returncode != 0:
-                print(f"    ⚠️ 拼接失败 (rc={r.returncode}): {r.stderr[-200:]}")
-                # 降级：直接拷贝第一段句子音频
-                if sentence_audios and os.path.exists(sentence_audios[0]["path"]):
-                    import shutil
-                    shutil.copy2(sentence_audios[0]["path"], output_path)
-                    print("    → 降级使用第一段音频")
+                raise RuntimeError(
+                    f"tts_concat_failed clip={clip_index} rc={r.returncode}: {(r.stderr or '')[-200:]}"
+                )
+        except RuntimeError:
+            raise
         except Exception as e:
-            print(f"    ⚠️ 拼接异常: {e}")
+            raise RuntimeError(f"tts_concat_failed clip={clip_index}: {e}") from e
+
+        if not os.path.isfile(output_path) or os.path.getsize(output_path) <= 80:
+            raise RuntimeError(f"tts_concat_empty clip={clip_index}")
 
         # 计算每句的精确时间轴（偏移前留白）
         timeline = []
@@ -284,6 +300,10 @@ class DubbingSkill:
             if os.path.exists(path) and os.path.getsize(path) > 80:
                 duration = self._get_audio_duration(path)
                 results.append({"text": sentence, "path": path, "duration": duration})
+        if len(results) < len(sentences):
+            raise RuntimeError(
+                f"tts_sentence_partial: {len(results)}/{len(sentences)} clip={clip_index}"
+            )
         return results
 
     def _generate_tts(self, text: str, output_path: str):

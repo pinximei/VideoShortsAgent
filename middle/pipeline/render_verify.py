@@ -39,10 +39,10 @@ def _streams_in_sync(video_path: Path, *, tolerance: float = 0.6) -> bool:
             elif st.get("codec_type") == "audio" and ad is None:
                 ad = d
         if vd is None or ad is None:
-            return True
+            return False
         return abs(vd - ad) <= tolerance
     except Exception:
-        return True
+        return False
 
 
 def _quick_video_checks(task_dir: Path, platforms: list[str]) -> dict[str, Any]:
@@ -107,8 +107,7 @@ def run_post_render_verify(
                 report["ok"] = False
         except Exception as exc:
             report["effects_audit"] = {"ok": False, "error": str(exc)[:200], "warnings": []}
-            if not report["quick"].get("ok", True):
-                report["ok"] = False
+            report["ok"] = False
     else:
         av_script = middle / "scripts" / "verify_av_sync.py"
         vis_script = middle / "scripts" / "verify_video_visual.py"
@@ -120,6 +119,8 @@ def run_post_render_verify(
 
         for script, key in ((av_script, "av_sync"), (vis_script, "visual")):
             if not script.is_file():
+                report[key] = {"ok": False, "error": "script_missing"}
+                report["ok"] = False
                 continue
             r = subprocess.run(
                 [py, str(script), str(task_dir.resolve())],

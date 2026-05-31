@@ -100,6 +100,8 @@ render:
   retry_max: 1
   verify_required: true
   full_verify: false
+  # 任一步失败（TTS/渲染/验收/绑定）→ 任务 FAILED，禁止标记发布
+  fail_closed: true
   bookends: douyin
   ffmpeg_preset: fast
 

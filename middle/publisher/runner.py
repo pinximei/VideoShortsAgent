@@ -63,11 +63,18 @@ def _resolve_account(cfg: PipelineConfig, req: PublishRequest) -> tuple[str, Cha
     return str(bindings["batch_id"]), acc
 
 
-def _load_publish_pack(cfg: PipelineConfig, article_id: int, channel_id: str) -> PublishPack:
+def _load_publish_pack(
+    cfg: PipelineConfig,
+    article_id: int,
+    channel_id: str,
+    *,
+    job: dict | None = None,
+) -> PublishPack:
+    from pipeline.pipeline_gates import assert_channel_publishable
+
+    video_path = assert_channel_publishable(cfg, article_id, channel_id, job=job)
     out_dir = cfg.output_root / str(article_id)
     title_path = out_dir / "publish" / f"{channel_id}_title.txt"
-    video_candidates = list(out_dir.glob(f"video_{channel_id}*.mp4")) + list(out_dir.glob("*.mp4"))
-    video_path = video_candidates[0] if video_candidates else None
     title = title_path.read_text(encoding="utf-8").strip() if title_path.is_file() else ""
     return PublishPack(
         article_id=article_id,
@@ -108,12 +115,15 @@ def check_login(cfg: PipelineConfig, batch_id: str, account: ChannelAccount) -> 
 
 
 def publish_content(cfg: PipelineConfig, req: PublishRequest) -> PublishResult:
+    from pipeline.db import JobStore
+
     batch_id, account = _resolve_account(cfg, req)
     slot = cfg.publisher.slot_for_batch(batch_id)
     if not slot:
         raise ValueError(f"no slot for batch={batch_id}")
 
-    pack = _load_publish_pack(cfg, req.article_id, req.channel_id)
+    job = JobStore(cfg.db_path).get_job(content_key_for_article(req.article_id))
+    pack = _load_publish_pack(cfg, req.article_id, req.channel_id, job=job)
     if req.dry_run:
         script = get_publish_script(req.channel_id)
         return PublishResult(

@@ -15,6 +15,8 @@ def _article() -> dict:
 
 
 def test_run_pipeline_mock_soul(tmp_path: Path) -> None:
+    from tests.conftest import add_test_channel_accounts
+
     cfg = PipelineConfig(
         data_dir=tmp_path,
         min_worth_score=7,
@@ -23,6 +25,7 @@ def test_run_pipeline_mock_soul(tmp_path: Path) -> None:
         render_enabled=False,
         llm_enabled=False,
     )
+    add_test_channel_accounts(cfg)
     soul = MagicMock()
     soul.list_feed.return_value = [
         {

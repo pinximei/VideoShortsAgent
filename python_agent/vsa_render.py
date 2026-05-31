@@ -20,16 +20,36 @@ from python_agent.skills.dubbing_skill import DubbingSkill
 from python_agent.skills.render_skill import RenderSkill
 
 
+def _tts_by_clip_index(clips: list[dict], tts_clips: list[dict]) -> list[dict | None]:
+    by_idx = {int(t.get("index", -1)): t for t in tts_clips if "index" in t}
+    out: list[dict | None] = []
+    for i, c in enumerate(clips):
+        if i in by_idx:
+            out.append(by_idx[i])
+        elif i < len(tts_clips) and "index" not in tts_clips[i]:
+            out.append(tts_clips[i])
+        elif (c.get("tts_text") or "").strip():
+            out.append(None)
+        else:
+            out.append(None)
+    return out
+
+
 def _trim_clips(clips: list[dict], tts_clips: list[dict], max_seconds: float):
+    aligned = _tts_by_clip_index(clips, tts_clips)
     kept_c, kept_t, total = [], [], 0.0
-    for c, t in zip(clips, tts_clips):
+    for c, t in zip(clips, aligned):
+        if t is None:
+            continue
         dur = float(t.get("duration") or 0)
         if dur <= 0 or total + dur > max_seconds + 0.25:
             break
         kept_c.append(c)
         kept_t.append(t)
         total += dur
-    return kept_c or clips[:1], kept_t or tts_clips[:1]
+    if not kept_c and any((c.get("tts_text") or "").strip() for c in clips):
+        raise RuntimeError("tts_trim_empty: no valid TTS duration within max_seconds")
+    return kept_c, kept_t
 
 
 def _format_video(
@@ -159,7 +179,17 @@ def render_from_plan(
     if not skip_tts:
         dubber = DubbingSkill(voice=voice)
         tts_info = dubber.execute(analysis, str(tmp), voice=voice)
-        clips, tts_list = _trim_clips(clips, tts_info.get("tts_clips") or [], max_seconds)
+        tts_list = list(tts_info.get("tts_clips") or [])
+        expected = sum(1 for c in clips if (c.get("tts_text") or "").strip())
+        if expected and len(tts_list) < expected:
+            got = {int(t.get("index", -1)) for t in tts_list}
+            missing = [i for i, c in enumerate(clips) if (c.get("tts_text") or "").strip() and i not in got]
+            raise RuntimeError(
+                f"tts_failed: expected {expected} clips, got {len(tts_list)}, missing indices {missing}"
+            )
+        clips, tts_list = _trim_clips(clips, tts_list, max_seconds)
+        if not tts_list and expected:
+            raise RuntimeError("tts_failed: all clips trimmed away or zero duration")
         analysis["clips"] = clips
         tts_info["tts_clips"] = tts_list
         if tts_list and clips_need_broll_retiming(clips):

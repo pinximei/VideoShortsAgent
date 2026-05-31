@@ -461,17 +461,21 @@ def mark_publish(body: PublishBody):
     if not store.get_job(ck):
         raise HTTPException(404, "job not found")
     job = store.get_job(ck)
-    if job and job.get("status") not in ("ready_to_publish", "completed", "packed", "rendered", "processing"):
+    if job and job.get("status") not in ("ready_to_publish", "completed", "packed", "rendered"):
         raise HTTPException(400, f"任务状态 {job.get('status')} 不可标记发布")
 
+    from pipeline.pipeline_gates import PipelineGateError, assert_channel_publishable
     from pipeline.publish_guard import PublishGuardError, validate_publish_target
 
     cfg = get_cfg()
     try:
+        assert_channel_publishable(cfg, body.article_id, body.channel, job=job)
         ch_bind, acc, _bindings = validate_publish_target(
             cfg, job, body.channel, body.account_id or None
         )
         account_id = acc.id
+    except PipelineGateError as e:
+        raise HTTPException(409, detail={"code": e.code, "message": e.message}) from e
     except PublishGuardError as e:
         raise HTTPException(409, detail={"code": e.code, "message": e.message}) from e
 

@@ -277,6 +277,16 @@ def write_publish_pack(
         meta_path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
 
     _prefetch_cover_if_needed(output_dir, brief)
+
+    if cfg and cfg.render_enabled and cfg.pipeline_fail_closed:
+        from .pipeline_gates import assert_publish_pack_meta
+
+        assert_publish_pack_meta(output_dir, cfg)
+        if meta.get("llm_error") and not cfg.render_allow_template_fallback:
+            from .pipeline_gates import PipelineGateError
+
+            raise PipelineGateError("llm_failed", str(meta["llm_error"])[:300])
+
     return meta
 
 

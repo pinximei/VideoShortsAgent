@@ -17,5 +17,5 @@ def test_audit_ok_without_render_effects_if_video_present(tmp_path: Path) -> Non
         encoding="utf-8",
     )
     report = audit_task_effects(task, platforms=["douyin"])
-    assert report["ok"] is True
+    assert report["ok"] is False
     assert "render_effects_missing" in str(report.get("warnings", []))

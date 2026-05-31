@@ -283,7 +283,7 @@ class RenderSkill:
         cumulative_duration = 0.0
         valid_clip_count = len(clips)
         for i, clip in enumerate(clips):
-            tts_clip = tts_clips[i] if tts_clips and i < len(tts_clips) else None
+            tts_clip = _tts_for_index(i)
             dur = tts_clip["duration"] if tts_clip else (float(clip["end"]) - float(clip["start"]))
             cumulative_duration += dur
             if cumulative_duration > MAX_TOTAL_DURATION:
@@ -294,6 +294,16 @@ class RenderSkill:
         if tts_clips:
             tts_clips = tts_clips[:valid_clip_count]
 
+        def _tts_for_index(idx: int) -> dict | None:
+            if not tts_clips:
+                return None
+            for row in tts_clips:
+                if int(row.get("index", -1)) == idx:
+                    return row
+            if idx < len(tts_clips) and "index" not in tts_clips[idx]:
+                return tts_clips[idx]
+            return None
+
         segment_paths = []
         for i, clip in enumerate(clips):
             start = float(clip["start"])
@@ -302,7 +312,7 @@ class RenderSkill:
             video_duration = end - start
 
             # TTS 时长为主时钟：视频裁剪成与 TTS 一样长
-            tts_clip = tts_clips[i] if tts_clips and i < len(tts_clips) else None
+            tts_clip = _tts_for_index(i)
             if tts_clip:
                 target_duration = tts_clip["duration"]
                 tts_path = tts_clip["path"]
@@ -436,6 +446,10 @@ class RenderSkill:
                     outro_path = self._ensure_has_audio(outro_path, 2.0, output_dir, "outro")
                     bookend_suffix.append(outro_path)
 
+        if len(segment_paths) < len(clips):
+            raise RuntimeError(
+                f"render_partial_failure: {len(segment_paths)}/{len(clips)} segments rendered"
+            )
         if not segment_paths:
             raise RuntimeError("所有片段渲染失败，请检查 B-roll 时长与分镜 start/end")
 
@@ -1193,7 +1207,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             if not self._simple_concat(video_paths, output_path, output_dir, x264_preset=x264_preset):
                 raise RuntimeError("视频拼接失败（xfade 与滤镜 concat 均失败）")
             if not self._streams_in_sync(output_path):
-                print("[RenderSkill] 警告: 成片视音时长仍不一致")
+                raise RuntimeError("av_stream_duration_mismatch after concat fallback")
 
         import glob
         for old in glob.glob(os.path.join(output_dir, "norm_concat_*.mp4")):
@@ -1227,11 +1241,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     vd = d
                 elif st.get("codec_type") == "audio" and ad is None:
                     ad = d
+            if result.returncode != 0:
+                return False
             if vd is None or ad is None:
-                return True
+                return False
             return abs(vd - ad) <= tolerance
         except Exception:
-            return True
+            return False
 
     def _get_duration(self, video_path: str) -> float:
         """获取视频时长"""
