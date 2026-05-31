@@ -1,6 +1,61 @@
 {
-  "generated_at": "2026-05-31T22:59:51.419206+00:00",
+  "generated_at": "2026-05-31T23:17:27.279582+00:00",
   "videos": [
+    {
+      "video_id": "BV14qh8ztEhv",
+      "audio": "research/voice_content/media/BV14qh8ztEhv/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 660.95,
+      "silence_total_sec": 0.37,
+      "speech_active_sec": 660.58,
+      "speech_ratio": 0.999,
+      "silence_gaps": 1,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1aGVQ6AE3s",
+      "audio": "research/voice_content/media/BV1aGVQ6AE3s/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 60.33,
+      "silence_total_sec": 3.42,
+      "speech_active_sec": 56.91,
+      "speech_ratio": 0.943,
+      "silence_gaps": 3,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1aJQGBSEit",
+      "audio": "research/voice_content/media/BV1aJQGBSEit/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 316.5,
+      "silence_total_sec": 0,
+      "speech_active_sec": 316.5,
+      "speech_ratio": 1.0,
+      "silence_gaps": 0,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1b9VS64E1s",
+      "audio": "research/voice_content/media/BV1b9VS64E1s/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 258.74,
+      "silence_total_sec": 0,
+      "speech_active_sec": 258.74,
+      "speech_ratio": 1.0,
+      "silence_gaps": 0,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1DFvKzgEDE",
+      "audio": "research/voice_content/media/BV1DFvKzgEDE/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 378.62,
+      "silence_total_sec": 7.69,
+      "speech_active_sec": 370.93,
+      "speech_ratio": 0.98,
+      "silence_gaps": 9,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
     {
       "video_id": "BV1dU4y1e7N9",
       "audio": "research/voice_content/media/BV1dU4y1e7N9/audio.m4a",
@@ -10,6 +65,83 @@
       "speech_active_sec": 178.71,
       "speech_ratio": 0.987,
       "silence_gaps": 5,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1gU4y157sW",
+      "audio": "research/voice_content/media/BV1gU4y157sW/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 83.38,
+      "silence_total_sec": 83.38,
+      "speech_active_sec": 0.0,
+      "speech_ratio": 0.0,
+      "silence_gaps": 1,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1hS4y1S7wL",
+      "audio": "research/voice_content/media/BV1hS4y1S7wL/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 295.04,
+      "silence_total_sec": 92.01,
+      "speech_active_sec": 203.03,
+      "speech_ratio": 0.688,
+      "silence_gaps": 119,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1iF411k7cu",
+      "audio": "research/voice_content/media/BV1iF411k7cu/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 242.86,
+      "silence_total_sec": 1.15,
+      "speech_active_sec": 241.71,
+      "speech_ratio": 0.995,
+      "silence_gaps": 3,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1R8Vn6JEWH",
+      "audio": "research/voice_content/media/BV1R8Vn6JEWH/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 70.03,
+      "silence_total_sec": 0,
+      "speech_active_sec": 70.03,
+      "speech_ratio": 1.0,
+      "silence_gaps": 0,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1XNVS6FEJG",
+      "audio": "research/voice_content/media/BV1XNVS6FEJG/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 22.15,
+      "silence_total_sec": 0,
+      "speech_active_sec": 22.15,
+      "speech_ratio": 1.0,
+      "silence_gaps": 0,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1YQ3nztEuL",
+      "audio": "research/voice_content/media/BV1YQ3nztEuL/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 65.92,
+      "silence_total_sec": 0,
+      "speech_active_sec": 65.92,
+      "speech_ratio": 1.0,
+      "silence_gaps": 0,
+      "method": "ffmpeg_silencedetect_-35dB"
+    },
+    {
+      "video_id": "BV1ySLc6QEcB",
+      "audio": "research/voice_content/media/BV1ySLc6QEcB/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 2569.66,
+      "silence_total_sec": 24.12,
+      "speech_active_sec": 2545.54,
+      "speech_ratio": 0.991,
+      "silence_gaps": 52,
       "method": "ffmpeg_silencedetect_-35dB"
     }
   ]

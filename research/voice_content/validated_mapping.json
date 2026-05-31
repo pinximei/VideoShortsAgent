@@ -1,0 +1,91 @@
+{
+  "mapping": [
+    {
+      "style_id": "V01_burst_hook_fast",
+      "video_id": "7618932620755291433",
+      "wpm": null
+    },
+    {
+      "style_id": "V02_tiktok_follow_punch",
+      "video_id": "7641485803578789172",
+      "wpm": null
+    },
+    {
+      "style_id": "V03_top10_listing",
+      "video_id": "7642198364225948962",
+      "wpm": null
+    },
+    {
+      "style_id": "V04_minimal_calm",
+      "video_id": "7642633512055475313",
+      "wpm": null
+    },
+    {
+      "style_id": "V05_badge_authority",
+      "video_id": "7643043013397623478",
+      "wpm": null
+    },
+    {
+      "style_id": "V06_chart_story",
+      "video_id": "7641861418416901414",
+      "wpm": null
+    },
+    {
+      "style_id": "V07_glitch_tease",
+      "video_id": "BV1iF411k7cu",
+      "wpm": 188
+    },
+    {
+      "style_id": "V08_terminal_dev",
+      "video_id": "BV1DFvKzgEDE",
+      "wpm": 290
+    },
+    {
+      "style_id": "V09_split_demo",
+      "video_id": "BV1hS4y1S7wL",
+      "wpm": 320
+    },
+    {
+      "style_id": "V10_glass_three_points",
+      "video_id": "BV1YQ3nztEuL",
+      "wpm": 334
+    },
+    {
+      "style_id": "V11_word_slam_energy",
+      "video_id": "BV1aGVQ6AE3s",
+      "wpm": 361
+    },
+    {
+      "style_id": "V12_phrase_pages",
+      "video_id": "BV1R8Vn6JEWH",
+      "wpm": 369
+    },
+    {
+      "style_id": "V13_marquee_news",
+      "video_id": "BV1aJQGBSEit",
+      "wpm": 369
+    },
+    {
+      "style_id": "V14_shake_keyword",
+      "video_id": "BV1ySLc6QEcB",
+      "wpm": 373
+    },
+    {
+      "style_id": "V15_star_odometer",
+      "video_id": "BV1b9VS64E1s",
+      "wpm": 378
+    },
+    {
+      "style_id": "V16_soft_purple_story",
+      "video_id": "BV1XNVS6FEJG",
+      "wpm": 379
+    },
+    {
+      "style_id": "V17_code_rain_hook",
+      "video_id": "BV14qh8ztEhv",
+      "wpm": 403
+    }
+  ],
+  "measured_count": 17,
+  "median_wpm": 369
+}

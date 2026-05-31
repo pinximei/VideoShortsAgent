@@ -1,54 +1,32 @@
-# 口播对标分析（仅写实测/可核对画面文字）
+# 口播对标分析（仅写实测）
 
-> 2026-05-31T23:01:38.678597+00:00
+> 2026-05-31T23:34:31.551540+00:00
 
-## 抽帧自动分析（字幕差分）
+## B站语速（ASR）
 
-- 可靠条数：**1/20**
-- 登录遮挡：**7/20**
+- 可测量：**11/12**
 
-| # | 标题 | reliable | login_blocked | peaks | 证据帧 |
-|---|------|----------|---------------|-------|--------|
-| 1 | 每天一个GitHub热门产品 | False | False | 0 | `research/motion/github_daily/captures/7618932620755291433/keyframes/key_02_035pct.png` |
-| 2 | Github项目推荐 | False | False | 0 | `research/motion/github_daily/captures/7641485803578789172/keyframes/key_02_035pct.png` |
-| 3 | github今日最快增长 | False | False | 0 | `research/motion/github_daily/captures/7642198364225948962/keyframes/key_02_035pct.png` |
-| 4 | 本周github skill前十 | False | False | 0 | `research/motion/github_daily/captures/7642633512055475313/keyframes/key_02_035pct.png` |
-| 5 | github每日热榜 | True | False | 2 | `research/motion/github_daily/captures/7641791711051647030/keyframes/key_02_035pct.png` |
-| 6 | github本周star前十 | False | False | 0 | `research/motion/github_daily/captures/7643092805896032739/keyframes/key_02_035pct.png` |
-| 7 | 本周AI GitHub Top10 | False | False | 0 | `research/motion/github_daily/captures/7643043013397623478/keyframes/key_02_035pct.png` |
-| 8 | 每周精选GitHub热门 | False | False | 0 | `research/motion/github_daily/captures/7641861418416901414/keyframes/key_02_035pct.png` |
-| 9 | B站-BVHgB7ZnPbcI | False | True | 0 | `research/motion/github_daily/captures/BVHgB7ZnPbcI/keyframes/key_02_035pct.png` |
-| 10 | B站-BVHgBvVc9bBR | False | True | 0 | `research/motion/github_daily/captures/BVHgBvVc9bBR/keyframes/key_02_035pct.png` |
-| 11 | B站-BVHgB7VtdbBx | False | True | 0 | `research/motion/github_daily/captures/BVHgB7VtdbBx/keyframes/key_02_035pct.png` |
-| 12 | B站-BV9xiti9rNYq | False | True | 0 | `research/motion/github_daily/captures/BV9xiti9rNYq/keyframes/key_02_035pct.png` |
-| 13 | B站-BV1dU4y1e7N9 | False | False | 0 | `research/motion/github_daily/captures/BV1dU4y1e7N9/keyframes/key_02_035pct.png` |
-| 14 | B站-BV1o7411U7j6 | False | True | 0 | `research/motion/github_daily/captures/BV1o7411U7j6/keyframes/key_02_035pct.png` |
-| 15 | B站-BV1UEVM6uEMA | False | False | 0 | `research/motion/github_daily/captures/BV1UEVM6uEMA/keyframes/key_02_035pct.png` |
-| 16 | B站-BV1YQ3nztEuL | False | False | 0 | `research/motion/github_daily/captures/BV1YQ3nztEuL/keyframes/key_02_035pct.png` |
-| 17 | B站-BV1R8Vn6JEWH | False | False | 0 | `research/motion/github_daily/captures/BV1R8Vn6JEWH/keyframes/key_02_035pct.png` |
-| 18 | B站-BV1TN41167Ep | False | True | 0 | `research/motion/github_daily/captures/BV1TN41167Ep/keyframes/key_02_035pct.png` |
-| 19 | B站-BV1VK411h7Zb | False | True | 0 | `research/motion/github_daily/captures/BV1VK411h7Zb/keyframes/key_02_035pct.png` |
-| 20 | B站-BV15zV46BE6w | False | False | 0 | `research/motion/github_daily/captures/BV15zV46BE6w/keyframes/key_02_035pct.png` |
+| # | BV | 字/分钟 | 方法 |
+|---|-----|---------|------|
+| 1 | BV1iF411k7cu | 188 | dashscope_paraformer_v2 |
+| 2 | BV1YQ3nztEuL | 334 | dashscope_paraformer_v2 |
+| 3 | BV1DFvKzgEDE | 290 | dashscope_paraformer_v2 |
+| 4 | BV1hS4y1S7wL | 320 | dashscope_paraformer_v2 |
+| 5 | BV1XNVS6FEJG | 379 | dashscope_paraformer_v2 |
+| 6 | BV1b9VS64E1s | 378 | dashscope_paraformer_v2 |
+| 7 | BV1ySLc6QEcB | 373 | dashscope_paraformer_v2 |
+| 9 | BV1aGVQ6AE3s | 361 | dashscope_paraformer_v2 |
+| 10 | BV1R8Vn6JEWH | 369 | dashscope_paraformer_v2 |
+| 11 | BV1aJQGBSEit | 369 | dashscope_paraformer_v2 |
+| 12 | BV14qh8ztEhv | 403 | dashscope_paraformer_v2 |
 
-## 画面可见文案（人工审计 JSON）
+## 抖音字幕节奏（phash）
 
-### 7618932620755291433 — 每天一个GitHub热门产品
-- 证据图：`research/motion/github_daily/captures/7618932620755291433/keyframes/key_03_055pct.png`（exists=True)
-- 画面字：GitHub 1.7万颗星, 收藏飙增, 每天一个GitHub热门产品
-- 内容风格（画面）：数据图表+黄字强调（幻灯片）
-
-### 7641485803578789172 — Github项目推荐
-- 证据图：`research/motion/github_daily/captures/7641485803578789172/keyframes/key_02_035pct.png`（exists=True)
-- 画面字：被低估的开源 AI Agent 项目, Pi AI Agent Toolkit, github.com/comet-works/pi, 48.8K, MIT, TypeScript
-- 内容风格（画面）：浅底徽章+橙词「开源」+仓库头
-
-### 7642633512055475313 — 本周github skill前十
-- 证据图：`research/motion/github_daily/captures/7642633512055475313/keyframes/key_02_035pct.png`（exists=True)
-- 画面字：GitHub AI Skills 热榜 Top10
-- 可见字幕样例：GitHub AI Skills热榜Top10来了，让我们看十月份的第一周，排位如何。
-- 内容风格（画面）：黑底榜单+底字幕口播
-
-### 7642198364225948962 — github今日最快增长
-- 证据图：`research/motion/github_daily/captures/7642198364225948962/keyframes/key_02_035pct.png`（exists=True)
-- 画面字：每天一个优质项目
-- 内容风格（画面）：米白极简标题（幻灯）
+- `7618932620755291433`: switch≈750ms reliable=True
+- `7641485803578789172`: switch≈500ms reliable=True
+- `7642198364225948962`: switch≈500ms reliable=True
+- `7642633512055475313`: switch≈500ms reliable=True
+- `7641791711051647030`: switch≈Nonems reliable=None
+- `7643092805896032739`: switch≈500ms reliable=False
+- `7643043013397623478`: switch≈1500ms reliable=True
+- `7641861418416901414`: switch≈500ms reliable=True

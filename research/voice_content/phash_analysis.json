@@ -1,0 +1,109 @@
+{
+  "generated_at": "2026-05-31T23:34:21.100598+00:00",
+  "reliable_count": 6,
+  "videos": [
+    {
+      "video_id": "7618932620755291433",
+      "title": "每天一个GitHub热门产品",
+      "analysis": {
+        "frames": 24,
+        "phash_gaps": 13,
+        "subtitle_switch_sec": 0.75,
+        "subtitle_switch_ms": 750,
+        "switches_per_min": 65.0,
+        "chars_per_minute_est": 640,
+        "reliable": true,
+        "method": "phash_bottom_band"
+      }
+    },
+    {
+      "video_id": "7641485803578789172",
+      "title": "Github项目推荐",
+      "analysis": {
+        "frames": 24,
+        "phash_gaps": 17,
+        "subtitle_switch_sec": 0.5,
+        "subtitle_switch_ms": 500,
+        "switches_per_min": 85.0,
+        "chars_per_minute_est": 960,
+        "reliable": true,
+        "method": "phash_bottom_band"
+      }
+    },
+    {
+      "video_id": "7642198364225948962",
+      "title": "github今日最快增长",
+      "analysis": {
+        "frames": 24,
+        "phash_gaps": 18,
+        "subtitle_switch_sec": 0.5,
+        "subtitle_switch_ms": 500,
+        "switches_per_min": 90.0,
+        "chars_per_minute_est": 960,
+        "reliable": true,
+        "method": "phash_bottom_band"
+      }
+    },
+    {
+      "video_id": "7642633512055475313",
+      "title": "本周github skill前十",
+      "analysis": {
+        "frames": 24,
+        "phash_gaps": 20,
+        "subtitle_switch_sec": 0.5,
+        "subtitle_switch_ms": 500,
+        "switches_per_min": 100.0,
+        "chars_per_minute_est": 960,
+        "reliable": true,
+        "method": "phash_bottom_band"
+      }
+    },
+    {
+      "video_id": "7641791711051647030",
+      "title": "github每日热榜",
+      "analysis": null
+    },
+    {
+      "video_id": "7643092805896032739",
+      "title": "github本周star前十",
+      "analysis": {
+        "frames": 24,
+        "phash_gaps": 2,
+        "subtitle_switch_sec": 0.5,
+        "subtitle_switch_ms": 500,
+        "switches_per_min": 10.0,
+        "chars_per_minute_est": 960,
+        "reliable": false,
+        "method": "phash_bottom_band"
+      }
+    },
+    {
+      "video_id": "7643043013397623478",
+      "title": "本周AI GitHub Top10",
+      "analysis": {
+        "frames": 24,
+        "phash_gaps": 5,
+        "subtitle_switch_sec": 1.5,
+        "subtitle_switch_ms": 1500,
+        "switches_per_min": 25.0,
+        "chars_per_minute_est": 320,
+        "reliable": true,
+        "method": "phash_bottom_band"
+      }
+    },
+    {
+      "video_id": "7641861418416901414",
+      "title": "每周精选GitHub热门",
+      "analysis": {
+        "frames": 24,
+        "phash_gaps": 16,
+        "subtitle_switch_sec": 0.5,
+        "subtitle_switch_ms": 500,
+        "switches_per_min": 80.0,
+        "chars_per_minute_est": 960,
+        "reliable": true,
+        "method": "phash_bottom_band"
+      }
+    }
+  ]
+}

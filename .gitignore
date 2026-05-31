@@ -44,6 +44,11 @@ middle/config.yaml
 
 # Motion research: keep manifests/keyframes; skip bulk video captures in git
 research/motion/github_daily/captures/**/*.png
+research/motion/github_daily/captures_v2/**/*.png
+research/motion/github_daily/captures_v3/**/*.png
+research/voice_content/cookies.txt
+research/voice_content/media/**/*
+!research/voice_content/media/**/asr_dashscope.json
 research/motion/github_daily/verify_g20/**/*.mp4
 research/motion/github_daily/ours/*.mp4
 _py_test.py

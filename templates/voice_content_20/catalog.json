@@ -11,7 +11,7 @@
       "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.12,
       "words_per_minute": 280,
-      "subtitle_switch_ms": 450,
+      "subtitle_switch_ms": 750,
       "total_chars": [
         200,
         240
@@ -33,8 +33,9 @@
       "hook_pattern": "别划走|你绝对不知道|刚刚",
       "tone": "急促、反问、第一人称",
       "outline_hint": "第1镜3秒钩子→项目名+数字→2个痛点→Star/关注",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "phash_bottom_band",
+      "measured_ref": "7618932620755291433"
     },
     {
       "id": "V02_tiktok_follow_punch",
@@ -43,7 +44,7 @@
       "edge_tts_rate": "+10%",
       "sentence_pause_sec": 0.15,
       "words_per_minute": 240,
-      "subtitle_switch_ms": 550,
+      "subtitle_switch_ms": 500,
       "total_chars": [
         180,
         220
@@ -64,8 +65,9 @@
       },
       "hook_pattern": "今天这个|一分钟|讲清",
       "tone": "口语、短句、每句≤12字",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "phash_bottom_band",
+      "measured_ref": "7641485803578789172"
     },
     {
       "id": "V03_top10_listing",
@@ -74,15 +76,16 @@
       "edge_tts_rate": "+14%",
       "sentence_pause_sec": 0.18,
       "words_per_minute": 260,
-      "subtitle_switch_ms": 700,
+      "subtitle_switch_ms": 500,
       "total_chars": [
         210,
         250
       ],
       "hook_pattern": "Top10|前十|本周",
       "tone": "序号感、排比",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "phash_bottom_band",
+      "measured_ref": "7642198364225948962"
     },
     {
       "id": "V04_minimal_calm",
@@ -91,57 +94,62 @@
       "edge_tts_rate": "+5%",
       "sentence_pause_sec": 0.28,
       "words_per_minute": 200,
-      "subtitle_switch_ms": 900,
+      "subtitle_switch_ms": 500,
       "total_chars": [
         160,
         200
       ],
       "hook_pattern": "每天一个|优质项目",
       "tone": "平静、可信、少形容词",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "phash_bottom_band",
+      "measured_ref": "7642633512055475313"
     },
     {
       "id": "V05_badge_authority",
       "name": "数据徽章权威感",
       "reference_motion": "G04",
-      "edge_tts_rate": "+8%",
+      "edge_tts_rate": "+5%",
       "sentence_pause_sec": 0.22,
-      "words_per_minute": 220,
-      "subtitle_switch_ms": 800,
+      "words_per_minute": 188,
+      "subtitle_switch_ms": 1500,
       "total_chars": [
         190,
         230
       ],
       "hook_pattern": "Star|MIT|开源",
       "tone": "数字前置、机构背书",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "phash_bottom_band",
+      "measured_ref": "7643043013397623478",
+      "speech_ratio": 0.995
     },
     {
       "id": "V06_chart_story",
       "name": "数据故事弧线",
       "reference_motion": "G02",
-      "edge_tts_rate": "+12%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.2,
-      "words_per_minute": 250,
-      "subtitle_switch_ms": 750,
+      "words_per_minute": 290,
+      "subtitle_switch_ms": 500,
       "total_chars": [
         200,
         240
       ],
       "hook_pattern": "暴涨|增长|破万",
       "tone": "趋势叙事",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "phash_bottom_band",
+      "measured_ref": "7641861418416901414",
+      "speech_ratio": 0.98
     },
     {
       "id": "V07_glitch_tease",
       "name": "悬念炸裂预告",
       "reference_motion": "G07",
-      "edge_tts_rate": "+16%",
+      "edge_tts_rate": "+5%",
       "sentence_pause_sec": 0.14,
-      "words_per_minute": 270,
+      "words_per_minute": 188,
       "subtitle_switch_ms": 500,
       "total_chars": [
         190,
@@ -149,16 +157,18 @@
       ],
       "hook_pattern": "又炸了|离谱|绝了",
       "tone": "夸张但具体",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1iF411k7cu",
+      "speech_ratio": 0.995
     },
     {
       "id": "V08_terminal_dev",
       "name": "程序员终端口吻",
       "reference_motion": "G08",
-      "edge_tts_rate": "+6%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.25,
-      "words_per_minute": 210,
+      "words_per_minute": 290,
       "subtitle_switch_ms": 1000,
       "total_chars": [
         170,
@@ -166,48 +176,54 @@
       ],
       "hook_pattern": "clone|README|一行命令",
       "tone": "技术黑话适度",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1DFvKzgEDE",
+      "speech_ratio": 0.98
     },
     {
       "id": "V09_split_demo",
       "name": "边讲边演示",
       "reference_motion": "G09",
-      "edge_tts_rate": "+10%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.2,
-      "words_per_minute": 230,
+      "words_per_minute": 320,
       "total_chars": [
         185,
         225
       ],
       "hook_pattern": "看这个界面|左边|右边",
       "tone": "指示性强",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1hS4y1S7wL",
+      "speech_ratio": 0.688
     },
     {
       "id": "V10_glass_three_points",
       "name": "三点结构化",
       "reference_motion": "G10",
-      "edge_tts_rate": "+9%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.24,
-      "words_per_minute": 215,
+      "words_per_minute": 334,
       "total_chars": [
         180,
         220
       ],
       "hook_pattern": "第一|第二|第三",
       "tone": "清单体",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1YQ3nztEuL",
+      "speech_ratio": 1.0
     },
     {
       "id": "V11_word_slam_energy",
       "name": "高能量砸字口播",
       "reference_motion": "G11",
-      "edge_tts_rate": "+20%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.1,
-      "words_per_minute": 290,
+      "words_per_minute": 361,
       "subtitle_switch_ms": 400,
       "total_chars": [
         200,
@@ -215,16 +231,18 @@
       ],
       "hook_pattern": "快|狠|准",
       "tone": "极短句连发",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1aGVQ6AE3s",
+      "speech_ratio": 0.943
     },
     {
       "id": "V12_phrase_pages",
       "name": "短语分页口播",
       "reference_motion": "G12",
-      "edge_tts_rate": "+8%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.3,
-      "words_per_minute": 205,
+      "words_per_minute": 369,
       "subtitle_switch_ms": 1000,
       "total_chars": [
         175,
@@ -232,88 +250,100 @@
       ],
       "hook_pattern": "分三步|听我说",
       "tone": "每页4词以内",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1R8Vn6JEWH",
+      "speech_ratio": 1.0
     },
     {
       "id": "V13_marquee_news",
       "name": "资讯快报体",
       "reference_motion": "G13",
-      "edge_tts_rate": "+15%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.16,
-      "words_per_minute": 265,
+      "words_per_minute": 369,
       "total_chars": [
         195,
         235
       ],
       "hook_pattern": "刚刚|突发|更新",
       "tone": "新闻播报",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1aJQGBSEit",
+      "speech_ratio": 1.0
     },
     {
       "id": "V14_shake_keyword",
       "name": "关键词重复强调",
       "reference_motion": "G14",
-      "edge_tts_rate": "+13%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.18,
-      "words_per_minute": 255,
+      "words_per_minute": 373,
       "total_chars": [
         190,
         230
       ],
       "hook_pattern": "重点来了|记住",
       "tone": "关键词重复2次",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1ySLc6QEcB",
+      "speech_ratio": 0.991
     },
     {
       "id": "V15_star_odometer",
       "name": "Star数滚动叙事",
       "reference_motion": "G15",
-      "edge_tts_rate": "+11%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.2,
-      "words_per_minute": 245,
+      "words_per_minute": 378,
       "total_chars": [
         200,
         240
       ],
       "hook_pattern": "Star|星标|万人",
       "tone": "数字递进",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1b9VS64E1s",
+      "speech_ratio": 1.0
     },
     {
       "id": "V16_soft_purple_story",
       "name": "柔和叙事种草",
       "reference_motion": "G16",
-      "edge_tts_rate": "+7%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.26,
-      "words_per_minute": 215,
+      "words_per_minute": 379,
       "total_chars": [
         175,
         210
       ],
       "hook_pattern": "为什么火|适合谁",
       "tone": "种草不硬广",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV1XNVS6FEJG",
+      "speech_ratio": 1.0
     },
     {
       "id": "V17_code_rain_hook",
       "name": "极客冷开场",
       "reference_motion": "G17",
-      "edge_tts_rate": "+5%",
+      "edge_tts_rate": "+18%",
       "sentence_pause_sec": 0.28,
-      "words_per_minute": 200,
+      "words_per_minute": 403,
       "total_chars": [
         165,
         200
       ],
       "hook_pattern": "开发者|仓库",
       "tone": "冷静克制",
-      "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validated": true,
+      "validation_note": "dashscope_paraformer_v2",
+      "measured_ref": "BV14qh8ztEhv",
+      "speech_ratio": 0.999
     },
     {
       "id": "V18_cta_star_push",
@@ -329,7 +359,8 @@
       "hook_pattern": "点个Star|评论区",
       "tone": "CTA前置",
       "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validation_note": "no_measurement_yet",
+      "measured_ref": null
     },
     {
       "id": "V19_daily_episode",
@@ -345,7 +376,8 @@
       "hook_pattern": "第\\d+期|日更",
       "tone": "系列粘性",
       "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validation_note": "no_measurement_yet",
+      "measured_ref": null
     },
     {
       "id": "V20_clean_badge_friend",
@@ -361,8 +393,11 @@
       "hook_pattern": "安利|自用|真心",
       "tone": "像朋友聊天",
       "validated": false,
-      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
+      "validation_note": "no_measurement_yet",
+      "measured_ref": null
     }
   ],
-  "catalog_status": "PLACEHOLDER_NOT_FROM_MEASUREMENT"
+  "catalog_status": "PARTIAL_VALIDATED_17_of_20",
+  "median_measured_wpm": 369,
+  "updated_at": "2026-05-31T23:34:25.183343+00:00"
 }

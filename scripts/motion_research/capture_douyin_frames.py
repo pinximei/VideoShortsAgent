@@ -116,15 +116,32 @@ def capture_one(page, vid: str, out_dir: Path, frames: int, interval_ms: int, *,
         except Exception:
             pass
         page.wait_for_timeout(1500)
+        dur = page.eval_on_selector(
+            "video",
+            """v => {
+              const d = v.duration;
+              return (isFinite(d) && d > 0) ? d : 60;
+            }""",
+        ) or 60
+        try:
+            dur = float(dur)
+        except (TypeError, ValueError):
+            dur = 60.0
         count = 0
         for i in range(frames):
+            t = min((i / max(1, frames - 1)) * dur * 0.95, max(0, dur - 0.3))
+            page.eval_on_selector(
+                "video",
+                "(v, t) => { try { v.currentTime = t; } catch(e) {} }",
+                t,
+            )
+            page.wait_for_timeout(350)
             fp = out_dir / f"f_{i:04d}.png"
             try:
                 video.screenshot(path=str(fp), timeout=5000)
             except Exception:
                 page.screenshot(path=str(fp), full_page=False)
             count += 1
-            page.wait_for_timeout(interval_ms)
         _extract_keyframes(out_dir, key_dir)
         return count
     except Exception as exc:

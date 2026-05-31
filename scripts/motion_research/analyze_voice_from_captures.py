@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 GITHUB_DAILY = ROOT / "research" / "motion" / "github_daily"
 CAPTURES = GITHUB_DAILY / "captures"
 CORPUS = GITHUB_DAILY / "video_corpus.json"
+CAPTURE_SUBDIR = "captures_v2"  # 优先 v2，否则 captures
 OUT = ROOT / "research" / "voice_content" / "analysis_report.json"
 
 # 复用字幕动效分析
@@ -92,7 +93,9 @@ def main() -> int:
     rows: list[dict] = []
     for v in corpus.get("videos", []):
         vid = str(v["id"])
-        cap = CAPTURES / vid
+        cap = GITHUB_DAILY / CAPTURE_SUBDIR / vid
+        if not cap.is_dir():
+            cap = CAPTURES / vid
         kf_dir = cap / "keyframes"
         kfs = [str(p.relative_to(ROOT)).replace("\\", "/") for p in sorted(kf_dir.glob("*.png"))] if kf_dir.is_dir() else []
         analysis = analyze_capture_dir(cap) if cap.is_dir() else None

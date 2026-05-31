@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "research" / "motion" / "github_daily" / "video_corpus.json"
 OUT = ROOT / "research" / "voice_content" / "media"
+COOKIES = ROOT / "research" / "voice_content" / "cookies.txt"
 
 
 def _run(cmd: list[str], timeout: int = 300) -> tuple[int, str]:
@@ -25,42 +26,47 @@ def _run(cmd: list[str], timeout: int = 300) -> tuple[int, str]:
     return p.returncode, (p.stderr or "") + (p.stdout or "")
 
 
-def download_one(url: str, vid: str, dest: Path) -> dict:
+def download_one(url: str, vid: str, dest: Path, *, cookies: Path | None = None) -> dict:
     dest.mkdir(parents=True, exist_ok=True)
     audio_tpl = str(dest / "audio.%(ext)s")
-    sub_tpl = str(dest / "subs")
     meta: dict = {"video_id": vid, "url": url, "ok": False}
+    cmd = [
+        "yt-dlp",
+        "-f",
+        "ba[ext=m4a]/bestaudio/best",
+        "--write-auto-sub",
+        "--write-sub",
+        "--sub-lang",
+        "zh-Hans,zh-CN,zh,en",
+        "--convert-subs",
+        "vtt",
+        "-o",
+        audio_tpl,
+        "--print",
+        "%(title)s|||%(duration)s",
+        "--no-overwrites",
+        "--ignore-errors",
+    ]
+    if cookies and cookies.is_file():
+        cmd.extend(["--cookies", str(cookies)])
+    cmd.append(url)
 
-    code, log = _run(
-        [
-            "yt-dlp",
-            "-f",
-            "ba[ext=m4a]/bestaudio/best",
-            "--write-auto-sub",
-            "--write-sub",
-            "--sub-lang",
-            "zh-Hans,zh-CN,zh,en",
-            "--convert-subs",
-            "vtt",
-            "-o",
-            audio_tpl,
-            "--print",
-            "%(title)s|||%(duration)s",
-            "--no-overwrites",
-            url,
-        ],
-        timeout=420,
-    )
+    code, log = _run(cmd, timeout=420)
     meta["log_tail"] = log[-800:] if log else ""
 
-    # rename subs from yt-dlp naming
-    for sub in dest.glob("*.vtt"):
+    for sub in sorted(dest.glob("*.vtt")) + sorted(dest.glob("*.zh*.vtt")):
         meta["subtitle_vtt"] = str(sub.relative_to(ROOT)).replace("\\", "/")
-    for sub in dest.glob("*.zh*.vtt"):
-        meta["subtitle_vtt"] = str(sub.relative_to(ROOT)).replace("\\", "/")
-    for aud in dest.glob("audio.*"):
-        if aud.suffix in (".m4a", ".mp3", ".opus", ".webm"):
+        break
+    for aud in sorted(dest.glob("audio.*")):
+        if aud.suffix in (".m4a", ".mp3", ".opus", ".webm", ".aac") and aud.stat().st_size > 1000:
             meta["audio"] = str(aud.relative_to(ROOT)).replace("\\", "/")
+            break
+    # yt-dlp 有时输出为 title.ext
+    if not meta.get("audio"):
+        for aud in sorted(dest.iterdir()):
+            if aud.suffix in (".m4a", ".mp3", ".opus", ".webm") and aud.stat().st_size > 1000:
+                meta["audio"] = str(aud.relative_to(ROOT)).replace("\\", "/")
+                break
 
     if "|||" in log:
         parts = [ln for ln in log.splitlines() if "|||" in ln]
@@ -86,22 +92,11 @@ def main() -> int:
         platform = v.get("platform", "douyin")
         dest = OUT / vid
         print(f"[download] {vid} ({platform})")
-        if platform == "bilibili" and url.startswith("http"):
-            rows.append(download_one(url, vid, dest))
+        ck = COOKIES if COOKIES.is_file() else None
+        if url.startswith("http"):
+            rows.append(download_one(url, vid, dest, cookies=ck))
         else:
-            # 抖音：尝试 yt-dlp（常失败），记录状态
-            code, log = _run(["yt-dlp", "--print", "title", url], timeout=90)
-            rows.append(
-                {
-                    "video_id": vid,
-                    "url": url,
-                    "platform": "douyin",
-                    "ok": code == 0,
-                    "yt_dlp_code": code,
-                    "log_tail": log[-400:] if log else "",
-                    "note": "douyin_download_often_blocked",
-                }
-            )
+            rows.append({"video_id": vid, "url": url, "ok": False, "note": "no_url"})
 
     manifest = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
