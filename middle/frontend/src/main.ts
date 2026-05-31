@@ -10,6 +10,7 @@ import PublishingView from "./views/PublishingView.vue";
 import ChannelConfigView from "./views/ChannelConfigView.vue";
 import PublisherBatchesView from "./views/PublisherBatchesView.vue";
 import LlmSettingsView from "./views/LlmSettingsView.vue";
+import TtsSettingsView from "./views/TtsSettingsView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -22,6 +23,7 @@ const router = createRouter({
     { path: "/settings/channels", component: ChannelConfigView },
     { path: "/settings/publisher", component: PublisherBatchesView },
     { path: "/settings/llm", component: LlmSettingsView },
+    { path: "/settings/tts", component: TtsSettingsView },
   ],
 });
 

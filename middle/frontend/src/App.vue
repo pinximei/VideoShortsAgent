@@ -14,6 +14,7 @@ const pageTitle = computed(() => {
     "/settings/channels": "渠道账号",
     "/settings/publisher": "发布批次",
     "/settings/llm": "DeepSeek 编排",
+    "/settings/tts": "配音 · 阿里云",
   };
   if (route.path.startsWith("/jobs/")) return `任务 #${route.params.id}`;
   if (route.path.startsWith("/pending/")) return "待发布";
@@ -50,6 +51,7 @@ onMounted(async () => {
         <RouterLink to="/settings/channels">⚙️ 渠道账号</RouterLink>
         <RouterLink to="/settings/publisher">🖥️ 发布批次</RouterLink>
         <RouterLink to="/settings/llm">🤖 DeepSeek 编排</RouterLink>
+        <RouterLink to="/settings/tts">🎙️ 配音 · 阿里云</RouterLink>
       </nav>
 
       <template v-for="t in themes" :key="t.id">

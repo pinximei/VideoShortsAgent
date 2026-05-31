@@ -146,6 +146,12 @@ class LlmSettingsBody(BaseModel):
     enabled: bool | None = None
 
 
+class TtsSettingsBody(BaseModel):
+    dashscope_api_key: str = ""
+    tts_provider: str = ""
+    tts_fallback: str = ""
+
+
 @app.get("/api/v1/settings/llm")
 def get_llm_settings_api():
     from pipeline.llm_settings import llm_settings_public
@@ -181,6 +187,35 @@ def test_llm_settings_api():
         return _envelope(result)
     except Exception as e:
         raise HTTPException(400, f"LLM 测试失败: {type(e).__name__}: {str(e)[:300]}")
+
+
+@app.get("/api/v1/settings/tts")
+def get_tts_settings_api():
+    from pipeline.tts_settings import tts_settings_public
+
+    return _envelope(tts_settings_public())
+
+
+@app.put("/api/v1/settings/tts")
+def put_tts_settings_api(body: TtsSettingsBody):
+    from pipeline.tts_settings import save_tts_settings, tts_settings_public
+
+    save_tts_settings(
+        dashscope_api_key=body.dashscope_api_key or None,
+        tts_provider=body.tts_provider or None,
+        tts_fallback=body.tts_fallback or None,
+    )
+    return _envelope(tts_settings_public())
+
+
+@app.post("/api/v1/settings/tts/test")
+def test_tts_settings_api():
+    from pipeline.tts_settings import test_tts_connection
+
+    try:
+        return _envelope(test_tts_connection(provider="dashscope"))
+    except Exception as e:
+        raise HTTPException(400, f"TTS 测试失败: {type(e).__name__}: {str(e)[:300]}") from e
 
 
 @app.get("/api/v1/channel-config")
@@ -330,9 +365,11 @@ def vsa_capabilities():
 @app.get("/api/v1/health")
 def health():
     from pipeline.llm_settings import llm_settings_public
+    from pipeline.tts_settings import tts_settings_public
 
     cfg = get_cfg()
     llm = llm_settings_public(cfg)
+    tts = tts_settings_public()
     return _envelope(
         {
             "service": "aisoul-pipeline",
@@ -340,6 +377,8 @@ def health():
             "data_dir": str(cfg.data_dir),
             "llm_configured": llm.get("api_key_set"),
             "llm_model": llm.get("model"),
+            "tts_dashscope_configured": tts.get("dashscope_api_key_set"),
+            "tts_provider": tts.get("tts_provider"),
         }
     )
 

@@ -51,6 +51,23 @@ export type LlmSettings = {
   env_path: string;
 };
 
+export type TtsSettings = {
+  tts_provider: string;
+  tts_fallback: string;
+  dashscope_api_key_env: string;
+  dashscope_api_key_set: boolean;
+  dashscope_api_key_masked: string;
+  env_path: string;
+  help_url: string;
+};
+
+export type TtsHealthResult = {
+  ok: boolean;
+  mode: string;
+  chain: string[];
+  providers: Record<string, { ok?: boolean; error?: string; latency_sec?: number; bytes?: number }>;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(path, {
     headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
@@ -133,4 +150,16 @@ export const api = {
       "/api/v1/settings/llm/test",
       { method: "POST" }
     ),
+  ttsSettings: () => request<TtsSettings>("/api/v1/settings/tts"),
+  saveTtsSettings: (body: {
+    dashscope_api_key?: string;
+    tts_provider?: string;
+    tts_fallback?: string;
+  }) =>
+    request<TtsSettings>("/api/v1/settings/tts", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  testTtsSettings: () =>
+    request<TtsHealthResult>("/api/v1/settings/tts/test", { method: "POST" }),
 };
