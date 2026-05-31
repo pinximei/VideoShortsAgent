@@ -43,9 +43,11 @@ def _safe_remove(path: str, *, retries: int = 6) -> None:
 class DubbingSkill:
     """中文配音技能（句级精确同步）"""
 
-    def __init__(self, voice: str = DEFAULT_VOICE):
+    def __init__(self, voice: str = DEFAULT_VOICE, *, tts_rate: str = "+0%", sentence_pause: float | None = None):
         self.voice = voice
-        print(f"[DubbingSkill] 语音: {self.voice} OK")
+        self.tts_rate = (tts_rate or "+0%").strip()
+        self.sentence_pause = sentence_pause if sentence_pause is not None else SENTENCE_PAUSE
+        print(f"[DubbingSkill] 语音: {self.voice} rate={self.tts_rate} OK")
 
     def execute(self, analysis: dict, output_dir: str, voice: str = "") -> dict:
         """执行 TTS 生成（按句分段，精确计时）
@@ -191,7 +193,7 @@ class DubbingSkill:
         """
         # 计算语音内容时长（句子 + 句间停顿）
         content_duration = sum(sa["duration"] for sa in sentence_audios)
-        content_duration += SENTENCE_PAUSE * max(0, len(sentence_audios) - 1)
+        content_duration += self.sentence_pause * max(0, len(sentence_audios) - 1)
 
         # 计算前后留白：前留白 ≤ 0.5 秒（快速出声），剩余放尾部
         if video_duration > 0 and video_duration > content_duration:
@@ -205,7 +207,7 @@ class DubbingSkill:
 
         # 生成静音文件
         silence_path = os.path.join(tts_dir, f"silence_{clip_index}.mp3")
-        self._generate_silence(silence_path, SENTENCE_PAUSE)
+        self._generate_silence(silence_path, self.sentence_pause)
 
         lead_silence_path = os.path.join(tts_dir, f"lead_{clip_index}.mp3")
         self._generate_silence(lead_silence_path, lead_silence)
@@ -264,7 +266,7 @@ class DubbingSkill:
                 "start": round(start, 3),
                 "end": round(end, 3)
             })
-            current_time = end + (SENTENCE_PAUSE if j < len(sentence_audios) - 1 else 0)
+            current_time = end + (self.sentence_pause if j < len(sentence_audios) - 1 else 0)
 
         # 总时长 = 最后一句结束 + 尾部留白
         total_duration = (timeline[-1]["end"] if timeline else 0) + trail_silence
@@ -307,7 +309,7 @@ class DubbingSkill:
         try:
             run_async(
                 synthesize_batch_sequential(
-                    items, voice=self.voice, cache_dir=cache_dir,
+                    items, voice=self.voice, cache_dir=cache_dir, rate=self.tts_rate,
                 )
             )
         except RuntimeError as exc:
@@ -332,7 +334,7 @@ class DubbingSkill:
         cache_dir = self._tts_cache_dir(os.path.dirname(output_path) or ".")
         run_async(
             synthesize_to_file(
-                text, self.voice, output_path, cache_dir=cache_dir,
+                text, self.voice, output_path, cache_dir=cache_dir, rate=self.tts_rate,
             )
         )
 

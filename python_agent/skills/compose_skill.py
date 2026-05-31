@@ -22,11 +22,13 @@ class ComposeSkill:
     def execute(self, text: str, scene_type: str, visual_style: str = "auto",
                 image_filenames: list = None,
                 image_mode: str = "search",
-                motion_directed: bool = False) -> dict:
+                motion_directed: bool = False,
+                voice_style: dict | None = None) -> dict:
         """多轮规划编排（Agentic Visual Design）"""
         
         self._scene_type = scene_type
         self._motion_directed = motion_directed
+        self._voice_style = voice_style or {}
         scene_tpl = get_scene(scene_type)
         mode = "动效母版" if motion_directed else "视觉导演"
         print(f"[ComposeSkill] {mode}工作流 (Scene: {scene_type}, Style: {visual_style})")
@@ -102,9 +104,15 @@ class ComposeSkill:
         else:
             style_prompt = "\n【全局视觉预设】\n请作为视觉总监，结合全局基调，为全片统一决定一个文字排版风格（global_layout_style）。并在返回 JSON 中增加 'global_layout_style' 字段。"
 
+        voice_block = ""
+        if self._voice_style:
+            from python_agent.voice_content_templates import voice_style_prompt_block
+            voice_block = "\n" + voice_style_prompt_block(self._voice_style) + "\n"
+
         prompt = f"""你是一个顶级的短视频剧本编剧兼主创策划。
 请根据以下输入文本，生成一个极具强感染力的结构化分镜大纲（3-6个分镜）。
 {scene_block}
+{voice_block}
 输入文本：
 {text}
 {style_prompt}

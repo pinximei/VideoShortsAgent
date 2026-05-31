@@ -1,0 +1,244 @@
+{
+  "samples": [
+    {
+      "id": "V01_burst_hook_fast",
+      "name": "爆款快钩子",
+      "edge_tts_rate": "+18%",
+      "words_per_minute": 280,
+      "total_chars": 58,
+      "outline": [
+        "别划走！今天这个 GitHub 项目真的狠。",
+        "一行命令就能部署，Star 昨晚又涨了一万。",
+        "评论区扣 1，我把链接发你。"
+      ]
+    },
+    {
+      "id": "V02_tiktok_follow_punch",
+      "name": "跟读短句连击",
+      "edge_tts_rate": "+10%",
+      "words_per_minute": 240,
+      "total_chars": 27,
+      "outline": [
+        "今天这个。你必须知道。",
+        "开源神器。一分钟讲清。",
+        "记得收藏。"
+      ]
+    },
+    {
+      "id": "V03_top10_listing",
+      "name": "榜单枚举口播",
+      "edge_tts_rate": "+14%",
+      "words_per_minute": 260,
+      "total_chars": 44,
+      "outline": [
+        "本周 GitHub Top10 来了。",
+        "第三名最适合小白，第一名太硬核。",
+        "你猜今天冠军是谁？"
+      ]
+    },
+    {
+      "id": "V04_minimal_calm",
+      "name": "极简慢讲系列感",
+      "edge_tts_rate": "+5%",
+      "words_per_minute": 200,
+      "total_chars": 34,
+      "outline": [
+        "每天一个优质开源项目。",
+        "今天这个很轻量，但解决大问题。",
+        "值得 Star。"
+      ]
+    },
+    {
+      "id": "V05_badge_authority",
+      "name": "数据徽章权威感",
+      "edge_tts_rate": "+8%",
+      "words_per_minute": 220,
+      "total_chars": 31,
+      "outline": [
+        "【数据徽章权威感】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V06_chart_story",
+      "name": "数据故事弧线",
+      "edge_tts_rate": "+12%",
+      "words_per_minute": 250,
+      "total_chars": 30,
+      "outline": [
+        "【数据故事弧线】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V07_glitch_tease",
+      "name": "悬念炸裂预告",
+      "edge_tts_rate": "+16%",
+      "words_per_minute": 270,
+      "total_chars": 30,
+      "outline": [
+        "【悬念炸裂预告】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V08_terminal_dev",
+      "name": "程序员终端口吻",
+      "edge_tts_rate": "+6%",
+      "words_per_minute": 210,
+      "total_chars": 31,
+      "outline": [
+        "【程序员终端口吻】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V09_split_demo",
+      "name": "边讲边演示",
+      "edge_tts_rate": "+10%",
+      "words_per_minute": 230,
+      "total_chars": 29,
+      "outline": [
+        "【边讲边演示】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V10_glass_three_points",
+      "name": "三点结构化",
+      "edge_tts_rate": "+9%",
+      "words_per_minute": 215,
+      "total_chars": 29,
+      "outline": [
+        "【三点结构化】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V11_word_slam_energy",
+      "name": "高能量砸字口播",
+      "edge_tts_rate": "+20%",
+      "words_per_minute": 290,
+      "total_chars": 31,
+      "outline": [
+        "【高能量砸字口播】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V12_phrase_pages",
+      "name": "短语分页口播",
+      "edge_tts_rate": "+8%",
+      "words_per_minute": 205,
+      "total_chars": 30,
+      "outline": [
+        "【短语分页口播】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V13_marquee_news",
+      "name": "资讯快报体",
+      "edge_tts_rate": "+15%",
+      "words_per_minute": 265,
+      "total_chars": 29,
+      "outline": [
+        "【资讯快报体】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V14_shake_keyword",
+      "name": "关键词重复强调",
+      "edge_tts_rate": "+13%",
+      "words_per_minute": 255,
+      "total_chars": 31,
+      "outline": [
+        "【关键词重复强调】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V15_star_odometer",
+      "name": "Star数滚动叙事",
+      "edge_tts_rate": "+11%",
+      "words_per_minute": 245,
+      "total_chars": 33,
+      "outline": [
+        "【Star数滚动叙事】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V16_soft_purple_story",
+      "name": "柔和叙事种草",
+      "edge_tts_rate": "+7%",
+      "words_per_minute": 215,
+      "total_chars": 30,
+      "outline": [
+        "【柔和叙事种草】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V17_code_rain_hook",
+      "name": "极客冷开场",
+      "edge_tts_rate": "+5%",
+      "words_per_minute": 200,
+      "total_chars": 29,
+      "outline": [
+        "【极客冷开场】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V18_cta_star_push",
+      "name": "强引导Star",
+      "edge_tts_rate": "+12%",
+      "words_per_minute": 240,
+      "total_chars": 31,
+      "outline": [
+        "【强引导Star】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V19_daily_episode",
+      "name": "日更集数口播",
+      "edge_tts_rate": "+10%",
+      "words_per_minute": 230,
+      "total_chars": 30,
+      "outline": [
+        "【日更集数口播】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    },
+    {
+      "id": "V20_clean_badge_friend",
+      "name": "朋友推荐口吻",
+      "edge_tts_rate": "+6%",
+      "words_per_minute": 210,
+      "total_chars": 30,
+      "outline": [
+        "【朋友推荐口吻】钩子句。",
+        "项目亮点一句。",
+        "引导关注或 Star。"
+      ]
+    }
+  ]
+}

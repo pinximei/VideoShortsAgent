@@ -19,6 +19,11 @@ if str(_root) not in sys.path:
 
 from python_agent.capabilities.opening_hook import OPENING_HOOK_RULES, enforce_opening_hook_on_copy
 from python_agent.capabilities.registry import llm_capabilities_section, save_catalog_snapshot
+from python_agent.voice_content_templates import (
+    is_voice_style_brief,
+    pick_voice_content_style,
+    voice_style_prompt_block,
+)
 
 SYSTEM_PROMPT = """你是多平台内容运营与短视频剪辑策划专家。
 根据站内文章生成各平台可发布终稿，并为抖音/小红书规划视频分镜与特效参数。
@@ -80,6 +85,8 @@ feed：{feed_kind}
 
 {opening_hook_rules}
 
+{voice_content_rules}
+
 {capabilities_section}"""
 
 BROLL_SECTION = """
@@ -106,6 +113,11 @@ def generate_platform_copy(
     theme = next((t for t in cfg.themes if t.id == brief.theme_id), None)
     theme_label = theme.label if theme else (brief.theme_id or "未分类")
 
+    brief_dict = brief.to_dict() if hasattr(brief, "to_dict") else {}
+    voice_rules = ""
+    if is_voice_style_brief(brief_dict):
+        voice_rules = voice_style_prompt_block(pick_voice_content_style(brief_dict))
+
     user = USER_TEMPLATE.format(
         title=brief.title,
         hook=brief.hook,
@@ -118,6 +130,7 @@ def generate_platform_copy(
         theme_label=theme_label,
         broll_section=broll_section,
         opening_hook_rules=OPENING_HOOK_RULES,
+        voice_content_rules=voice_rules or "（口播：180~260字，快节奏短句，禁止废话开场）",
         capabilities_section=llm_capabilities_section(feed_kind=brief.feed_kind),
     )
     if getattr(brief, "cover_image_url", ""):

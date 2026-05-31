@@ -1,0 +1,467 @@
+{
+  "generated_at": "2026-05-31T22:37:03.032702+00:00",
+  "tool": "analyze_voice_from_captures.py",
+  "count": 20,
+  "videos": [
+    {
+      "video_id": "7618932620755291433",
+      "title": "每天一个GitHub热门产品",
+      "platform": "douyin",
+      "url": "https://www.douyin.com/video/7618932620755291433",
+      "keyframes": [
+        "research/motion/github_daily/captures/7618932620755291433/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/7618932620755291433/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/7618932620755291433/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/7618932620755291433/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/7618932620755291433/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/7618932620755291433/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 40,
+        "duration_est_sec": 24.0,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "7641485803578789172",
+      "title": "Github项目推荐",
+      "platform": "douyin",
+      "url": "https://www.douyin.com/video/7641485803578789172",
+      "keyframes": [
+        "research/motion/github_daily/captures/7641485803578789172/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/7641485803578789172/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/7641485803578789172/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/7641485803578789172/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/7641485803578789172/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/7641485803578789172/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 40,
+        "duration_est_sec": 24.0,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "7642198364225948962",
+      "title": "github今日最快增长",
+      "platform": "douyin",
+      "url": "https://www.douyin.com/video/7642198364225948962",
+      "keyframes": [
+        "research/motion/github_daily/captures/7642198364225948962/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/7642198364225948962/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/7642198364225948962/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/7642198364225948962/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/7642198364225948962/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/7642198364225948962/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 20,
+        "duration_est_sec": 12.0,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "7642633512055475313",
+      "title": "本周github skill前十",
+      "platform": "douyin",
+      "url": "https://www.douyin.com/video/7642633512055475313",
+      "keyframes": [
+        "research/motion/github_daily/captures/7642633512055475313/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/7642633512055475313/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/7642633512055475313/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/7642633512055475313/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/7642633512055475313/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/7642633512055475313/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 20,
+        "duration_est_sec": 12.0,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "7641791711051647030",
+      "title": "github每日热榜",
+      "platform": "douyin",
+      "url": "https://www.douyin.com/video/7641791711051647030",
+      "keyframes": [
+        "research/motion/github_daily/captures/7641791711051647030/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/7641791711051647030/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/7641791711051647030/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/7641791711051647030/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/7641791711051647030/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/7641791711051647030/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 20,
+        "duration_est_sec": 12.0,
+        "subtitle_switch_ms": 1799,
+        "switches_per_min": 10.0,
+        "words_per_minute_est": 266,
+        "change_peaks": 2,
+        "pace_label": "快"
+      }
+    },
+    {
+      "video_id": "7643092805896032739",
+      "title": "github本周star前十",
+      "platform": "douyin",
+      "url": "https://www.douyin.com/video/7643092805896032739",
+      "keyframes": [
+        "research/motion/github_daily/captures/7643092805896032739/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/7643092805896032739/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/7643092805896032739/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/7643092805896032739/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/7643092805896032739/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/7643092805896032739/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 20,
+        "duration_est_sec": 12.0,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "7643043013397623478",
+      "title": "本周AI GitHub Top10",
+      "platform": "douyin",
+      "url": "https://www.douyin.com/video/7643043013397623478",
+      "keyframes": [
+        "research/motion/github_daily/captures/7643043013397623478/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/7643043013397623478/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/7643043013397623478/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/7643043013397623478/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/7643043013397623478/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/7643043013397623478/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 20,
+        "duration_est_sec": 12.0,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "7641861418416901414",
+      "title": "每周精选GitHub热门",
+      "platform": "douyin",
+      "url": "https://www.douyin.com/video/7641861418416901414",
+      "keyframes": [
+        "research/motion/github_daily/captures/7641861418416901414/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/7641861418416901414/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/7641861418416901414/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/7641861418416901414/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/7641861418416901414/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/7641861418416901414/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 20,
+        "duration_est_sec": 12.0,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BVHgB7ZnPbcI",
+      "title": "B站-BVHgB7ZnPbcI",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BVHgB7ZnPbcI",
+      "keyframes": [
+        "research/motion/github_daily/captures/BVHgB7ZnPbcI/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BVHgB7ZnPbcI/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BVHgB7ZnPbcI/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BVHgB7ZnPbcI/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BVHgB7ZnPbcI/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BVHgB7ZnPbcI/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BVHgBvVc9bBR",
+      "title": "B站-BVHgBvVc9bBR",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BVHgBvVc9bBR",
+      "keyframes": [
+        "research/motion/github_daily/captures/BVHgBvVc9bBR/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BVHgBvVc9bBR/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BVHgBvVc9bBR/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BVHgBvVc9bBR/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BVHgBvVc9bBR/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BVHgBvVc9bBR/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BVHgB7VtdbBx",
+      "title": "B站-BVHgB7VtdbBx",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BVHgB7VtdbBx",
+      "keyframes": [
+        "research/motion/github_daily/captures/BVHgB7VtdbBx/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BVHgB7VtdbBx/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BVHgB7VtdbBx/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BVHgB7VtdbBx/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BVHgB7VtdbBx/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BVHgB7VtdbBx/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BV9xiti9rNYq",
+      "title": "B站-BV9xiti9rNYq",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BV9xiti9rNYq",
+      "keyframes": [
+        "research/motion/github_daily/captures/BV9xiti9rNYq/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BV9xiti9rNYq/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BV9xiti9rNYq/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BV9xiti9rNYq/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BV9xiti9rNYq/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BV9xiti9rNYq/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BV1dU4y1e7N9",
+      "title": "B站-BV1dU4y1e7N9",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BV1dU4y1e7N9",
+      "keyframes": [
+        "research/motion/github_daily/captures/BV1dU4y1e7N9/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BV1dU4y1e7N9/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BV1dU4y1e7N9/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BV1dU4y1e7N9/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BV1dU4y1e7N9/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BV1dU4y1e7N9/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BV1o7411U7j6",
+      "title": "B站-BV1o7411U7j6",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BV1o7411U7j6",
+      "keyframes": [
+        "research/motion/github_daily/captures/BV1o7411U7j6/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BV1o7411U7j6/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BV1o7411U7j6/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BV1o7411U7j6/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BV1o7411U7j6/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BV1o7411U7j6/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BV1UEVM6uEMA",
+      "title": "B站-BV1UEVM6uEMA",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BV1UEVM6uEMA",
+      "keyframes": [
+        "research/motion/github_daily/captures/BV1UEVM6uEMA/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BV1UEVM6uEMA/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BV1UEVM6uEMA/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BV1UEVM6uEMA/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BV1UEVM6uEMA/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BV1UEVM6uEMA/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BV1YQ3nztEuL",
+      "title": "B站-BV1YQ3nztEuL",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BV1YQ3nztEuL",
+      "keyframes": [
+        "research/motion/github_daily/captures/BV1YQ3nztEuL/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BV1YQ3nztEuL/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BV1YQ3nztEuL/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BV1YQ3nztEuL/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BV1YQ3nztEuL/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BV1YQ3nztEuL/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BV1R8Vn6JEWH",
+      "title": "B站-BV1R8Vn6JEWH",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BV1R8Vn6JEWH",
+      "keyframes": [
+        "research/motion/github_daily/captures/BV1R8Vn6JEWH/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BV1R8Vn6JEWH/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BV1R8Vn6JEWH/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BV1R8Vn6JEWH/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BV1R8Vn6JEWH/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BV1R8Vn6JEWH/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BV1TN41167Ep",
+      "title": "B站-BV1TN41167Ep",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BV1TN41167Ep",
+      "keyframes": [
+        "research/motion/github_daily/captures/BV1TN41167Ep/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BV1TN41167Ep/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BV1TN41167Ep/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BV1TN41167Ep/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BV1TN41167Ep/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BV1TN41167Ep/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BV1VK411h7Zb",
+      "title": "B站-BV1VK411h7Zb",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BV1VK411h7Zb",
+      "keyframes": [
+        "research/motion/github_daily/captures/BV1VK411h7Zb/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BV1VK411h7Zb/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BV1VK411h7Zb/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BV1VK411h7Zb/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BV1VK411h7Zb/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BV1VK411h7Zb/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    },
+    {
+      "video_id": "BV15zV46BE6w",
+      "title": "B站-BV15zV46BE6w",
+      "platform": "bilibili",
+      "url": "https://www.bilibili.com/video/BV15zV46BE6w",
+      "keyframes": [
+        "research/motion/github_daily/captures/BV15zV46BE6w/keyframes/key_00_000pct.png",
+        "research/motion/github_daily/captures/BV15zV46BE6w/keyframes/key_01_015pct.png",
+        "research/motion/github_daily/captures/BV15zV46BE6w/keyframes/key_02_035pct.png",
+        "research/motion/github_daily/captures/BV15zV46BE6w/keyframes/key_03_055pct.png",
+        "research/motion/github_daily/captures/BV15zV46BE6w/keyframes/key_04_075pct.png",
+        "research/motion/github_daily/captures/BV15zV46BE6w/keyframes/key_05_100pct.png"
+      ],
+      "voice_analysis": {
+        "frames": 18,
+        "duration_est_sec": 10.8,
+        "subtitle_switch_ms": null,
+        "switches_per_min": null,
+        "words_per_minute_est": null,
+        "change_peaks": 0,
+        "pace_label": "中"
+      }
+    }
+  ]
+}

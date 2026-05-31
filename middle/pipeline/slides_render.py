@@ -122,8 +122,24 @@ def render_slides_video(
     )
     visual_style = get_style(style_key)
 
+    from python_agent.voice_content_templates import (
+        apply_voice_style_to_brief,
+        is_voice_style_brief,
+        pick_voice_content_style,
+        save_voice_style,
+        voice_style_prompt_block,
+    )
+
+    voice_style: dict = {}
+    if is_voice_style_brief(brief_dict):
+        voice_style = pick_voice_content_style(brief_dict)
+        brief_dict = apply_voice_style_to_brief(brief_dict, voice_style)
+        save_voice_style(task_dir, voice_style)
+
     compose_text = brief_to_compose_text(brief_dict)
-    print(f"[SlidesRender] scene={scene_key} style={style_key} platform={platform_id}")
+    if voice_style:
+        compose_text += "\n\n" + voice_style_prompt_block(voice_style)
+    print(f"[SlidesRender] scene={scene_key} style={style_key} platform={platform_id} voice={voice_style.get('id', '-')}")
 
     script = ComposeSkill().execute(
         compose_text,
@@ -132,6 +148,7 @@ def render_slides_video(
         image_filenames=None,
         image_mode=cfg.render_slides_image_mode,
         motion_directed=True,
+        voice_style=voice_style or None,
     )
     slides = script.get("slides") or []
     if len(slides) < 2:
@@ -172,7 +189,13 @@ def render_slides_video(
 
     preset = get_platform_preset(platform_id)
     voice = preset.voice
-    dubbing = DubbingSkill(voice=voice)
+    tts_rate = str(brief_dict.get("tts_rate") or "+10%")
+    sent_pause = brief_dict.get("sentence_pause_sec")
+    dubbing = DubbingSkill(
+        voice=voice,
+        tts_rate=tts_rate,
+        sentence_pause=float(sent_pause) if sent_pause is not None else None,
+    )
     tts_input = [{"tts_text": s.get("tts_text", "")} for s in slides]
     tts_result = dubbing.execute(tts_input, str(work))
     if isinstance(tts_result, dict):

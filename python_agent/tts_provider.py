@@ -59,10 +59,10 @@ def resolve_provider_chain() -> list[str]:
     raise ValueError(f"未知 TTS_PROVIDER={mode}")
 
 
-def _read_cache(text: str, voice: str, out: Path, cache_dir: Path | None) -> Path | None:
+def _read_cache(text: str, voice: str, out: Path, cache_dir: Path | None, rate: str = "+0%") -> Path | None:
     if not cache_dir or not tts_cache_enabled():
         return None
-    shared = cache_path(cache_dir, cache_key(text, voice))
+    shared = cache_path(cache_dir, cache_key(f"{text}|{rate}", voice))
     if shared.is_file() and shared.stat().st_size > 80:
         if shared.resolve() != out.resolve():
             import shutil
@@ -71,10 +71,10 @@ def _read_cache(text: str, voice: str, out: Path, cache_dir: Path | None) -> Pat
     return None
 
 
-def _write_cache(text: str, voice: str, out: Path, cache_dir: Path | None) -> None:
+def _write_cache(text: str, voice: str, out: Path, cache_dir: Path | None, rate: str = "+0%") -> None:
     if not cache_dir or not tts_cache_enabled():
         return
-    shared = cache_path(cache_dir, cache_key(text, voice))
+    shared = cache_path(cache_dir, cache_key(f"{text}|{rate}", voice))
     import shutil
     shutil.copy2(out, shared)
 
@@ -84,10 +84,12 @@ def _synthesize_one_provider(
     text: str,
     voice: str,
     out: Path,
+    *,
+    rate: str = "+0%",
 ) -> Path:
     if provider == "edge":
         return Path(
-            run_async(edge_synthesize(text, voice, out, cache_dir=None))
+            run_async(edge_synthesize(text, voice, out, cache_dir=None, rate=rate))
         )
     if provider == "dashscope":
         return synthesize_dashscope(text, voice, out)
@@ -104,14 +106,16 @@ async def synthesize_to_file(
     output_path: str | Path,
     *,
     cache_dir: str | Path | None = None,
+    rate: str = "+0%",
 ) -> Path:
     text = (text or "").strip()
     if not text:
         raise ValueError("TTS 文本为空")
+    rate = (rate or "+0%").strip()
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     cdir = Path(cache_dir) if cache_dir else None
-    hit = _read_cache(text, voice, out, cdir)
+    hit = _read_cache(text, voice, out, cdir, rate=rate)
     if hit:
         return hit
 
@@ -119,10 +123,10 @@ async def synthesize_to_file(
     errors: list[str] = []
     for provider in chain:
         try:
-            result = _synthesize_one_provider(provider, text, voice, out)
+            result = _synthesize_one_provider(provider, text, voice, out, rate=rate)
             if not result.is_file() or result.stat().st_size <= 80:
                 raise RuntimeError("tts_empty_output")
-            _write_cache(text, voice, result, cdir)
+            _write_cache(text, voice, result, cdir, rate=rate)
             if provider != "edge":
                 print(f"[TTS] 使用 Key 后端: {provider}")
             return result
@@ -147,11 +151,12 @@ async def synthesize_batch_sequential(
     *,
     voice: str,
     cache_dir: str | Path | None = None,
+    rate: str = "+0%",
 ) -> list[Path]:
     paths: list[Path] = []
     for text, path in items:
         paths.append(
-            await synthesize_to_file(text, voice, path, cache_dir=cache_dir)
+            await synthesize_to_file(text, voice, path, cache_dir=cache_dir, rate=rate)
         )
     return paths
 

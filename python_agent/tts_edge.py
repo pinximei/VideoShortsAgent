@@ -120,6 +120,7 @@ async def synthesize_to_file(
     output_path: str | Path,
     *,
     cache_dir: str | Path | None = None,
+    rate: str = "+0%",
 ) -> Path:
     """
     合成单句/段文本到 mp3；失败时指数退避重试。
@@ -136,7 +137,8 @@ async def synthesize_to_file(
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    key = cache_key(text, voice)
+    rate = (rate or "+0%").strip()
+    key = cache_key(f"{text}|{rate}", voice)
     shared: Path | None = None
     if cache_dir and tts_cache_enabled():
         shared = cache_path(Path(cache_dir), key)
@@ -154,7 +156,7 @@ async def synthesize_to_file(
         try:
             await _throttle_before_request()
             async with _get_ws_sem():
-                comm = edge_tts.Communicate(text, voice)
+                comm = edge_tts.Communicate(text, voice, rate=rate)
                 await comm.save(str(out))
             if out.is_file() and out.stat().st_size > 80:
                 if shared is not None:
@@ -203,12 +205,13 @@ async def synthesize_batch_sequential(
     *,
     voice: str,
     cache_dir: str | Path | None = None,
+    rate: str = "+0%",
 ) -> list[Path]:
     """顺序合成多句，避免 asyncio.gather 触发 Bing burst 限流。"""
     paths: list[Path] = []
     for text, path in items:
         paths.append(
-            await synthesize_to_file(text, voice, path, cache_dir=cache_dir)
+            await synthesize_to_file(text, voice, path, cache_dir=cache_dir, rate=rate)
         )
     return paths
 
