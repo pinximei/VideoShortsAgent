@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-31T22:37:03.032702+00:00",
+  "generated_at": "2026-05-31T23:00:32.316908+00:00",
   "tool": "analyze_voice_from_captures.py",
   "count": 20,
   "videos": [
@@ -19,11 +19,22 @@
       "voice_analysis": {
         "frames": 40,
         "duration_est_sec": 24.0,
+        "login_overlay_scores": [
+          0.341,
+          0.319,
+          0.319,
+          0.319,
+          0.319
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0003,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -42,11 +53,22 @@
       "voice_analysis": {
         "frames": 40,
         "duration_est_sec": 24.0,
+        "login_overlay_scores": [
+          0.318,
+          0.318,
+          0.318,
+          0.318,
+          0.318
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0005,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -65,11 +87,22 @@
       "voice_analysis": {
         "frames": 20,
         "duration_est_sec": 12.0,
+        "login_overlay_scores": [
+          0.341,
+          0.319,
+          0.319,
+          0.319,
+          0.319
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -88,11 +121,22 @@
       "voice_analysis": {
         "frames": 20,
         "duration_est_sec": 12.0,
+        "login_overlay_scores": [
+          0.319,
+          0.319,
+          0.319,
+          0.319,
+          0.319
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -111,11 +155,22 @@
       "voice_analysis": {
         "frames": 20,
         "duration_est_sec": 12.0,
+        "login_overlay_scores": [
+          0.319,
+          0.319,
+          0.319,
+          0.061,
+          0.061
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0323,
         "subtitle_switch_ms": 1799,
         "switches_per_min": 10.0,
         "words_per_minute_est": 266,
         "change_peaks": 2,
-        "pace_label": "快"
+        "pace_label": "快",
+        "reliable": true,
+        "note": "ok"
       }
     },
     {
@@ -134,11 +189,22 @@
       "voice_analysis": {
         "frames": 20,
         "duration_est_sec": 12.0,
+        "login_overlay_scores": [
+          0.341,
+          0.319,
+          0.319,
+          0.319,
+          0.319
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -157,11 +223,22 @@
       "voice_analysis": {
         "frames": 20,
         "duration_est_sec": 12.0,
+        "login_overlay_scores": [
+          0.319,
+          0.319,
+          0.319,
+          0.319,
+          0.319
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -180,11 +257,22 @@
       "voice_analysis": {
         "frames": 20,
         "duration_est_sec": 12.0,
+        "login_overlay_scores": [
+          0.319,
+          0.319,
+          0.319,
+          0.319,
+          0.319
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -203,11 +291,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.675,
+          0.675,
+          0.675,
+          0.675,
+          0.675
+        ],
+        "login_blocked": true,
+        "motion_mean_diff": 0.0,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "login_modal"
       }
     },
     {
@@ -226,11 +325,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.733,
+          0.733,
+          0.733,
+          0.733,
+          0.733
+        ],
+        "login_blocked": true,
+        "motion_mean_diff": 0.0,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "login_modal"
       }
     },
     {
@@ -249,11 +359,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.742,
+          0.742,
+          0.742,
+          0.742,
+          0.742
+        ],
+        "login_blocked": true,
+        "motion_mean_diff": 0.0,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "login_modal"
       }
     },
     {
@@ -272,11 +393,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.631,
+          0.631,
+          0.631,
+          0.631,
+          0.631
+        ],
+        "login_blocked": true,
+        "motion_mean_diff": 0.0,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "login_modal"
       }
     },
     {
@@ -295,11 +427,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.304,
+          0.304,
+          0.304,
+          0.304,
+          0.304
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0006,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -318,11 +461,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.765,
+          0.765,
+          0.765,
+          0.765,
+          0.765
+        ],
+        "login_blocked": true,
+        "motion_mean_diff": 0.0013,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "login_modal"
       }
     },
     {
@@ -341,11 +495,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.314,
+          0.314,
+          0.314,
+          0.314,
+          0.314
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0004,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -364,11 +529,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.307,
+          0.307,
+          0.307,
+          0.307,
+          0.307
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0003,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -387,11 +563,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.35,
+          0.35,
+          0.35,
+          0.35,
+          0.35
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0005,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     },
     {
@@ -410,11 +597,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.542,
+          0.542,
+          0.548,
+          0.548,
+          0.548
+        ],
+        "login_blocked": true,
+        "motion_mean_diff": 0.001,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "login_modal"
       }
     },
     {
@@ -433,11 +631,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.37,
+          0.37,
+          0.37,
+          0.37,
+          0.37
+        ],
+        "login_blocked": true,
+        "motion_mean_diff": 0.0005,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "login_modal"
       }
     },
     {
@@ -456,11 +665,22 @@
       "voice_analysis": {
         "frames": 18,
         "duration_est_sec": 10.8,
+        "login_overlay_scores": [
+          0.328,
+          0.328,
+          0.328,
+          0.328,
+          0.328
+        ],
+        "login_blocked": false,
+        "motion_mean_diff": 0.0004,
         "subtitle_switch_ms": null,
         "switches_per_min": null,
         "words_per_minute_est": null,
         "change_peaks": 0,
-        "pace_label": "中"
+        "pace_label": "未证实",
+        "reliable": false,
+        "note": "static_slide"
       }
     }
   ]

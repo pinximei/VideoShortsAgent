@@ -1,0 +1,73 @@
+{
+  "generated_at": "2026-05-31T22:59:50.107921+00:00",
+  "disclaimer": "画面文字审计，不是 ASR 语速；speech_measurable=false 表示尚未有音轨证明",
+  "audited_count": 4,
+  "items": [
+    {
+      "video_id": "7618932620755291433",
+      "evidence": "research/motion/github_daily/captures/7618932620755291433/keyframes/key_03_055pct.png",
+      "login_modal_blocks": true,
+      "visible_slide_text": [
+        "GitHub 1.7万颗星",
+        "收藏飙增",
+        "每天一个GitHub热门产品"
+      ],
+      "subtitle_visible": false,
+      "content_style": "数据图表+黄字强调（幻灯片）",
+      "speech_measurable": false,
+      "title": "每天一个GitHub热门产品",
+      "url": "https://www.douyin.com/video/7618932620755291433",
+      "evidence_exists": true
+    },
+    {
+      "video_id": "7641485803578789172",
+      "evidence": "research/motion/github_daily/captures/7641485803578789172/keyframes/key_02_035pct.png",
+      "login_modal_blocks": true,
+      "visible_slide_text": [
+        "被低估的开源 AI Agent 项目",
+        "Pi AI Agent Toolkit",
+        "github.com/comet-works/pi",
+        "48.8K",
+        "MIT",
+        "TypeScript"
+      ],
+      "subtitle_visible": false,
+      "content_style": "浅底徽章+橙词「开源」+仓库头",
+      "speech_measurable": false,
+      "title": "Github项目推荐",
+      "url": "https://www.douyin.com/video/7641485803578789172",
+      "evidence_exists": true
+    },
+    {
+      "video_id": "7642633512055475313",
+      "evidence": "research/motion/github_daily/captures/7642633512055475313/keyframes/key_02_035pct.png",
+      "login_modal_blocks": true,
+      "visible_slide_text": [
+        "GitHub AI Skills 热榜 Top10"
+      ],
+      "subtitle_visible": true,
+      "subtitle_sample": "GitHub AI Skills热榜Top10来了，让我们看十月份的第一周，排位如何。",
+      "video_duration_label": "01:14",
+      "content_style": "黑底榜单+底字幕口播",
+      "speech_measurable": false,
+      "note": "字幕可见但无音轨，未测真实语速",
+      "title": "本周github skill前十",
+      "url": "https://www.douyin.com/video/7642633512055475313",
+      "evidence_exists": true
+    },
+    {
+      "video_id": "7642198364225948962",
+      "evidence": "research/motion/github_daily/captures/7642198364225948962/keyframes/key_02_035pct.png",
+      "login_modal_blocks": true,
+      "visible_slide_text": [
+        "每天一个优质项目"
+      ],
+      "subtitle_visible": false,
+      "content_style": "米白极简标题（幻灯）",
+      "speech_measurable": false,
+      "title": "github今日最快增长",
+      "url": "https://www.douyin.com/video/7642198364225948962",
+      "evidence_exists": true
+    }
+  ]
+}

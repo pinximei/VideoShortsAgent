@@ -1,0 +1,180 @@
+{
+  "generated_at": "2026-05-31T23:00:58.925440+00:00",
+  "tool": "download_reference_media.py",
+  "downloads": [
+    {
+      "video_id": "7618932620755291433",
+      "url": "https://www.douyin.com/video/7618932620755291433",
+      "platform": "douyin",
+      "ok": false,
+      "yt_dlp_code": 1,
+      "log_tail": "WARNING: [Douyin] 7618932620755291433: Failed to parse JSON: Expecting value in '': line 1 column 1 (char 0)\nERROR: [Douyin] 7618932620755291433: Fresh cookies (not necessarily logged in) are needed\n",
+      "note": "douyin_download_often_blocked"
+    },
+    {
+      "video_id": "7641485803578789172",
+      "url": "https://www.douyin.com/video/7641485803578789172",
+      "platform": "douyin",
+      "ok": false,
+      "yt_dlp_code": 1,
+      "log_tail": "WARNING: [Douyin] 7641485803578789172: Failed to parse JSON: Expecting value in '': line 1 column 1 (char 0)\nERROR: [Douyin] 7641485803578789172: Fresh cookies (not necessarily logged in) are needed\n",
+      "note": "douyin_download_often_blocked"
+    },
+    {
+      "video_id": "7642198364225948962",
+      "url": "https://www.douyin.com/video/7642198364225948962",
+      "platform": "douyin",
+      "ok": false,
+      "yt_dlp_code": 1,
+      "log_tail": "WARNING: [Douyin] 7642198364225948962: Failed to parse JSON: Expecting value in '': line 1 column 1 (char 0)\nERROR: [Douyin] 7642198364225948962: Fresh cookies (not necessarily logged in) are needed\n",
+      "note": "douyin_download_often_blocked"
+    },
+    {
+      "video_id": "7642633512055475313",
+      "url": "https://www.douyin.com/video/7642633512055475313",
+      "platform": "douyin",
+      "ok": false,
+      "yt_dlp_code": 1,
+      "log_tail": "WARNING: [Douyin] 7642633512055475313: Failed to parse JSON: Expecting value in '': line 1 column 1 (char 0)\nERROR: [Douyin] 7642633512055475313: Fresh cookies (not necessarily logged in) are needed\n",
+      "note": "douyin_download_often_blocked"
+    },
+    {
+      "video_id": "7641791711051647030",
+      "url": "https://www.douyin.com/video/7641791711051647030",
+      "platform": "douyin",
+      "ok": false,
+      "yt_dlp_code": 1,
+      "log_tail": "WARNING: [Douyin] 7641791711051647030: Failed to parse JSON: Expecting value in '': line 1 column 1 (char 0)\nERROR: [Douyin] 7641791711051647030: Fresh cookies (not necessarily logged in) are needed\n",
+      "note": "douyin_download_often_blocked"
+    },
+    {
+      "video_id": "7643092805896032739",
+      "url": "https://www.douyin.com/video/7643092805896032739",
+      "platform": "douyin",
+      "ok": false,
+      "yt_dlp_code": 1,
+      "log_tail": "WARNING: [Douyin] 7643092805896032739: Failed to parse JSON: Expecting value in '': line 1 column 1 (char 0)\nERROR: [Douyin] 7643092805896032739: Fresh cookies (not necessarily logged in) are needed\n",
+      "note": "douyin_download_often_blocked"
+    },
+    {
+      "video_id": "7643043013397623478",
+      "url": "https://www.douyin.com/video/7643043013397623478",
+      "platform": "douyin",
+      "ok": false,
+      "yt_dlp_code": 1,
+      "log_tail": "WARNING: [Douyin] 7643043013397623478: Failed to parse JSON: Expecting value in '': line 1 column 1 (char 0)\nERROR: [Douyin] 7643043013397623478: Fresh cookies (not necessarily logged in) are needed\n",
+      "note": "douyin_download_often_blocked"
+    },
+    {
+      "video_id": "7641861418416901414",
+      "url": "https://www.douyin.com/video/7641861418416901414",
+      "platform": "douyin",
+      "ok": false,
+      "yt_dlp_code": 1,
+      "log_tail": "WARNING: [Douyin] 7641861418416901414: Failed to parse JSON: Expecting value in '': line 1 column 1 (char 0)\nERROR: [Douyin] 7641861418416901414: Fresh cookies (not necessarily logged in) are needed\n",
+      "note": "douyin_download_often_blocked"
+    },
+    {
+      "video_id": "BVHgB7ZnPbcI",
+      "url": "https://www.bilibili.com/video/BVHgB7ZnPbcI",
+      "ok": false,
+      "log_tail": "ERROR: [BiliBili] HgB7ZnPbcI: Unable to download webpage: HTTP Error 404: Not Found (caused by <HTTPError 404: Not Found>)\n",
+      "yt_dlp_code": 1
+    },
+    {
+      "video_id": "BVHgBvVc9bBR",
+      "url": "https://www.bilibili.com/video/BVHgBvVc9bBR",
+      "ok": false,
+      "log_tail": "ERROR: [BiliBili] HgBvVc9bBR: Unable to download webpage: HTTP Error 404: Not Found (caused by <HTTPError 404: Not Found>)\n",
+      "yt_dlp_code": 1
+    },
+    {
+      "video_id": "BVHgB7VtdbBx",
+      "url": "https://www.bilibili.com/video/BVHgB7VtdbBx",
+      "ok": false,
+      "log_tail": "ERROR: [BiliBili] HgB7VtdbBx: Unable to download webpage: HTTP Error 404: Not Found (caused by <HTTPError 404: Not Found>)\n",
+      "yt_dlp_code": 1
+    },
+    {
+      "video_id": "BV9xiti9rNYq",
+      "url": "https://www.bilibili.com/video/BV9xiti9rNYq",
+      "ok": false,
+      "log_tail": "ERROR: [BiliBili] 9xiti9rNYq: Unable to download webpage: HTTP Error 404: Not Found (caused by <HTTPError 404: Not Found>)\n",
+      "yt_dlp_code": 1
+    },
+    {
+      "video_id": "BV1dU4y1e7N9",
+      "url": "https://www.bilibili.com/video/BV1dU4y1e7N9",
+      "ok": true,
+      "log_tail": "WARNING: [BiliBili] Subtitles are only available when logged in. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies\n2022 �� GitHub ��5�����Դ��Ϸ������֮�����ѿ���|||180.975\n",
+      "audio": "research/voice_content/media/BV1dU4y1e7N9/audio.m4a",
+      "title_downloaded": "2022 �� GitHub ��5�����Դ��Ϸ������֮�����ѿ���",
+      "duration_sec": 180.975,
+      "yt_dlp_code": 0
+    },
+    {
+      "video_id": "BV1o7411U7j6",
+      "url": "https://www.bilibili.com/video/BV1o7411U7j6",
+      "ok": false,
+      "log_tail": "WARNING: [BiliBili] Subtitles are only available when logged in. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies\n��򵥵�Github��������ͬʱ������Ŀ�Ľ̳�  ���������κ����������ɰ汾���� ͼ�λ����� �Զ��ϲ����� ̫������|||618.837\n",
+      "title_downloaded": "��򵥵�Github��������ͬʱ������Ŀ�Ľ̳�  ���������κ����������ɰ汾���� ͼ�λ����� �Զ��ϲ����� ̫������",
+      "duration_sec": 618.837,
+      "yt_dlp_code": 0
+    },
+    {
+      "video_id": "BV1UEVM6uEMA",
+      "url": "https://www.bilibili.com/video/BV1UEVM6uEMA",
+      "ok": false,
+      "log_tail": "WARNING: [BiliBili] Subtitles are only available when logged in. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies\ngithub��Դ��Ŀ��5.29��|||98.033\n",
+      "title_downloaded": "github��Դ��Ŀ��5.29��",
+      "duration_sec": 98.033,
+      "yt_dlp_code": 0
+    },
+    {
+      "video_id": "BV1YQ3nztEuL",
+      "url": "https://www.bilibili.com/video/BV1YQ3nztEuL",
+      "ok": false,
+      "log_tail": "WARNING: [BiliBili] Subtitles are only available when logged in. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies\nÿ����ʶһ���������Դ��Ŀ����13�ڡ����������������ɱ�����˲���/��ҵ������ ÿ��������ǧҳ�棬�ȴ�ͳ���߿�10���� 300+����һ���л�|||65.921\n",
+      "title_downloaded": "ÿ����ʶһ���������Դ��Ŀ����13�ڡ����������������ɱ�����˲���/��ҵ������ ÿ��������ǧҳ�棬�ȴ�ͳ���߿�10���� 300+����һ���л�",
+      "duration_sec": 65.921,
+      "yt_dlp_code": 0
+    },
+    {
+      "video_id": "BV1R8Vn6JEWH",
+      "url": "https://www.bilibili.com/video/BV1R8Vn6JEWH",
+      "ok": false,
+      "log_tail": "WARNING: [BiliBili] Subtitles are only available when logged in. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies\nGitHub����������Ŀ�������ղر��ã�|||70.031\n",
+      "title_downloaded": "GitHub����������Ŀ�������ղر��ã�",
+      "duration_sec": 70.031,
+      "yt_dlp_code": 0
+    },
+    {
+      "video_id": "BV1TN41167Ep",
+      "url": "https://www.bilibili.com/video/BV1TN41167Ep",
+      "ok": false,
+      "log_tail": "WARNING: [BiliBili] Subtitles are only available when logged in. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies\nGitHub����Щ�����Ȥ��Ӣ��ѧϰ��Ŀ|||299.348\n",
+      "title_downloaded": "GitHub����Щ�����Ȥ��Ӣ��ѧϰ��Ŀ",
+      "duration_sec": 299.348,
+      "yt_dlp_code": 0
+    },
+    {
+      "video_id": "BV1VK411h7Zb",
+      "url": "https://www.bilibili.com/video/BV1VK411h7Zb",
+      "ok": false,
+      "log_tail": "WARNING: [BiliBili] Subtitles are only available when logged in. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies\nmatlabС����ο�������GitHub�еĿ�Դmatlab��Ŀ���������Ƶ���а���Ŷ|||117.306\n",
+      "title_downloaded": "matlabС����ο�������GitHub�еĿ�Դmatlab��Ŀ���������Ƶ���а���Ŷ",
+      "duration_sec": 117.306,
+      "yt_dlp_code": 0
+    },
+    {
+      "video_id": "BV15zV46BE6w",
+      "url": "https://www.bilibili.com/video/BV15zV46BE6w",
+      "ok": false,
+      "log_tail": "WARNING: [BiliBili] Subtitles are only available when logged in. Use --cookies-from-browser or --cookies for the authentication. See  https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp  for how to manually pass cookies\nGitHub��Դ��Ŀ��5.29��|||95.833\n",
+      "title_downloaded": "GitHub��Դ��Ŀ��5.29��",
+      "duration_sec": 95.833,
+      "yt_dlp_code": 0
+    }
+  ],
+  "ok_count": 1
+}

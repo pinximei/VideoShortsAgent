@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-05-31T22:59:51.419206+00:00",
+  "videos": [
+    {
+      "video_id": "BV1dU4y1e7N9",
+      "audio": "research/voice_content/media/BV1dU4y1e7N9/audio.m4a",
+      "measurable": true,
+      "audio_duration_sec": 180.98,
+      "silence_total_sec": 2.27,
+      "speech_active_sec": 178.71,
+      "speech_ratio": 0.987,
+      "silence_gaps": 5,
+      "method": "ffmpeg_silencedetect_-35dB"
+    }
+  ]
+}

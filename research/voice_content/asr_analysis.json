@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-05-31T22:58:34.762148+00:00",
+  "tool": "analyze_voice_from_asr.py",
+  "measurable_count": 0,
+  "videos": [
+    {
+      "video_id": "BV1dU4y1e7N9",
+      "measurable": false,
+      "error": "Got: ConnectError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。\nAn error happened while trying to locate the files on the Hub and we cannot find the appropriate snapshot folder for the specified revision on the local disk. Please check your internet connection and try again."
+    }
+  ]
+}

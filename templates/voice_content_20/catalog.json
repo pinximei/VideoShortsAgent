@@ -12,11 +12,29 @@
       "sentence_pause_sec": 0.12,
       "words_per_minute": 280,
       "subtitle_switch_ms": 450,
-      "total_chars": [200, 240],
-      "slide_chars": {"title_card": [28, 45], "content_card": [45, 65], "cta_card": [22, 35]},
+      "total_chars": [
+        200,
+        240
+      ],
+      "slide_chars": {
+        "title_card": [
+          28,
+          45
+        ],
+        "content_card": [
+          45,
+          65
+        ],
+        "cta_card": [
+          22,
+          35
+        ]
+      },
       "hook_pattern": "别划走|你绝对不知道|刚刚",
       "tone": "急促、反问、第一人称",
-      "outline_hint": "第1镜3秒钩子→项目名+数字→2个痛点→Star/关注"
+      "outline_hint": "第1镜3秒钩子→项目名+数字→2个痛点→Star/关注",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V02_tiktok_follow_punch",
@@ -26,10 +44,28 @@
       "sentence_pause_sec": 0.15,
       "words_per_minute": 240,
       "subtitle_switch_ms": 550,
-      "total_chars": [180, 220],
-      "slide_chars": {"title_card": [24, 38], "content_card": [40, 58], "cta_card": [20, 32]},
+      "total_chars": [
+        180,
+        220
+      ],
+      "slide_chars": {
+        "title_card": [
+          24,
+          38
+        ],
+        "content_card": [
+          40,
+          58
+        ],
+        "cta_card": [
+          20,
+          32
+        ]
+      },
       "hook_pattern": "今天这个|一分钟|讲清",
-      "tone": "口语、短句、每句≤12字"
+      "tone": "口语、短句、每句≤12字",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V03_top10_listing",
@@ -39,9 +75,14 @@
       "sentence_pause_sec": 0.18,
       "words_per_minute": 260,
       "subtitle_switch_ms": 700,
-      "total_chars": [210, 250],
+      "total_chars": [
+        210,
+        250
+      ],
       "hook_pattern": "Top10|前十|本周",
-      "tone": "序号感、排比"
+      "tone": "序号感、排比",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V04_minimal_calm",
@@ -51,9 +92,14 @@
       "sentence_pause_sec": 0.28,
       "words_per_minute": 200,
       "subtitle_switch_ms": 900,
-      "total_chars": [160, 200],
+      "total_chars": [
+        160,
+        200
+      ],
       "hook_pattern": "每天一个|优质项目",
-      "tone": "平静、可信、少形容词"
+      "tone": "平静、可信、少形容词",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V05_badge_authority",
@@ -63,9 +109,14 @@
       "sentence_pause_sec": 0.22,
       "words_per_minute": 220,
       "subtitle_switch_ms": 800,
-      "total_chars": [190, 230],
+      "total_chars": [
+        190,
+        230
+      ],
       "hook_pattern": "Star|MIT|开源",
-      "tone": "数字前置、机构背书"
+      "tone": "数字前置、机构背书",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V06_chart_story",
@@ -75,9 +126,14 @@
       "sentence_pause_sec": 0.2,
       "words_per_minute": 250,
       "subtitle_switch_ms": 750,
-      "total_chars": [200, 240],
+      "total_chars": [
+        200,
+        240
+      ],
       "hook_pattern": "暴涨|增长|破万",
-      "tone": "趋势叙事"
+      "tone": "趋势叙事",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V07_glitch_tease",
@@ -87,9 +143,14 @@
       "sentence_pause_sec": 0.14,
       "words_per_minute": 270,
       "subtitle_switch_ms": 500,
-      "total_chars": [190, 230],
+      "total_chars": [
+        190,
+        230
+      ],
       "hook_pattern": "又炸了|离谱|绝了",
-      "tone": "夸张但具体"
+      "tone": "夸张但具体",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V08_terminal_dev",
@@ -99,9 +160,14 @@
       "sentence_pause_sec": 0.25,
       "words_per_minute": 210,
       "subtitle_switch_ms": 1000,
-      "total_chars": [170, 210],
+      "total_chars": [
+        170,
+        210
+      ],
       "hook_pattern": "clone|README|一行命令",
-      "tone": "技术黑话适度"
+      "tone": "技术黑话适度",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V09_split_demo",
@@ -110,9 +176,14 @@
       "edge_tts_rate": "+10%",
       "sentence_pause_sec": 0.2,
       "words_per_minute": 230,
-      "total_chars": [185, 225],
+      "total_chars": [
+        185,
+        225
+      ],
       "hook_pattern": "看这个界面|左边|右边",
-      "tone": "指示性强"
+      "tone": "指示性强",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V10_glass_three_points",
@@ -121,9 +192,14 @@
       "edge_tts_rate": "+9%",
       "sentence_pause_sec": 0.24,
       "words_per_minute": 215,
-      "total_chars": [180, 220],
+      "total_chars": [
+        180,
+        220
+      ],
       "hook_pattern": "第一|第二|第三",
-      "tone": "清单体"
+      "tone": "清单体",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V11_word_slam_energy",
@@ -133,9 +209,14 @@
       "sentence_pause_sec": 0.1,
       "words_per_minute": 290,
       "subtitle_switch_ms": 400,
-      "total_chars": [200, 250],
+      "total_chars": [
+        200,
+        250
+      ],
       "hook_pattern": "快|狠|准",
-      "tone": "极短句连发"
+      "tone": "极短句连发",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V12_phrase_pages",
@@ -145,9 +226,14 @@
       "sentence_pause_sec": 0.3,
       "words_per_minute": 205,
       "subtitle_switch_ms": 1000,
-      "total_chars": [175, 215],
+      "total_chars": [
+        175,
+        215
+      ],
       "hook_pattern": "分三步|听我说",
-      "tone": "每页4词以内"
+      "tone": "每页4词以内",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V13_marquee_news",
@@ -156,9 +242,14 @@
       "edge_tts_rate": "+15%",
       "sentence_pause_sec": 0.16,
       "words_per_minute": 265,
-      "total_chars": [195, 235],
+      "total_chars": [
+        195,
+        235
+      ],
       "hook_pattern": "刚刚|突发|更新",
-      "tone": "新闻播报"
+      "tone": "新闻播报",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V14_shake_keyword",
@@ -167,9 +258,14 @@
       "edge_tts_rate": "+13%",
       "sentence_pause_sec": 0.18,
       "words_per_minute": 255,
-      "total_chars": [190, 230],
+      "total_chars": [
+        190,
+        230
+      ],
       "hook_pattern": "重点来了|记住",
-      "tone": "关键词重复2次"
+      "tone": "关键词重复2次",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V15_star_odometer",
@@ -178,9 +274,14 @@
       "edge_tts_rate": "+11%",
       "sentence_pause_sec": 0.2,
       "words_per_minute": 245,
-      "total_chars": [200, 240],
+      "total_chars": [
+        200,
+        240
+      ],
       "hook_pattern": "Star|星标|万人",
-      "tone": "数字递进"
+      "tone": "数字递进",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V16_soft_purple_story",
@@ -189,9 +290,14 @@
       "edge_tts_rate": "+7%",
       "sentence_pause_sec": 0.26,
       "words_per_minute": 215,
-      "total_chars": [175, 210],
+      "total_chars": [
+        175,
+        210
+      ],
       "hook_pattern": "为什么火|适合谁",
-      "tone": "种草不硬广"
+      "tone": "种草不硬广",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V17_code_rain_hook",
@@ -200,9 +306,14 @@
       "edge_tts_rate": "+5%",
       "sentence_pause_sec": 0.28,
       "words_per_minute": 200,
-      "total_chars": [165, 200],
+      "total_chars": [
+        165,
+        200
+      ],
       "hook_pattern": "开发者|仓库",
-      "tone": "冷静克制"
+      "tone": "冷静克制",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V18_cta_star_push",
@@ -211,9 +322,14 @@
       "edge_tts_rate": "+12%",
       "sentence_pause_sec": 0.2,
       "words_per_minute": 240,
-      "total_chars": [185, 225],
+      "total_chars": [
+        185,
+        225
+      ],
       "hook_pattern": "点个Star|评论区",
-      "tone": "CTA前置"
+      "tone": "CTA前置",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V19_daily_episode",
@@ -222,9 +338,14 @@
       "edge_tts_rate": "+10%",
       "sentence_pause_sec": 0.22,
       "words_per_minute": 230,
-      "total_chars": [190, 230],
+      "total_chars": [
+        190,
+        230
+      ],
       "hook_pattern": "第\\d+期|日更",
-      "tone": "系列粘性"
+      "tone": "系列粘性",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     },
     {
       "id": "V20_clean_badge_friend",
@@ -233,9 +354,15 @@
       "edge_tts_rate": "+6%",
       "sentence_pause_sec": 0.25,
       "words_per_minute": 210,
-      "total_chars": [170, 210],
+      "total_chars": [
+        170,
+        210
+      ],
       "hook_pattern": "安利|自用|真心",
-      "tone": "像朋友聊天"
+      "tone": "像朋友聊天",
+      "validated": false,
+      "validation_note": "pending: need ASR or reliable subtitle diff per reference video"
     }
-  ]
+  ],
+  "catalog_status": "PLACEHOLDER_NOT_FROM_MEASUREMENT"
 }

@@ -1,0 +1,23 @@
+{
+  "text": "别划走，今天这个 GitHub 项目 Star 涨了一万，评论区扣一要链接。",
+  "samples": [
+    {
+      "rate": "+0%",
+      "chars": 38,
+      "duration_sec": 5.88,
+      "mp3": "research/voice_content/ours_tts/sample_+0p.mp3"
+    },
+    {
+      "rate": "+10%",
+      "chars": 38,
+      "duration_sec": 5.352,
+      "mp3": "research/voice_content/ours_tts/sample_+10p.mp3"
+    },
+    {
+      "rate": "+18%",
+      "chars": 38,
+      "duration_sec": 4.992,
+      "mp3": "research/voice_content/ours_tts/sample_+18p.mp3"
+    }
+  ]
+}

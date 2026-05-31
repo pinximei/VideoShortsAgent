@@ -77,9 +77,29 @@ def harvest_more_ids(page, queries: list[str], limit: int = 20) -> list[str]:
     return list(seen)[:limit]
 
 
-def capture_one(page, vid: str, out_dir: Path, frames: int, interval_ms: int) -> int:
+def _dismiss_login(page) -> None:
+    """尽量关掉登录弹窗，避免整页截图污染抽帧。"""
+    for sel in (
+        'button:has-text("关闭")',
+        '[aria-label="关闭"]',
+        '.dy-account-close',
+        'div[class*="close"]',
+    ):
+        try:
+            page.locator(sel).first.click(timeout=800)
+            page.wait_for_timeout(500)
+        except Exception:
+            pass
+    try:
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(400)
+    except Exception:
+        pass
+
+
+def capture_one(page, vid: str, out_dir: Path, frames: int, interval_ms: int, *, force: bool = False) -> int:
     key_dir = out_dir / "keyframes"
-    if key_dir.is_dir() and len(list(key_dir.glob("*.png"))) >= 6:
+    if not force and key_dir.is_dir() and len(list(key_dir.glob("*.png"))) >= 6:
         print(f"  skip {vid} (keyframes exist)")
         return 6
 
@@ -88,16 +108,21 @@ def capture_one(page, vid: str, out_dir: Path, frames: int, interval_ms: int) ->
     print(f"[capture] {vid}")
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=90000)
-        page.wait_for_timeout(4000)
+        page.wait_for_timeout(5000)
+        _dismiss_login(page)
+        video = page.locator("video").first
         try:
-            page.locator("video").first.click(timeout=2000)
+            video.click(timeout=3000)
         except Exception:
             pass
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(1500)
         count = 0
         for i in range(frames):
             fp = out_dir / f"f_{i:04d}.png"
-            page.screenshot(path=str(fp), full_page=False)
+            try:
+                video.screenshot(path=str(fp), timeout=5000)
+            except Exception:
+                page.screenshot(path=str(fp), full_page=False)
             count += 1
             page.wait_for_timeout(interval_ms)
         _extract_keyframes(out_dir, key_dir)
@@ -115,6 +140,8 @@ def main() -> int:
     ap.add_argument("--interval-ms", type=int, default=600)
     ap.add_argument("--harvest-search", action="store_true", help="先搜索补全 corpus 至 20 条")
     ap.add_argument("--video-id", action="append", default=[])
+    ap.add_argument("--force", action="store_true", help="覆盖已有 keyframes")
+    ap.add_argument("--out-subdir", default="", help="如 captures_v2 写入子目录")
     args = ap.parse_args()
 
     try:
@@ -158,10 +185,11 @@ def main() -> int:
             items = _load_corpus(args.corpus)
             print(f"corpus now {len(items)} videos")
 
+        cap_root = GITHUB_DAILY / (args.out_subdir or "captures")
         for v in items[:20]:
             vid = str(v["id"])
-            cap_dir = GITHUB_DAILY / "captures" / vid
-            n = capture_one(page, vid, cap_dir, args.frames, args.interval_ms)
+            cap_dir = cap_root / vid
+            n = capture_one(page, vid, cap_dir, args.frames, args.interval_ms, force=args.force)
             kf = sorted((cap_dir / "keyframes").glob("*.png")) if (cap_dir / "keyframes").is_dir() else []
             report_entries.append(
                 {

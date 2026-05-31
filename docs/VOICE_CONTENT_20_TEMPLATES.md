@@ -1,6 +1,8 @@
 # 口播/文案 20 套模板（V01–V20）
 
-> 生成：2026-05-31T22:37:03.286388+00:00
+> **⚠️ 未验证占位**：`catalog.json` 中 `validated: false`；WPM/rate 不是从 20 条爆款实测得出。  
+> 请看 **`docs/VOICE_CONTENT_PROOF_REPORT.md`** 了解目前已证明什么。
+
 > 机器目录：`templates/voice_content_20/catalog.json`
 
 ## 与画面模板关系

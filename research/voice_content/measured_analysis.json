@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-05-31T23:00:59.578561+00:00",
+  "tool": "analyze_voice_from_media.py",
+  "measurable_count": 0,
+  "videos": [
+    {
+      "video_id": "BV1dU4y1e7N9",
+      "source": "media",
+      "measurable": false,
+      "audio_duration_sec": 180.98
+    }
+  ]
+}
