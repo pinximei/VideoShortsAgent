@@ -243,6 +243,7 @@ class RenderSlidesSkill:
             "statValue": str(slide.get("stat_value") or ""),
             "showKineticWall": bool(slide.get("show_kinetic_wall", False)),
             "midIcon": str(slide.get("mid_icon") or ""),
+            "midEffect": str(slide.get("mid_effect") or "auto"),
             "hookBeats": list(slide.get("hook_beats") or []),
         }
         if sentences:

@@ -217,7 +217,7 @@ def build_github_daily_slide_plan(
     mparams = dict(picked.get("motion_params") or {})
     plan: list[dict[str, Any]] = []
     platform = str(brief.get("platform") or "").strip().lower()
-    cap_ms = 500 if platform == "douyin" else int(style.get("wordsPerPageMs", 800))
+    cap_ms = 2400 if platform == "douyin" else int(style.get("wordsPerPageMs", 800))
     for i, slide in enumerate(slides):
         st = str(slide.get("type") or "content_card")
         if slide.get("motion_profile"):

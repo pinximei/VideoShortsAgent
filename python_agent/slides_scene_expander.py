@@ -99,6 +99,8 @@ def _expand_content_scenes(
         ns["css_decorations"] = list(css_list[si % len(css_list)])
         ns["transition_to_next"] = trans[min(scene_i + 1, len(trans) - 1)]
         ns["mid_screen_kinetic"] = False
+        effects = ("glow_ring", "typewriter", "particle_dust", "bracket_slam", "glow_scan")
+        ns["mid_effect"] = effects[scene_i % len(effects)]
         scene_i += 1
         out.append(ns)
     return out, scene_i

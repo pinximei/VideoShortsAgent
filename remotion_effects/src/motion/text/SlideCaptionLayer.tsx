@@ -45,7 +45,8 @@ export const SlideCaptionLayer: React.FC<Props> = ({
         <TikTokActiveCaption
           words={sentences.map((s) => ({text: s.text + ' ', start: s.start, end: s.end}))}
           profile={motionProfile}
-          wordsPerPageMs={motionParams.wordsPerPageMs ?? 800}
+          wordsPerPageMs={motionParams.wordsPerPageMs ?? 2400}
+          maxCharsPerPage={motionParams.maxCharsPerPage ?? 18}
           accentColor={accentColor}
         />
       ) : (

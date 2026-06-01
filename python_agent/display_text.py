@@ -1,77 +1,127 @@
-"""屏显与底栏字幕：单行、跟口播时间轴；标题/要点短截断；tts_text 不裁。"""
+"""屏显与底栏字幕：按语义整句/分句切分，禁止半个词或半句话拆到两页。"""
 from __future__ import annotations
 
 import re
 from typing import Any
 
-# 底栏单行安全字数（与 CaptionOverlay 动态字号对齐）
-CAPTION_LINE_MAX_CHARS = 12
-CAPTION_LINE_MAX_CHARS_DOUYIN = 10
-HEADING_MAX_CHARS = 14
-BULLET_MAX_CHARS = 20
-BULLET_MAX_COUNT = 4
-HOOK_MAX_CHARS = 16
+# 底栏单行：抖音略短但仍要完整语义单位（≥6 字优先）
+CAPTION_LINE_MAX_CHARS = 22
+CAPTION_LINE_MAX_CHARS_DOUYIN = 18
+TIKTOK_PHRASE_MAX_CHARS = 18
+TIKTOK_PHRASE_MIN_CHARS = 6
+HEADING_MAX_CHARS = 28
+HEADING_MAX_CHARS_LEGACY = 14
+BULLET_MAX_CHARS = 36
+BULLET_MAX_COUNT = 5
+HOOK_MAX_CHARS = 22
+
+_CLAUSE_END = re.compile(r"[。！？；\n]")
+_SOFT_BREAK = re.compile(r"[，,、]")
 
 
 def _plain(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip())
 
 
-def _split_fixed_chunks(text: str, *, max_chars: int) -> list[str]:
-    """无标点时按字数切分为单行片段。"""
+def _merge_orphan_fragments(phrases: list[str], *, min_len: int = 4) -> list[str]:
+    """把过短碎片并到上一段，避免「一个词拆两页」。"""
+    if not phrases:
+        return []
+    out: list[str] = []
+    for p in phrases:
+        p = _plain(p)
+        if not p:
+            continue
+        if out and len(p) < min_len:
+            out[-1] = _plain(out[-1] + p)
+        elif out and len(out[-1]) < min_len:
+            out[-1] = _plain(out[-1] + p)
+        else:
+            out.append(p)
+    return out
+
+
+def split_spoken_clauses(text: str, *, max_chars: int = CAPTION_LINE_MAX_CHARS) -> list[str]:
+    """
+    只按句号/问号/叹号/分号切大句；超长分句才按逗号拆，禁止固定字数硬切词。
+    """
     t = _plain(text)
     if not t:
         return []
     if len(t) <= max_chars:
         return [t]
+
+    clauses = [c.strip() for c in _CLAUSE_END.split(t) if c.strip()]
+    if not clauses:
+        clauses = [t]
+
     out: list[str] = []
-    i = 0
-    while i < len(t):
-        chunk = t[i : i + max_chars]
-        if len(chunk) < max_chars:
-            out.append(chunk)
-            break
-        break_at = -1
-        for p in "，,。！？；;、 ":
-            pos = chunk.rfind(p)
-            if pos > max_chars // 3:
-                break_at = pos + 1
-                break
-        if break_at > 0:
-            out.append(chunk[:break_at].strip())
-            i += break_at
-        else:
-            out.append(chunk)
-            i += max_chars
-    return [x for x in out if x]
+    for clause in clauses:
+        if len(clause) <= max_chars:
+            out.append(clause)
+            continue
+        parts = [p.strip() for p in _SOFT_BREAK.split(clause) if p.strip()]
+        if len(parts) <= 1:
+            out.append(clause[:max_chars])
+            continue
+        buf = ""
+        for part in parts:
+            candidate = _plain(buf + part) if buf else part
+            if len(candidate) <= max_chars:
+                buf = candidate
+            else:
+                if buf:
+                    out.append(buf)
+                buf = part if len(part) <= max_chars else part[:max_chars]
+        if buf:
+            out.append(buf)
+
+    return _merge_orphan_fragments(out, min_len=TIKTOK_PHRASE_MIN_CHARS // 2)
 
 
 def split_spoken_phrases(text: str, *, max_chars: int = CAPTION_LINE_MAX_CHARS) -> list[str]:
-    """拆成口播/底栏同步用的单行字幕（每段对应一次 TTS + 一屏一行）。"""
-    t = _plain(text)
-    if not t:
-        return []
-    parts = re.split(r"[。！？；\n]+", t)
-    parts = [p.strip() for p in parts if p.strip()]
-    if not parts:
-        parts = [t]
-    out: list[str] = []
-    for part in parts:
-        if len(part) <= max_chars:
-            out.append(part)
+    """口播/底栏同步：语义分句（兼容旧调用）。"""
+    return split_spoken_clauses(text, max_chars=max_chars)
+
+
+def split_tiktok_caption_sentences(
+    sentences: list[dict[str, Any]],
+    *,
+    max_chars: int = TIKTOK_PHRASE_MAX_CHARS,
+) -> list[dict[str, Any]]:
+    """抖音底栏：每页一条完整语义短语，按 TTS 时间轴比例切分。"""
+    out: list[dict[str, Any]] = []
+    for seg in sentences or []:
+        text = _plain(str(seg.get("text", "") or ""))
+        if not text:
             continue
-        sub = re.split(r"[，,、]+", part)
-        sub = [s.strip() for s in sub if s.strip()]
-        if len(sub) > 1:
-            for s in sub:
-                out.extend(
-                    _split_fixed_chunks(s, max_chars=max_chars)
-                    if len(s) > max_chars
-                    else [s]
-                )
-        else:
-            out.extend(_split_fixed_chunks(part, max_chars=max_chars))
-    return out if out else [t]
+        start = float(seg.get("start", 0))
+        end = float(seg.get("end", start + 1))
+        dur = max(0.35, end - start)
+        phrases = split_spoken_clauses(text, max_chars=max_chars)
+        phrases = _merge_orphan_fragments(phrases, min_len=4)
+        if not phrases:
+            continue
+        if len(phrases) == 1:
+            out.append({"text": phrases[0], "start": start, "end": end})
+            continue
+        total = sum(max(1, len(p)) for p in phrases)
+        t0 = start
+        for i, p in enumerate(phrases):
+            frac = max(1, len(p)) / total
+            t1 = end if i == len(phrases) - 1 else t0 + dur * frac
+            out.append({"text": p, "start": round(t0, 3), "end": round(t1, 3)})
+            t0 = t1
+    return out
+
+
+def split_caption_sentences(
+    sentences: list[dict[str, Any]],
+    *,
+    max_chars: int | None = None,
+) -> list[dict[str, Any]]:
+    cap = max_chars or CAPTION_LINE_MAX_CHARS
+    return split_tiktok_caption_sentences(sentences, max_chars=cap)
 
 
 def fit_heading(text: str, *, max_chars: int = HEADING_MAX_CHARS) -> str:
@@ -101,11 +151,14 @@ def fit_bullets(bullets: list[Any], *, max_items: int = BULLET_MAX_COUNT) -> lis
     return out
 
 
-def fit_slide_for_display(slide: dict[str, Any]) -> dict[str, Any]:
-    """就地规范化单镜屏显字段（不改 tts_text）。"""
+def fit_slide_for_display(slide: dict[str, Any], *, legacy_compact: bool = False) -> dict[str, Any]:
     s = dict(slide)
+    use_legacy = legacy_compact or not (
+        s.get("github_daily_style_id") or s.get("motion_profile")
+    )
+    hmax = HEADING_MAX_CHARS_LEGACY if use_legacy else HEADING_MAX_CHARS
     if s.get("heading"):
-        s["heading"] = fit_heading(str(s["heading"]))
+        s["heading"] = fit_heading(str(s["heading"]), max_chars=hmax)
     if s.get("hook_text"):
         s["hook_text"] = fit_hook(str(s["hook_text"]))
     if s.get("subheading"):
@@ -124,37 +177,7 @@ def fit_slide_for_display(slide: dict[str, Any]) -> dict[str, Any]:
     return s
 
 
-def split_caption_sentences(
-    sentences: list[dict[str, Any]],
-    *,
-    max_chars: int | None = None,
-) -> list[dict[str, Any]]:
-    """长句按时轴均分为多段单行字幕，与口播进度对齐（不含换行符）。"""
-    cap = max_chars or CAPTION_LINE_MAX_CHARS
-    out: list[dict[str, Any]] = []
-    for seg in sentences or []:
-        text = _plain(str(seg.get("text", "") or ""))
-        if not text:
-            continue
-        start = float(seg.get("start", 0))
-        end = float(seg.get("end", start + 1))
-        dur = max(0.25, end - start)
-        phrases = split_spoken_phrases(text, max_chars=cap)
-        if len(phrases) <= 1:
-            out.append({"text": phrases[0] if phrases else text, "start": start, "end": end})
-            continue
-        total = sum(max(1, len(p)) for p in phrases)
-        t0 = start
-        for i, p in enumerate(phrases):
-            frac = max(1, len(p)) / total
-            t1 = end if i == len(phrases) - 1 else t0 + dur * frac
-            out.append({"text": p, "start": round(t0, 3), "end": round(t1, 3)})
-            t0 = t1
-    return out
-
-
 def caption_font_size_for_text(text: str, *, base: int = 52, min_size: int = 30) -> int:
-    """单行底栏字号（字越多越小，保证一行内显示）。"""
     n = len(_plain(text))
     if n <= 8:
         return base

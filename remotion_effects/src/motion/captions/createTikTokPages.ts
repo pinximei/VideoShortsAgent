@@ -1,6 +1,5 @@
 /**
- * 与 @remotion/captions createTikTokStyleCaptions 同逻辑（预研对齐官方源码）
- * https://github.com/remotion-dev/remotion/blob/main/packages/captions/src/create-tiktok-style-captions.ts
+ * TikTok 字幕分页：时间间隙 + 每页字数上限，避免半句话拆两页。
  */
 export type CaptionToken = {text: string; fromMs: number; toMs: number};
 export type CaptionPage = {
@@ -19,8 +18,9 @@ export function wordsToCaptions(words: WordInput[]): Array<{
 }> {
   const out: Array<{text: string; startMs: number; endMs: number}> = [];
   for (const w of words) {
-    const t = w.text;
-    const needsSpace = t.length > 0 && !t.startsWith(' ') && out.length > 0;
+    const t = (w.text || '').trim();
+    if (!t) continue;
+    const needsSpace = out.length > 0 && !/[\s，,、]$/.test(out[out.length - 1].text);
     out.push({
       text: needsSpace ? ` ${t}` : t,
       startMs: Math.round(w.start * 1000),
@@ -30,9 +30,14 @@ export function wordsToCaptions(words: WordInput[]): Array<{
   return out;
 }
 
+function visibleLen(s: string): number {
+  return s.replace(/\s/g, '').length;
+}
+
 export function createTikTokPages(
   captions: Array<{text: string; startMs: number; endMs: number}>,
   combineTokensWithinMilliseconds: number,
+  maxCharsPerPage: number = 18,
 ): CaptionPage[] {
   const pages: CaptionPage[] = [];
   let currentText = '';
@@ -40,7 +45,8 @@ export function createTikTokPages(
   let currentFrom = 0;
   let currentTo = 0;
 
-  const add = () => {
+  const flush = () => {
+    if (!currentText.trim()) return;
     pages.push({
       text: currentText.trimStart(),
       startMs: currentFrom,
@@ -53,36 +59,43 @@ export function createTikTokPages(
     }
   };
 
+  const shouldBreakPage = (item: {startMs: number; endMs: number; text: string}) => {
+    if (!currentText.trim()) return false;
+    const gap = item.startMs - currentTo;
+    const nextLen = visibleLen(currentText + item.text);
+    if (gap > combineTokensWithinMilliseconds) return true;
+    if (nextLen > maxCharsPerPage) return true;
+    return false;
+  };
+
   captions.forEach((item, index) => {
-    const {text} = item;
-    if (
-      text.startsWith(' ') &&
-      currentTo - currentFrom > combineTokensWithinMilliseconds
-    ) {
-      if (currentText !== '') add();
-      currentText = text.trimStart();
-      currentTokens = [{text: currentText, fromMs: item.startMs, toMs: item.endMs}].filter(
-        (t) => t.text !== '',
-      );
+    const piece = item.text.trim();
+    if (!piece) return;
+
+    if (shouldBreakPage(item)) {
+      flush();
+      currentText = piece;
+      currentTokens = [{text: piece, fromMs: item.startMs, toMs: item.endMs}];
       currentFrom = item.startMs;
       currentTo = item.endMs;
     } else {
-      if (currentText === '') currentFrom = item.startMs;
-      currentText += text;
-      currentText = currentText.trimStart();
-      if (text.trim() !== '') {
-        currentTokens.push({
-          text: currentTokens.length === 0 ? currentText.trimStart() : text,
-          fromMs: item.startMs,
-          toMs: item.endMs,
-        });
-      }
+      if (!currentText) currentFrom = item.startMs;
+      const sep = currentText && !currentText.endsWith(' ') ? ' ' : '';
+      currentText += sep + piece;
+      currentTokens.push({
+        text: currentTokens.length === 0 ? piece : (sep ? ' ' : '') + piece,
+        fromMs: item.startMs,
+        toMs: item.endMs,
+      });
       currentTo = item.endMs;
     }
-    if (index === captions.length - 1 && currentText !== '') {
-      add();
-      pages[pages.length - 1].durationMs =
-        currentTo - pages[pages.length - 1].startMs;
+
+    if (index === captions.length - 1) {
+      flush();
+      if (pages.length) {
+        pages[pages.length - 1].durationMs =
+          currentTo - pages[pages.length - 1].startMs;
+      }
     }
   });
 

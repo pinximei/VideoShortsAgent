@@ -22,14 +22,16 @@ interface Props {
   words: Word[];
   profile?: string;
   wordsPerPageMs?: number;
+  maxCharsPerPage?: number;
   accentColor?: string;
 }
 
 export const TikTokActiveCaption: React.FC<Props> = ({
   words,
   profile,
-  wordsPerPageMs = 1200,
+  wordsPerPageMs = 2400,
   accentColor = '#FF9F43',
+  maxCharsPerPage = 18,
 }) => {
   const highlightColor = accentColor || DEFAULT_HIGHLIGHT;
   const frame = useCurrentFrame();
@@ -37,8 +39,8 @@ export const TikTokActiveCaption: React.FC<Props> = ({
 
   const pages: CaptionPage[] = useMemo(() => {
     const caps = wordsToCaptions(words);
-    return createTikTokPages(caps, wordsPerPageMs);
-  }, [words, wordsPerPageMs]);
+    return createTikTokPages(caps, wordsPerPageMs, maxCharsPerPage);
+  }, [words, wordsPerPageMs, maxCharsPerPage]);
 
   const timeMs = (frame / fps) * 1000;
   let page: CaptionPage | null = pages[0] ?? null;

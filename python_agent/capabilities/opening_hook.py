@@ -320,7 +320,8 @@ def enforce_opening_hook_on_slides_script(
         mp["staggerFrames"] = 2
         mp["springStiffness"] = 220
         mp["springDamping"] = 9
-        mp["wordsPerPageMs"] = 380
+        mp["wordsPerPageMs"] = 2400
+        mp["maxCharsPerPage"] = 18
         s0["motion_params"] = mp
         s0["caption_mode"] = s0.get("caption_mode") or "tiktok"
 

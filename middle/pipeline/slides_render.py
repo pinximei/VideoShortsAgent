@@ -128,7 +128,8 @@ def _apply_platform_gv_to_slides(
             if platform_id == "douyin":
                 s["caption_mode"] = "tiktok"
                 mp = dict(s.get("motion_params") or {})
-                mp.setdefault("wordsPerPageMs", 420)
+                mp.setdefault("wordsPerPageMs", 2400)
+                mp.setdefault("maxCharsPerPage", 18)
                 s["motion_params"] = mp
                 s["background_color"] = s.get("background_color") or "#120908"
                 vd.update(

@@ -65,6 +65,7 @@ interface ContentCardProps {
   statValue?: string;
   showKineticWall?: boolean;
   midIcon?: string;
+  midEffect?: string;
 }
 
 export const ContentCard: React.FC<ContentCardProps> = ({
@@ -111,6 +112,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   statValue = '',
   showKineticWall = false,
   midIcon = '',
+  midEffect = 'auto',
 }) => {
   const hud = overlayMode === 'hud';
   const frame = useCurrentFrame();
@@ -150,6 +152,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             statValue={statValue}
             showKineticWall={showKineticWall}
             midIcon={midIcon}
+            midEffect={midEffect}
           />
         ) : (
           <AnimatedBullets

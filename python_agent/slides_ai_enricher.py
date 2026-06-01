@@ -53,6 +53,9 @@ def enrich_slides_visual_payload(
             s.setdefault("show_kinetic_wall", s.get("viz_type") == "none")
             if s.get("viz_type") != "none":
                 s["show_kinetic_wall"] = False
+            effects = ("glow_ring", "typewriter", "particle_dust", "bracket_slam", "glow_scan")
+            idx = int(s.get("scene_index") or 0)
+            s.setdefault("mid_effect", effects[idx % len(effects)])
         else:
             s["viz_type"] = "none"
             s["show_chart"] = False

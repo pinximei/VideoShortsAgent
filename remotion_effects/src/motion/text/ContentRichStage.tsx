@@ -1,12 +1,13 @@
 import React from 'react';
 import {useCurrentFrame, useVideoConfig, spring, interpolate} from 'remotion';
-import {DISPLAY_FONT, BODY_FONT} from '../fonts';
+import {BODY_FONT, DISPLAY_FONT} from '../fonts';
 import {resolveMotionTheme} from '../types';
 import {AnimatedBarChart} from '../charts/AnimatedBarChart';
 import {AnimatedLineChart} from '../charts/AnimatedLineChart';
+import {MidStageEffects} from '../effects/MidStageEffects';
+import {HeroTypewriter} from './HeroTypewriter';
 
 interface Props {
-  heading?: string;
   featureLabel?: string;
   summaryLines?: string[];
   kineticPhrases?: string[];
@@ -24,12 +25,9 @@ interface Props {
   statValue?: string;
   showKineticWall?: boolean;
   midIcon?: string;
+  midEffect?: string;
 }
 
-/**
- * 中部安全区垂直居中：顶栏场景标 + 底栏字幕留白，主体在中间 1/3~2/3 视觉重心。
- * 图表仅 viz=line|bar 时出现；无图表时用大字 + 可选词芯片。
- */
 export const ContentRichStage: React.FC<Props> = ({
   featureLabel = '',
   summaryLines = [],
@@ -48,6 +46,7 @@ export const ContentRichStage: React.FC<Props> = ({
   statValue = '',
   showKineticWall = false,
   midIcon = '',
+  midEffect = 'glow_ring',
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
@@ -62,14 +61,30 @@ export const ContentRichStage: React.FC<Props> = ({
   const showStat = viz === 'stat' && Boolean(statValue);
   const icon = (midIcon || '').trim() || (showLine ? '📈' : showStat ? '⭐' : '');
 
+  const effects = ['glow_ring', 'typewriter', 'particle_dust', 'bracket_slam', 'glow_scan'];
+  const effect =
+    midEffect && midEffect !== 'auto'
+      ? midEffect
+      : effects[sceneIndex % effects.length];
+  const useTypewriter = effect === 'typewriter';
+
   const enter = spring({frame, fps, config: {damping: 16, stiffness: 140}});
-  const chips = showKineticWall ? kineticPhrases.slice(0, 5) : [];
+  const chips = showKineticWall ? kineticPhrases.slice(0, 4) : [];
+  const heroSize = Math.min(72, Math.floor(width / Math.max(5, hero.length * 0.52)));
 
   const safeTop = Math.round(height * 0.14);
   const safeBottom = Math.round(height * 0.36);
 
   return (
     <>
+      <MidStageEffects
+        effect={effect === 'kinetic_wall' ? 'particle_dust' : effect}
+        accentColor={accentColor}
+        accentColor2={accentColor2}
+        width={width}
+        height={height}
+      />
+
       <div
         style={{
           position: 'absolute',
@@ -101,42 +116,52 @@ export const ContentRichStage: React.FC<Props> = ({
           justifyContent: 'center',
           alignItems: 'center',
           zIndex: 20,
-          gap: 20,
+          gap: 18,
         }}
       >
         {icon ? (
           <div
             style={{
-              fontSize: 56,
+              fontSize: 52,
               lineHeight: 1,
               opacity: enter,
-              transform: `scale(${interpolate(enter, [0, 1], [1.3, 1])})`,
+              transform: `scale(${interpolate(enter, [0, 1], [1.25, 1])})`,
             }}
           >
             {icon}
           </div>
         ) : null}
 
-        <div
-          style={{
-            fontFamily: DISPLAY_FONT,
-            fontSize: Math.min(72, Math.floor(width / Math.max(6, hero.length * 0.55))),
-            fontWeight: 900,
-            color: theme.fg,
-            textAlign: 'center',
-            lineHeight: 1.15,
-            maxWidth: width * 0.88,
-            opacity: enter,
-            transform: `translateY(${(1 - enter) * 24}px)`,
-            textShadow: `0 4px 24px rgba(0,0,0,0.5)`,
-          }}
-        >
-          {hero}
-        </div>
+        {useTypewriter ? (
+          <HeroTypewriter
+            text={hero}
+            fontSize={heroSize}
+            color={theme.fg}
+            accentColor={accentColor2}
+          />
+        ) : (
+          <div
+            style={{
+              fontFamily: DISPLAY_FONT,
+              fontSize: heroSize,
+              fontWeight: 900,
+              color: theme.fg,
+              textAlign: 'center',
+              lineHeight: 1.15,
+              maxWidth: width * 0.88,
+              opacity: enter,
+              transform: `translateY(${(1 - enter) * 20}px) scale(${interpolate(enter, [0, 1], [1.08, 1])})`,
+              textShadow: `0 4px 28px rgba(0,0,0,0.55), 0 0 40px ${accentColor}33`,
+              wordBreak: 'keep-all',
+            }}
+          >
+            {hero}
+          </div>
+        )}
 
         {subLines.map((line, i) => {
           const s = spring({
-            frame: Math.max(0, frame - 10 - i * 8),
+            frame: Math.max(0, frame - 12 - i * 10),
             fps,
             config: {damping: 18, stiffness: 120},
           });
@@ -145,12 +170,13 @@ export const ContentRichStage: React.FC<Props> = ({
               key={`${i}-${line}`}
               style={{
                 fontFamily: BODY_FONT,
-                fontSize: 32,
+                fontSize: 30,
                 fontWeight: 600,
                 color: theme.fg,
-                opacity: s * 0.92,
+                opacity: s * 0.9,
                 textAlign: 'center',
                 maxWidth: width * 0.85,
+                wordBreak: 'keep-all',
               }}
             >
               {line}
@@ -165,8 +191,8 @@ export const ContentRichStage: React.FC<Props> = ({
               fontSize: 48,
               fontWeight: 900,
               color: accentColor2,
-              opacity: spring({frame: Math.max(0, frame - 14), fps}),
-              textShadow: `0 0 20px ${accentColor2}66`,
+              opacity: spring({frame: Math.max(0, frame - 16), fps, config: {damping: 10, stiffness: 200}}),
+              textShadow: `0 0 24px ${accentColor2}88`,
             }}
           >
             {statValue}
@@ -174,27 +200,27 @@ export const ContentRichStage: React.FC<Props> = ({
         ) : null}
 
         {showLine ? (
-          <div style={{width: '100%', maxWidth: 820, marginTop: 8}}>
+          <div style={{width: '100%', maxWidth: 820}}>
             <AnimatedLineChart
               label={chartLabel || '趋势'}
               unit={chartUnit}
               series={series}
               accentColor={accentColor}
               accentColor2={accentColor2}
-              startFrame={20}
+              startFrame={22}
             />
           </div>
         ) : null}
 
         {showBar ? (
-          <div style={{width: '100%', maxWidth: 820, marginTop: 8}}>
+          <div style={{width: '100%', maxWidth: 820}}>
             <AnimatedBarChart
               label={chartLabel || '对比'}
               unit={chartUnit}
               bars={series}
               accentColor={accentColor}
               accentColor2={accentColor2}
-              startFrame={20}
+              startFrame={22}
             />
           </div>
         ) : null}
@@ -207,12 +233,11 @@ export const ContentRichStage: React.FC<Props> = ({
               justifyContent: 'center',
               gap: 8,
               maxWidth: width * 0.9,
-              marginTop: 12,
             }}
           >
             {chips.map((word, i) => {
               const s = spring({
-                frame: Math.max(0, frame - 24 - i * 4),
+                frame: Math.max(0, frame - 28 - i * 5),
                 fps,
                 config: {damping: 14, stiffness: 180},
               });
@@ -222,13 +247,15 @@ export const ContentRichStage: React.FC<Props> = ({
                   style={{
                     padding: '8px 14px',
                     borderRadius: 8,
-                    background: `${accentColor}22`,
-                    border: `1px solid ${accentColor}44`,
+                    background: `${accentColor}28`,
+                    border: `1px solid ${accentColor}55`,
                     fontFamily: BODY_FONT,
                     fontSize: 22,
                     fontWeight: 700,
                     color: theme.fg,
                     opacity: s,
+                    transform: `translateY(${(1 - s) * 10}px)`,
+                    wordBreak: 'keep-all',
                   }}
                 >
                   {word}
