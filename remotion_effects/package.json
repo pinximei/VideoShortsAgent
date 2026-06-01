@@ -10,15 +10,15 @@
     "render:gradient": "remotion render src/index.tsx GradientBackground --codec=vp9 --image-format=png"
   },
   "dependencies": {
-    "@remotion/bundler": "^4.0.0",
-    "@remotion/cli": "^4.0.0",
-    "@remotion/google-fonts": "^4.0.435",
-    "@remotion/media": "^4.0.435",
-    "@remotion/transitions": "^4.0.435",
+    "@remotion/bundler": "4.0.470",
+    "@remotion/cli": "4.0.470",
+    "@remotion/google-fonts": "4.0.470",
+    "@remotion/media": "4.0.470",
+    "@remotion/transitions": "4.0.470",
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "remotion": "^4.0.0",
+    "remotion": "4.0.470",
     "typescript": "^5.0.0"
   }
 }

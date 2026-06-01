@@ -168,7 +168,11 @@ class RenderSlidesSkill:
                 }
             )
 
-        parallel = os.environ.get("SLIDES_RENDER_PARALLEL", "1") != "0" and len(jobs) > 1
+        parallel = (
+            os.environ.get("SLIDES_RENDER_PARALLEL", "1") != "0"
+            and len(jobs) > 1
+            and os.name != "nt"
+        )
         try:
             max_w = int(os.environ.get("SLIDES_RENDER_WORKERS", "3"))
         except ValueError:
@@ -329,8 +333,8 @@ class RenderSlidesSkill:
         ]
 
         print(
-            f"  [Remotion] {composition} profile={motion_profile} "
-            f"decor={len(css_dec)} frames={frames}"
+            f"  [Remotion] {composition} profile={slide.get('motion_profile', '')} "
+            f"decor={len(slide.get('css_decorations') or [])} frames={frames}"
         )
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",

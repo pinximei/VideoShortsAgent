@@ -404,7 +404,7 @@ def render_slides_video(
         validate_slides_before_render,
     )
 
-    slides = auto_fix_slides(slides, platform_id=platform_id)
+    slides = auto_fix_slides(slides, platform=platform_id)
     gate = validate_slides_before_render(slides, platform=platform_id)
     gate_path = task_dir / "llm" / f"slides_quality_gate_{platform_id}.json"
     gate_path.write_text(json.dumps(gate, ensure_ascii=False, indent=2), encoding="utf-8")
