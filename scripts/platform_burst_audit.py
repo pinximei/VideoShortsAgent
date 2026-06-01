@@ -321,6 +321,7 @@ def main() -> int:
             defaults = PLATFORM_GV.get(platform, {})
             b["voice_content_style_id"] = defaults.get("voice_id", "")
             b["github_daily_style_id"] = defaults.get("motion_id", "")
+            b["use_platform_gv_default"] = True
             voice_style = pick_voice_content_style(b)
             print(f"  V={voice_style.get('id')} G池=platform:{platform}")
             print(f"  TTS预设: {voice_style_prompt_block(voice_style)[:120]}...")

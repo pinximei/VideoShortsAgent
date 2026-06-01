@@ -374,14 +374,6 @@ def pick_github_daily_style(brief: dict[str, Any]) -> dict[str, Any]:
     )
     platform = str(brief.get("platform") or "").strip().lower()
     pool = list(styles)
-    if platform == "douyin":
-        fast = [s for s in pool if s.get("id") in _DOUYIN_G_IDS]
-        if len(fast) >= 4:
-            pool = fast
-    elif platform == "xhs":
-        soft = [s for s in pool if s.get("id") in _XHS_G_IDS]
-        if len(soft) >= 4:
-            pool = soft
     idx = _seed_int(f"github_daily:{seed}:{platform or 'all'}") % len(pool)
     style = dict(pool[idx])
     return {

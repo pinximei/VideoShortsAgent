@@ -27,19 +27,21 @@ def resolve_platform_voice_style(
     brief: dict[str, Any],
     styles: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
-    platform = str(brief.get("platform") or "").strip().lower()
+    """仅解析 brief 显式指定的 V；平台默认不覆盖 20 套哈希选型。"""
     explicit = str(brief.get("voice_content_style_id") or "").strip()
     if explicit:
         return _find_by_id(styles, explicit)
-    defaults = PLATFORM_GV.get(platform) or {}
-    if defaults.get("voice_id"):
-        return _find_by_id(styles, defaults["voice_id"])
     motion_id = str(brief.get("github_daily_style_id") or "")
     if motion_id:
         for s in styles:
             ref = str(s.get("reference_motion") or "")
             if ref and motion_id.startswith(ref):
                 return dict(s)
+    if brief.get("use_platform_gv_default"):
+        platform = str(brief.get("platform") or "").strip().lower()
+        vid = (PLATFORM_GV.get(platform) or {}).get("voice_id")
+        if vid:
+            return _find_by_id(styles, vid)
     return None
 
 
@@ -47,13 +49,10 @@ def resolve_platform_motion_style(
     brief: dict[str, Any],
     styles: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
-    platform = str(brief.get("platform") or "").strip().lower()
+    """仅解析 brief 显式指定的 G；平台默认不覆盖 20 套哈希选型。"""
     explicit = str(brief.get("github_daily_style_id") or brief.get("motion_style_id") or "").strip()
     if explicit:
         return _find_by_id(styles, explicit)
-    defaults = PLATFORM_GV.get(platform) or {}
-    if defaults.get("motion_id"):
-        return _find_by_id(styles, defaults["motion_id"])
     voice_id = str(brief.get("voice_content_style_id") or "")
     if voice_id:
         from python_agent.voice_content_templates import load_voice_catalog
@@ -64,4 +63,9 @@ def resolve_platform_motion_style(
             for s in styles:
                 if str(s.get("id") or "").startswith(ref):
                     return dict(s)
+    if brief.get("use_platform_gv_default"):
+        platform = str(brief.get("platform") or "").strip().lower()
+        gid = (PLATFORM_GV.get(platform) or {}).get("motion_id")
+        if gid:
+            return _find_by_id(styles, gid)
     return None

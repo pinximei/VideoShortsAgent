@@ -17,7 +17,7 @@ from python_agent.voice_content_templates import (
 
 
 def test_douyin_defaults_v01_g01():
-    brief = {"platform": "douyin", **PLATFORM_GV["douyin"]}
+    brief = {"platform": "douyin", "use_platform_gv_default": True, **PLATFORM_GV["douyin"]}
     v = pick_voice_content_style(brief)
     g = pick_github_daily_style(brief)
     assert v.get("id") == "V01_burst_hook_fast"
@@ -25,7 +25,7 @@ def test_douyin_defaults_v01_g01():
 
 
 def test_xhs_defaults():
-    brief = {"platform": "xhs", **PLATFORM_GV["xhs"]}
+    brief = {"platform": "xhs", "use_platform_gv_default": True, **PLATFORM_GV["xhs"]}
     v = pick_voice_content_style(brief)
     g = pick_github_daily_style(brief)
     assert v.get("id") == "V04_minimal_calm"
