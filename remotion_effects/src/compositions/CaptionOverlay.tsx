@@ -26,6 +26,7 @@ interface CaptionOverlayProps {
   sentences?: Sentence[];
   style?: 'spring' | 'fade' | 'typewriter';
   accentColor?: string;
+  textColor?: string;
 }
 
 // 解析文本中的 **粗体** 标记
@@ -68,6 +69,7 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
   sentences = [],
   style = 'spring',
   accentColor = '#00d2ff',
+  textColor = '#FFFFFF',
 }) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
@@ -207,7 +209,6 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
           position: 'relative',
           transform: `translateY(${textY}px) scale(${textScale})`,
           maxWidth: '94%',
-          overflow: 'hidden',
         }}>
           {/* 底层：描边文字 */}
           <div
@@ -225,7 +226,8 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
               letterSpacing: 1,
               WebkitTextStroke: '3px rgba(255,255,255,0.3)',
               pointerEvents: 'none',
-              whiteSpace: 'nowrap',
+              whiteSpace: 'normal',
+              wordBreak: 'keep-all',
             }}
           >
             {strippedText}
@@ -237,13 +239,14 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
               position: 'relative',
               fontSize,
               fontWeight: 800,
-              color: '#FFFFFF',
+              color: textColor,
               textAlign: 'center',
               lineHeight: 1.35,
               textShadow: '0 2px 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.8)',
               fontFamily: '"Microsoft YaHei", "PingFang SC", sans-serif',
               letterSpacing: 1,
-              whiteSpace: 'nowrap',
+              whiteSpace: 'normal',
+              wordBreak: 'keep-all',
             }}
           >
             {parseHighlightedText(displayText, accentColor)}

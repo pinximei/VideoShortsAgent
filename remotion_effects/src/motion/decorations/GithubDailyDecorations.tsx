@@ -280,7 +280,7 @@ export const GithubDailyDecorations: React.FC<Props> = ({
     );
   }
 
-  if (has('chart-line-rise') && slideRole === 'content') {
+  if (has('chart-line-rise') && slideRole === 'content' && !has('mid-viz-active')) {
     const h = [40, 55, 48, 70, 85, 95];
     layers.push(
       <div

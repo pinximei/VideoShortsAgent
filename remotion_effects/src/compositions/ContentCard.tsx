@@ -8,6 +8,7 @@ import {
 import {SlideBackground} from './SlideBackground';
 import {MotionSlideShell} from '../motion/decorations/MotionSlideShell';
 import {AnimatedBullets} from '../motion/text/AnimatedBullets';
+import {ContentRichStage} from '../motion/text/ContentRichStage';
 import {SlideCaptionLayer} from '../motion/text/SlideCaptionLayer';
 import type {MotionParams} from '../motion/types';
 
@@ -46,6 +47,24 @@ interface ContentCardProps {
   backgroundColor?: string;
   cssDecorations?: string[];
   captionMode?: string;
+  colorMood?: string;
+  particleType?: string;
+  broadcastFrame?: boolean;
+  sceneFocus?: boolean;
+  sceneIndex?: number;
+  sceneTotal?: number;
+  featureLabel?: string;
+  summaryLines?: string[];
+  kineticPhrases?: string[];
+  vizType?: string;
+  showChart?: boolean;
+  chartBars?: number[];
+  chartSeries?: number[];
+  chartLabel?: string;
+  chartUnit?: string;
+  statValue?: string;
+  showKineticWall?: boolean;
+  midIcon?: string;
 }
 
 export const ContentCard: React.FC<ContentCardProps> = ({
@@ -76,6 +95,22 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   backgroundColor,
   cssDecorations = [],
   captionMode = '',
+  broadcastFrame = false,
+  sceneFocus = false,
+  sceneIndex = 0,
+  sceneTotal = 3,
+  featureLabel = '',
+  summaryLines = [],
+  kineticPhrases = [],
+  vizType = 'none',
+  showChart = false,
+  chartBars = [],
+  chartSeries = [],
+  chartLabel = '',
+  chartUnit = '',
+  statValue = '',
+  showKineticWall = false,
+  midIcon = '',
 }) => {
   const hud = overlayMode === 'hud';
   const frame = useCurrentFrame();
@@ -92,21 +127,49 @@ export const ContentCard: React.FC<ContentCardProps> = ({
         backgroundColor={backgroundColor}
         cssDecorations={cssDecorations}
         slideRole="content"
+        colorMood={colorMood}
+        particleType={particleType}
+        broadcastFrame={broadcastFrame}
       >
-        <AnimatedBullets
-          heading={heading}
-          bullets={bullets}
-          profile={motionProfile}
-          params={motionParams}
-          bulletStartFrames={bulletStartFrames}
-        />
+        {sceneFocus || bullets.length <= 1 ? (
+          <ContentRichStage
+            featureLabel={featureLabel || (typeof bullets[0] === 'string' ? bullets[0] : '')}
+            summaryLines={summaryLines}
+            kineticPhrases={kineticPhrases}
+            sceneIndex={sceneIndex}
+            sceneTotal={sceneTotal}
+            accentColor={accentColor2 || accentColor}
+            accentColor2={accentColor2 || accentColor}
+            colorMood={colorMood}
+            vizType={vizType}
+            showChart={showChart}
+            chartBars={chartBars}
+            chartSeries={chartSeries}
+            chartLabel={chartLabel}
+            chartUnit={chartUnit}
+            statValue={statValue}
+            showKineticWall={showKineticWall}
+            midIcon={midIcon}
+          />
+        ) : (
+          <AnimatedBullets
+            heading={heading}
+            bullets={bullets}
+            profile={motionProfile}
+            params={motionParams}
+            bulletStartFrames={bulletStartFrames}
+            colorMood={colorMood}
+          />
+        )}
         <SlideCaptionLayer
           sentences={sentences}
           captionMode={captionMode}
           motionProfile={motionProfile}
           motionParams={motionParams}
           captionStyle={captionStyle}
-          accentColor={accentColor}
+          accentColor={accentColor2 || accentColor}
+          colorMood={colorMood}
+          textColor={textColor}
         />
       </MotionSlideShell>
     );

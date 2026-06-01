@@ -9,6 +9,7 @@ import {SlideBackground} from './SlideBackground';
 import {MotionSlideShell} from '../motion/decorations/MotionSlideShell';
 import {AnimatedHeading} from '../motion/text/AnimatedHeading';
 import {SlideCaptionLayer} from '../motion/text/SlideCaptionLayer';
+import {HookBurst} from '../motion/text/HookBurst';
 import type {MotionParams} from '../motion/types';
 
 interface Sentence {
@@ -44,6 +45,11 @@ interface TitleCardProps {
   cssDecorations?: string[];
   githubDailyStyleId?: string;
   captionMode?: string;
+  openingBurst?: boolean;
+  hookBeats?: string[];
+  colorMood?: string;
+  particleType?: string;
+  broadcastFrame?: boolean;
 }
 
 export const TitleCard: React.FC<TitleCardProps> = ({
@@ -72,10 +78,15 @@ export const TitleCard: React.FC<TitleCardProps> = ({
   backgroundColor,
   cssDecorations = [],
   captionMode = '',
+  openingBurst = false,
+  hookBeats = [],
+  broadcastFrame = false,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const currentTime = frame / fps;
+  const burstText = (hookText || '').trim();
+  const showBurst = openingBurst && burstText.length > 0;
 
   // 动效档案驱动（v2）：按词弹射 / TikTok 高亮，锐背景
   if (motionProfile) {
@@ -88,14 +99,25 @@ export const TitleCard: React.FC<TitleCardProps> = ({
         backgroundColor={backgroundColor}
         cssDecorations={cssDecorations}
         slideRole="title"
+        colorMood={colorMood}
+        particleType={particleType}
+        broadcastFrame={broadcastFrame}
       >
+        {showBurst ? (
+          <HookBurst
+            text={burstText}
+            beats={hookBeats.length ? hookBeats : undefined}
+            accentColor={accentColor2 || accentColor}
+          />
+        ) : null}
         <AnimatedHeading
           text={heading}
           subtext={subheading}
           profile={motionProfile}
           params={motionParams}
-          layout={layoutStyle === 'top-heavy' ? 'top-heavy' : 'center'}
+          layout="center"
           cssDecorations={cssDecorations}
+          colorMood={colorMood}
         />
         <SlideCaptionLayer
           sentences={sentences}
@@ -103,7 +125,9 @@ export const TitleCard: React.FC<TitleCardProps> = ({
           motionProfile={motionProfile}
           motionParams={motionParams}
           captionStyle={captionStyle}
-          accentColor={accentColor}
+          accentColor={accentColor2 || accentColor}
+          colorMood={colorMood}
+          textColor={textColor}
         />
       </MotionSlideShell>
     );

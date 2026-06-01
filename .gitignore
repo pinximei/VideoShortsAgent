@@ -42,6 +42,9 @@ test_audio.wav
 !test_video.*
 middle/config.yaml
 
+# Cursor 本地 skills 缓存（Git 用 vendor/remotion-best-practices）
+.agents/
+
 # === 本地验收 / 成片 / 中间产物（禁止提交 GitHub）===
 reports/
 !reports/.gitkeep

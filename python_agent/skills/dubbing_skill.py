@@ -22,6 +22,8 @@ SENTENCE_PAUSE = 0.2
 MIN_LEAD_SILENCE = 0.3
 # 前置留白上限（秒）,切换场景后应尽快出声
 MAX_LEAD_SILENCE = 0.5
+# 第 1 镜：几乎零留白，钩子口播立刻进
+OPENING_LEAD_SILENCE = 0.06
 
 
 def _safe_remove(path: str, *, retries: int = 6) -> None:
@@ -118,7 +120,12 @@ class DubbingSkill:
             clip_audio_path = os.path.join(tts_dir, f"tts_clip_{i}.mp3")
             video_duration = float(clip.get("end", 0)) - float(clip.get("start", 0))
             sentence_timeline, total_duration = self._concat_sentence_audios(
-                sentence_audios, clip_audio_path, tts_dir, i, video_duration
+                sentence_audios,
+                clip_audio_path,
+                tts_dir,
+                i,
+                video_duration,
+                lead_silence_override=OPENING_LEAD_SILENCE if i == 0 else None,
             )
             if total_duration <= 0:
                 total_duration = self._get_audio_duration(clip_audio_path)
@@ -177,9 +184,16 @@ class DubbingSkill:
         phrases = split_spoken_phrases(text)
         return phrases if phrases else [text.strip() or text]
 
-    def _concat_sentence_audios(self, sentence_audios: list,
-                                 output_path: str, tts_dir: str,
-                                 clip_index: int, video_duration: float = 0) -> tuple:
+    def _concat_sentence_audios(
+        self,
+        sentence_audios: list,
+        output_path: str,
+        tts_dir: str,
+        clip_index: int,
+        video_duration: float = 0,
+        *,
+        lead_silence_override: float | None = None,
+    ) -> tuple:
         """拼接句子音频，居中对齐于视频画面（前后留白），返回精确时间轴和总时长
 
         Args:
@@ -201,7 +215,11 @@ class DubbingSkill:
             trail_silence = total_padding - lead_silence
 
         else:
-            lead_silence = MIN_LEAD_SILENCE
+            lead_silence = (
+                lead_silence_override
+                if lead_silence_override is not None
+                else (OPENING_LEAD_SILENCE if clip_index == 0 else MIN_LEAD_SILENCE)
+            )
             trail_silence = 0.0
 
         # 生成静音文件

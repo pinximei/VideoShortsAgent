@@ -12,7 +12,11 @@ import json
 import shutil
 import subprocess
 
-from python_agent.display_text import fit_slide_for_display, split_caption_sentences
+from python_agent.display_text import (
+    fit_slide_for_display,
+    split_caption_sentences,
+    split_tiktok_caption_sentences,
+)
 
 # Remotion 项目目录（相对于项目根）
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -59,14 +63,18 @@ class RenderSlidesSkill:
                 split_caption_sentences,
             )
 
-            cap_max = (
-                CAPTION_LINE_MAX_CHARS_DOUYIN
-                if slide.get("caption_mode") == "tiktok"
-                else CAPTION_LINE_MAX_CHARS
-            )
-            sentences = split_caption_sentences(
-                tts_clip.get("sentences", []), max_chars=cap_max
-            )
+            raw_sents = tts_clip.get("sentences", [])
+            if slide.get("caption_mode") == "tiktok":
+                sentences = split_tiktok_caption_sentences(raw_sents)
+            else:
+                sentences = split_caption_sentences(
+                    raw_sents,
+                    max_chars=(
+                        CAPTION_LINE_MAX_CHARS_DOUYIN
+                        if slide.get("caption_mode") == "tiktok"
+                        else CAPTION_LINE_MAX_CHARS
+                    ),
+                )
             slide = fit_slide_for_display(slide)
 
             print(f"  [Slide {i+1}/{len(slides)}] {slide.get('type', '?')}: "
@@ -182,13 +190,17 @@ class RenderSlidesSkill:
                         break
             bullet_start_frames.append(m_frame)
             
-        visual_props = slide.get("visual_design", {})
+        visual_props = slide.get("visual_design", {}) or {}
 
         motion_profile = slide.get("motion_profile") or visual_props.get("motion_profile", "github_daily_hook")
         motion_params = slide.get("motion_params") or visual_props.get("motion_params") or {}
 
         bg = slide.get("background_color") or visual_props.get("background_color")
         css_dec = slide.get("css_decorations") or visual_props.get("css_decorations") or []
+
+        accent = visual_props.get("accent_color") or style.get("accent_color", "#58a6ff")
+        accent2 = visual_props.get("accent_color2") or "#FFD93D"
+        text_color = visual_props.get("text_color") or style.get("text_color", "#f0f6fc")
 
         props = {
             "heading": slide.get("heading", ""),
@@ -197,10 +209,13 @@ class RenderSlidesSkill:
             "ctaText": slide.get("cta_text", ""),
             "hookText": slide.get("hook_text", ""),
             "captionStyle": slide.get("caption_style", style.get("caption_style", "spring")),
-            "colors": style.get("colors", ["#0d1117", "#161b22"]),
-            "textColor": style.get("text_color", "#f0f6fc"),
-            "accentColor": style.get("accent_color", "#58a6ff"),
-            "accentColor2": "#3fb950",
+            "colors": style.get("colors", ["#1a100c", "#2d1810"]),
+            "textColor": text_color,
+            "accentColor": accent,
+            "accentColor2": accent2,
+            "colorMood": visual_props.get("color_mood", ""),
+            "particleType": visual_props.get("particle_type", ""),
+            "broadcastFrame": bool(visual_props.get("broadcast_frame")),
             "layoutStyle": visual_props.get("layout_style", "center"),
             "motionProfile": motion_profile,
             "motionParams": motion_params,
@@ -212,6 +227,23 @@ class RenderSlidesSkill:
             "headingStartFrame": heading_start_frame,
             "bulletStartFrames": bullet_start_frames,
             "captionMode": slide.get("caption_mode", ""),
+            "openingBurst": bool(slide.get("opening_burst")) and slide.get("type") == "title_card",
+            "sceneFocus": bool(slide.get("scene_focus")),
+            "sceneIndex": int(slide.get("scene_index") or 0),
+            "sceneTotal": int(slide.get("scene_total") or 3),
+            "featureLabel": str(slide.get("feature_label") or ""),
+            "summaryLines": list(slide.get("summary_lines") or []),
+            "kineticPhrases": list(slide.get("kinetic_phrases") or []),
+            "vizType": str(slide.get("viz_type") or "none"),
+            "showChart": bool(slide.get("show_chart", False)),
+            "chartBars": list(slide.get("chart_bars") or slide.get("chart_series") or []),
+            "chartSeries": list(slide.get("chart_series") or slide.get("chart_bars") or []),
+            "chartLabel": str(slide.get("chart_label") or ""),
+            "chartUnit": str(slide.get("chart_unit") or ""),
+            "statValue": str(slide.get("stat_value") or ""),
+            "showKineticWall": bool(slide.get("show_kinetic_wall", False)),
+            "midIcon": str(slide.get("mid_icon") or ""),
+            "hookBeats": list(slide.get("hook_beats") or []),
         }
         if sentences:
             props["sentences"] = sentences
@@ -432,7 +464,7 @@ class RenderSlidesSkill:
             shutil.copy2(segment_paths[0], output_path)
             return
 
-        transition_duration = 0.8
+        transition_duration = 0.45 if len(segment_paths) >= 4 else 0.65
         durations = [self._get_duration(p) for p in segment_paths]
         if any(d <= 0 for d in durations):
             print("[RenderSlidesSkill] ⚠️ 部分片段时长无效，使用简单拼接")

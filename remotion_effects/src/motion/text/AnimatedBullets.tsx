@@ -1,7 +1,8 @@
 import React from 'react';
 import {useCurrentFrame, useVideoConfig, spring, interpolate} from 'remotion';
 import type {MotionParams, MotionProfileId} from '../types';
-import {THEMES} from '../types';
+import {resolveMotionTheme} from '../types';
+import {DISPLAY_FONT, BODY_FONT} from '../fonts';
 
 interface Props {
   heading?: string;
@@ -9,6 +10,7 @@ interface Props {
   profile: MotionProfileId | string;
   params?: MotionParams;
   bulletStartFrames?: number[];
+  colorMood?: string;
 }
 
 export const AnimatedBullets: React.FC<Props> = ({
@@ -17,11 +19,12 @@ export const AnimatedBullets: React.FC<Props> = ({
   profile,
   params = {},
   bulletStartFrames = [],
+  colorMood = '',
 }) => {
   const frame = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const {fps, width, height} = useVideoConfig();
   const p = String(profile);
-  const theme = p.includes('github') ? THEMES.github : p.includes('tiktok') ? THEMES.tiktok : THEMES.kinetic;
+  const theme = resolveMotionTheme(p, colorMood);
   const fromRight = p === 'bullet_rail_right' || p.includes('github_daily');
   const staggerUp = p === 'bullet_stagger_up';
   const glassStack = p === 'glass_card_stack';
@@ -42,6 +45,7 @@ export const AnimatedBullets: React.FC<Props> = ({
     }
     const lineW = interpolate(s, [0, 1], [0, 100]);
 
+    const isLight = colorMood === 'xhs-soft' || colorMood === 'xhs';
     if (glassStack) {
       return (
         <div
@@ -56,10 +60,11 @@ export const AnimatedBullets: React.FC<Props> = ({
             style={{
               padding: '20px 28px',
               borderRadius: 14,
-              border: `1px solid ${theme.accent}44`,
-              background: 'rgba(255,255,255,0.06)',
+              border: `1px solid ${theme.accent}${isLight ? '55' : '44'}`,
+              background: isLight ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.08)',
               backdropFilter: 'blur(8px)',
               maxWidth: 880,
+              boxShadow: isLight ? '0 8px 24px rgba(0,0,0,0.08)' : 'none',
             }}
           >
             <div style={{
@@ -67,10 +72,8 @@ export const AnimatedBullets: React.FC<Props> = ({
               fontWeight: 600,
               color: theme.fg,
               lineHeight: 1.35,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
               maxWidth: 820,
+              wordBreak: 'keep-all',
             }}>{b}</div>
           </div>
         </div>
@@ -105,19 +108,31 @@ export const AnimatedBullets: React.FC<Props> = ({
           color: theme.fg,
           lineHeight: 1.35,
           maxWidth: 820,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          wordBreak: 'keep-all',
         }}>{b}</div>
       </div>
     );
   };
 
   return (
-    <div style={{padding: '200px 72px 120px', zIndex: 10}}>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '180px 56px 280px',
+        zIndex: 10,
+        boxSizing: 'border-box',
+        fontFamily: BODY_FONT,
+      }}
+    >
       {heading && (
         <div
           style={{
+            fontFamily: DISPLAY_FONT,
             fontSize: 48,
             fontWeight: 800,
             color: theme.fg,
@@ -126,9 +141,7 @@ export const AnimatedBullets: React.FC<Props> = ({
             transform: `translateX(${(1 - headSpring) * (fromRight ? 80 : -40)}px)`,
             maxWidth: '92%',
             lineHeight: 1.25,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            wordBreak: 'keep-all',
           }}
         >
           {heading}

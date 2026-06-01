@@ -46,6 +46,7 @@ interface CTACardProps {
   backgroundColor?: string;
   cssDecorations?: string[];
   captionMode?: string;
+  broadcastFrame?: boolean;
 }
 
 export const CTACard: React.FC<CTACardProps> = ({
@@ -73,6 +74,7 @@ export const CTACard: React.FC<CTACardProps> = ({
   backgroundColor,
   cssDecorations = [],
   captionMode = '',
+  broadcastFrame = false,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
@@ -93,6 +95,9 @@ export const CTACard: React.FC<CTACardProps> = ({
         backgroundColor={backgroundColor}
         cssDecorations={cssDecorations}
         slideRole="cta"
+        colorMood={colorMood}
+        particleType={particleType}
+        broadcastFrame={broadcastFrame}
       >
         <div style={{
           position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',

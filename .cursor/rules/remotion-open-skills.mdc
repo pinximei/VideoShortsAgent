@@ -1,0 +1,18 @@
+---
+description: Remotion 渲染与 LLM 编排须遵循官方开源 skills，禁止自造 Remotion 动画规范
+globs:
+  - remotion_effects/**
+  - python_agent/slides_*.py
+  - python_agent/video_skills_orchestrator.py
+---
+
+# Remotion 开源 Skills
+
+- 官方包：`npx skills add remotion-dev/skills` → `.agents/skills/remotion-best-practices/`
+- 动画只用 `useCurrentFrame` + `spring` / `interpolate`；**禁止** CSS `animation` / Tailwind 动画类
+- 转场优先 `@remotion/transitions`（见官方 `rules/transitions.md`）
+- 图表：单通道中部组件；**不要**同时用 `chart-line-rise` 底栏装饰 + 中部 `AnimatedBarChart`
+- LLM 编排走 `video_skills_orchestrator` 或 `scripts/run_open_skills_video.py`
+- 文档检索：MCP `@remotion/mcp@latest`（https://www.remotion.dev/docs/ai/mcp）
+- 官方资源索引：`docs/REMOTION_OFFICIAL_RESOURCES.md`、`python_agent/remotion_resources.py`
+- 图表字体：`@remotion/google-fonts/NotoSansSC`（对齐 skills `charts-bar-chart.tsx`）

@@ -253,3 +253,78 @@ def ensure_min_clips(
         if fk_local == "news" or i == len(out) - 1:
             clip["transition_to_next"] = "fade"
     return out[:4]
+
+
+def enforce_opening_hook_on_slides_script(
+    script: dict[str, Any],
+    *,
+    brief: dict[str, Any],
+    platform: str = "",
+) -> dict[str, Any]:
+    """slides 管线：强化第 1 镜（title_card）前 3 秒钩子屏显 + 口播起手。"""
+    slides = [dict(s) for s in (script.get("slides") or [])]
+    if not slides:
+        return script
+    s0 = slides[0]
+    if str(s0.get("type") or "") != "title_card":
+        return script
+
+    fk = str(brief.get("feed_kind") or "github_daily")
+    title = str(brief.get("title") or s0.get("heading") or "")
+    hook = scroll_stopping_hook(
+        title=title,
+        hook=str(brief.get("hook") or s0.get("hook_text") or ""),
+        feed_kind=fk,
+    )
+    screen = _screen_hook_text(hook, max_len=18)
+    s0["hook_text"] = screen
+    beats = s0.get("hook_beats")
+    if isinstance(beats, list) and len(beats) >= 2:
+        s0["hook_beats"] = [str(x)[:18] for x in beats if str(x).strip()][:4]
+    else:
+        parts = re.split(r"(?<=[。！？?!，,])", hook)
+        s0["hook_beats"] = [
+            _screen_hook_text(p.strip("，,。！？?! "), max_len=16)
+            for p in parts
+            if 4 <= len(p.strip()) <= 18
+        ][:4]
+        if not s0["hook_beats"]:
+            s0["hook_beats"] = [screen, hook[:14] if len(hook) > 14 else hook]
+    s0["opening_burst"] = True
+
+    tts = str(s0.get("tts_text") or "").strip()
+    hook_sent = hook.rstrip("。！？?!") + "！"
+    first_clause = tts.split("。", 1)[0] if tts else ""
+    hook_key = hook[:8] if len(hook) >= 4 else hook
+    already_hooked = (
+        tts.startswith(hook_sent[: min(8, len(hook_sent))])
+        or (hook_key and hook_key in first_clause)
+        or (screen[:8] and screen[:8] in first_clause)
+    )
+    if already_hooked and hook_key and tts.count(hook_key) > 1:
+        rest = tts.split(hook_key, 1)[-1].lstrip("！。，, ")
+        tts = f"{hook_sent}{rest}" if rest else hook_sent
+        already_hooked = True
+    if already_hooked:
+        s0["tts_text"] = tts
+    else:
+        cleaned = tts
+        for bad in ("大家好", "今天", "本期", "我们来"):
+            if cleaned.startswith(bad):
+                cleaned = re.sub(r"^[^。！？?]+[。！？?]\s*", "", cleaned).strip() or cleaned
+        s0["tts_text"] = f"{hook_sent}{cleaned}" if cleaned else hook_sent
+
+    plat = (platform or str(brief.get("platform") or "")).strip().lower()
+    if plat == "douyin":
+        mp = dict(s0.get("motion_params") or {})
+        mp["staggerFrames"] = 2
+        mp["springStiffness"] = 220
+        mp["springDamping"] = 9
+        mp["wordsPerPageMs"] = 380
+        s0["motion_params"] = mp
+        s0["caption_mode"] = s0.get("caption_mode") or "tiktok"
+
+    slides[0] = s0
+    out = dict(script)
+    out["slides"] = slides
+    return out

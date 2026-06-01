@@ -6,8 +6,8 @@ import {
   type CaptionPage,
 } from '../captions/createTikTokPages';
 
-/** Remotion 官方 TikTok 模板对齐值 */
-const HIGHLIGHT_COLOR = '#39E508';
+/** 默认 TikTok 绿；暖色播报可覆盖 */
+const DEFAULT_HIGHLIGHT = '#39E508';
 const INACTIVE_COLOR = '#ffffff';
 const DESIRED_FONT_SIZE = 96;
 const CAPTION_BOTTOM_PX = 320;
@@ -22,13 +22,16 @@ interface Props {
   words: Word[];
   profile?: string;
   wordsPerPageMs?: number;
+  accentColor?: string;
 }
 
 export const TikTokActiveCaption: React.FC<Props> = ({
   words,
   profile,
   wordsPerPageMs = 1200,
+  accentColor = '#FF9F43',
 }) => {
+  const highlightColor = accentColor || DEFAULT_HIGHLIGHT;
   const frame = useCurrentFrame();
   const {fps, width} = useVideoConfig();
 
@@ -58,9 +61,11 @@ export const TikTokActiveCaption: React.FC<Props> = ({
   });
 
   const absoluteTimeMs = page.startMs + (localFrame / fps) * 1000;
+  const charCount = Math.max(1, page.text.replace(/\s/g, '').length);
   const fontSize = Math.min(
     DESIRED_FONT_SIZE,
-    Math.floor((width * 0.9) / Math.max(6, page.text.length * 0.55)),
+    Math.floor((width * 0.88) / Math.max(4, charCount * 0.62)),
+    charCount <= 8 ? 88 : charCount <= 12 ? 72 : 58,
   );
 
   return (
@@ -73,7 +78,7 @@ export const TikTokActiveCaption: React.FC<Props> = ({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '0 48px',
+        padding: '0 40px',
         zIndex: 120,
         transform: `translateY(${(1 - enter) * 12}px)`,
         opacity: enter,
@@ -84,9 +89,10 @@ export const TikTokActiveCaption: React.FC<Props> = ({
           fontSize,
           fontWeight: 'bold',
           textAlign: 'center',
-          whiteSpace: 'nowrap',
-          lineHeight: 1.15,
-          maxWidth: width * 0.92,
+          whiteSpace: 'normal',
+          lineHeight: 1.2,
+          maxWidth: width * 0.9,
+          wordBreak: 'keep-all',
           textTransform: 'none',
         }}
       >
@@ -97,9 +103,9 @@ export const TikTokActiveCaption: React.FC<Props> = ({
             <span
               key={`${token.fromMs}-${token.text}`}
               style={{
-                color: isActive ? HIGHLIGHT_COLOR : INACTIVE_COLOR,
+                color: isActive ? highlightColor : INACTIVE_COLOR,
                 textShadow: isActive
-                  ? '0 0 12px rgba(57,229,8,0.5), 2px 2px 8px rgba(0,0,0,0.85)'
+                  ? `0 0 12px ${highlightColor}88, 2px 2px 8px rgba(0,0,0,0.85)`
                   : '2px 2px 6px rgba(0,0,0,0.8)',
               }}
             >

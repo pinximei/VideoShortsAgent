@@ -16,38 +16,48 @@ interface Props {
   motionParams?: MotionParams;
   captionStyle?: 'spring' | 'fade' | 'typewriter';
   accentColor?: string;
+  colorMood?: string;
+  midScreenKinetic?: boolean;
+  textColor?: string;
 }
 
-/** 抖音：TikTok 逐词高亮；小红书：单行 spring 字幕 */
+/** 抖音：中屏动效字 + 底栏 TikTok；小红书：居中 fade 字幕 */
 export const SlideCaptionLayer: React.FC<Props> = ({
   sentences,
   captionMode = '',
   motionProfile = '',
   motionParams = {},
   captionStyle = 'spring',
-  accentColor = '#00d2ff',
+  accentColor = '#FF9F43',
+  colorMood = '',
+  midScreenKinetic = false,
+  textColor = '#FFFFFF',
 }) => {
   if (!sentences.length) {
     return null;
   }
   const tikTok =
     captionMode === 'tiktok' || String(motionProfile).includes('tiktok');
-  if (tikTok) {
-    return (
-      <TikTokActiveCaption
-        words={sentences.map((s) => ({text: s.text + ' ', start: s.start, end: s.end}))}
-        profile={motionProfile}
-        wordsPerPageMs={motionParams.wordsPerPageMs ?? 800}
-      />
-    );
-  }
+
   return (
-    <div style={{position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none'}}>
-      <CaptionOverlay
-        sentences={sentences}
-        style={captionStyle}
-        accentColor={accentColor}
-      />
-    </div>
+    <>
+      {tikTok ? (
+        <TikTokActiveCaption
+          words={sentences.map((s) => ({text: s.text + ' ', start: s.start, end: s.end}))}
+          profile={motionProfile}
+          wordsPerPageMs={motionParams.wordsPerPageMs ?? 800}
+          accentColor={accentColor}
+        />
+      ) : (
+        <div style={{position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none'}}>
+          <CaptionOverlay
+            sentences={sentences}
+            style={captionStyle}
+            accentColor={accentColor}
+            textColor={textColor}
+          />
+        </div>
+      )}
+    </>
   );
 };

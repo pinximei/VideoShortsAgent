@@ -149,16 +149,52 @@ def is_github_daily_brief(brief: dict[str, Any]) -> bool:
     )
 
 
+def _enrich_github_daily_css(style: dict[str, Any], platform: str = "") -> list[str]:
+    """catalog 里 css 过少时补齐预研装饰，避免纯色底无动效。"""
+    base = list(style.get("css") or [])
+    sid = str(style.get("id") or "")
+    plat = (platform or "").strip().lower()
+    extras: list[str] = []
+    if sid in ("G06_tiktok_follow_caption", "G05_dark_top10_rank"):
+        extras.extend(["grid-tunnel-bg", "github-badge", "daily-video-tag"])
+    elif sid == "G01_cyber_hook_yellow" and plat != "douyin":
+        extras.extend(["float-icon", "text-stroke-yellow"])
+    elif sid == "G01_cyber_hook_yellow":
+        extras.extend(["text-stroke-yellow"])
+    elif sid == "G07_hook_glitch_github":
+        extras.extend(["github-badge"])
+    elif sid == "G03_minimal_white_series":
+        if "plain-white-bg" not in base:
+            extras.append("plain-white-bg")
+        extras.extend(["repo-header", "pill-badge"])
+    elif sid in ("G04_badge_pills_intro", "G20_clean_badge_orange"):
+        extras.extend(["repo-header", "accent-orange-word"])
+    elif sid == "G16_purple_gradient_soft":
+        extras.append("soft-purple-gradient")
+    if plat == "douyin" and "caption-bottom-safe" not in base + extras:
+        extras.append("caption-bottom-safe")
+    seen: set[str] = set()
+    out: list[str] = []
+    for x in base + extras:
+        if x and x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
+
+
 def _profile_for_github_slide(
     style: dict[str, Any], slide_type: str, *, platform: str = ""
 ) -> str:
-    plat = (platform or "").strip().lower()
     if slide_type == "title_card":
         return str(style.get("title_profile") or "github_daily_hook")
     if slide_type == "cta_card":
         return "cta_pulse_arrow"
-    if plat == "douyin":
-        return "tiktok_word_pop"
+    if slide_type == "content_card":
+        prof = str(style.get("content_profile") or "").strip()
+        if prof:
+            return prof
+        plat = (platform or "").strip().lower()
+        return "tiktok_word_pop" if plat == "douyin" else "github_daily_bullets"
     return str(style.get("content_profile") or "github_daily_bullets")
 
 
@@ -184,7 +220,16 @@ def build_github_daily_slide_plan(
     cap_ms = 500 if platform == "douyin" else int(style.get("wordsPerPageMs", 800))
     for i, slide in enumerate(slides):
         st = str(slide.get("type") or "content_card")
-        profile = _profile_for_github_slide(style, st, platform=platform)
+        if slide.get("motion_profile"):
+            profile = str(slide["motion_profile"])
+        else:
+            profile = _profile_for_github_slide(style, st, platform=platform)
+        if i == 0 and st == "title_card" and platform == "douyin":
+            tp = str(style.get("title_profile") or "")
+            if tp in ("kinetic_slam_tight", "kinetic_slam_loose", "github_daily_hook", "tiktok_word_pop"):
+                profile = "flash_hook_smash"
+            elif tp == "glitch_hook_clean":
+                profile = "glitch_hook_clean"
         slide_trans = trans if i < len(slides) - 1 else ""
         plan.append(
             {
@@ -199,8 +244,9 @@ def build_github_daily_slide_plan(
                     "springStiffness": mparams.get("springStiffness", 120),
                 },
                 "theme": _theme_for_bg(str(style.get("bg") or "#0d1117")),
-                "background": style.get("bg"),
-                "css_decorations": list(style.get("css") or []),
+                "background": slide.get("background_color") or style.get("bg"),
+                "css_decorations": list(slide.get("css_decorations") or [])
+                or _enrich_github_daily_css(style, platform),
                 "github_daily_style_id": style.get("id"),
                 "caption_style": cap,
                 "transition": slide_trans,
@@ -215,12 +261,28 @@ def apply_github_daily_plan_to_slides(
     for i, slide in enumerate(slides):
         tpl = plan[i] if i < len(plan) else plan[-1]
         apply_template_to_slide(slide, tpl)
-        vd = slide.get("visual_design") or {}
-        vd["background_color"] = tpl.get("background")
-        vd["css_decorations"] = tpl.get("css_decorations") or []
+        vd = dict(slide.get("visual_design") or {})
+        if slide.get("scene_focus") and slide.get("background_color"):
+            bg = slide["background_color"]
+        else:
+            bg = tpl.get("background")
+            slide["background_color"] = bg
+        if slide.get("scene_focus"):
+            dec = [d for d in (slide.get("css_decorations") or []) if d != "chart-line-rise"]
+            for d in tpl.get("css_decorations") or []:
+                if d not in dec and d != "chart-line-rise":
+                    dec.append(d)
+            slide["css_decorations"] = dec
+        else:
+            slide["background_color"] = tpl.get("background")
+            slide["css_decorations"] = tpl.get("css_decorations") or []
+        vd["background_color"] = slide.get("background_color") or bg
+        if slide.get("show_chart") or slide.get("scene_focus") or slide.get("summary_lines"):
+            slide["css_decorations"] = [
+                d for d in (slide.get("css_decorations") or []) if d != "chart-line-rise"
+            ]
+        vd["css_decorations"] = slide.get("css_decorations") or []
         slide["visual_design"] = vd
-        slide["background_color"] = tpl.get("background")
-        slide["css_decorations"] = tpl.get("css_decorations") or []
         slide["github_daily_style_id"] = tpl.get("github_daily_style_id")
     return slides
 
@@ -364,7 +426,7 @@ def pick_github_daily_style(brief: dict[str, Any]) -> dict[str, Any]:
             "caption_style": "fade" if platform == "xhs" else "spring",
             "transition": "dissolve" if platform == "xhs" else "wipeleft",
             "background": style.get("bg"),
-            "css_decorations": list(style.get("css") or []),
+            "css_decorations": _enrich_github_daily_css(style, platform),
         }
     seed = str(
         brief.get("content_key")
@@ -388,7 +450,7 @@ def pick_github_daily_style(brief: dict[str, Any]) -> dict[str, Any]:
         "caption_style": "fade" if platform == "xhs" else "spring",
         "transition": "dissolve" if platform == "xhs" else "fade",
         "background": style.get("bg"),
-        "css_decorations": style.get("css") or [],
+        "css_decorations": _enrich_github_daily_css(style, platform),
     }
 
 

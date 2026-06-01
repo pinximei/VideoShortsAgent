@@ -83,6 +83,18 @@ def _apply_platform_gv_to_slides(
     voice_style = pick_voice_content_style(b)
     expanded = expand_script_tts_to_minimum({"slides": [dict(s) for s in slides]}, voice_style)
     out_slides = list(expanded.get("slides") or slides)
+    from python_agent.slides_llm_director import direct_slides_script
+
+    out_slides = direct_slides_script(out_slides, b, platform_id)
+
+    from python_agent.slides_scene_expander import expand_platform_scenes
+
+    out_slides = expand_platform_scenes(out_slides, platform_id)
+    total_scenes = sum(1 for s in out_slides if s.get("scene_focus"))
+    if total_scenes:
+        for s in out_slides:
+            if s.get("scene_focus"):
+                s["scene_total"] = total_scenes
 
     if is_github_daily_brief(b):
         picked, plan = build_github_daily_slide_plan(b, out_slides)
@@ -93,19 +105,69 @@ def _apply_platform_gv_to_slides(
             encoding="utf-8",
         )
         out_slides = apply_github_daily_plan_to_slides(out_slides, plan)
+        from python_agent.capabilities.opening_hook import enforce_opening_hook_on_slides_script
+
+        script_wrap = enforce_opening_hook_on_slides_script(
+            {"slides": out_slides},
+            brief=b,
+            platform=platform_id,
+        )
+        out_slides = list(script_wrap.get("slides") or out_slides)
+        if out_slides and out_slides[0].get("opening_burst"):
+            plan0 = plan[0] if plan else {}
+            plan0 = dict(plan0)
+            plan0["motion_profile"] = "flash_hook_smash" if platform_id == "douyin" else plan0.get(
+                "motion_profile"
+            )
+            out_slides[0]["motion_profile"] = plan0["motion_profile"]
+            vd = dict(out_slides[0].get("visual_design") or {})
+            vd["motion_profile"] = plan0["motion_profile"]
+            out_slides[0]["visual_design"] = vd
         for s in out_slides:
+            vd = dict(s.get("visual_design") or {})
             if platform_id == "douyin":
                 s["caption_mode"] = "tiktok"
                 mp = dict(s.get("motion_params") or {})
-                mp.setdefault("wordsPerPageMs", 500)
+                mp.setdefault("wordsPerPageMs", 420)
                 s["motion_params"] = mp
+                s["background_color"] = s.get("background_color") or "#120908"
+                vd.update(
+                    {
+                        "color_mood": "warm",
+                        "particle_type": "warm",
+                        "broadcast_frame": True,
+                        "text_color": "#fff8f0",
+                        "accent_color": "#FF9F43",
+                        "accent_color2": "#FFD93D",
+                    }
+                )
             else:
                 s.pop("caption_mode", None)
+                s["background_color"] = s.get("background_color") or "#151c28"
+                vd.update(
+                    {
+                        "color_mood": "cool",
+                        "particle_type": "cool",
+                        "broadcast_frame": False,
+                        "text_color": "#e8eef7",
+                        "accent_color": "#3b82f6",
+                        "accent_color2": "#22d3ee",
+                    }
+                )
+            s["visual_design"] = vd
+            if platform_id == "douyin":
+                s["css_decorations"] = list(s.get("css_decorations") or vd.get("css_decorations") or [])
+            else:
+                s["css_decorations"] = list(s.get("css_decorations") or vd.get("css_decorations") or [])
         print(
             f"[SlidesRender] platform={platform_id} G={picked.get('id')} "
             f"V={voice_style.get('id')} caption={out_slides[0].get('caption_mode', 'spring')} "
             f"profiles={[s.get('motion_profile') for s in out_slides[:3]]}"
         )
+
+    from python_agent.slides_ai_enricher import enrich_slides_visual_payload
+
+    out_slides = enrich_slides_visual_payload(out_slides, b, platform_id)
     return out_slides, voice_style
 
 
@@ -204,6 +266,10 @@ def _load_or_build_slides_script(
     compose_text = brief_to_compose_text(brief_dict)
     if voice_style:
         compose_text += "\n\n" + voice_style_prompt_block(voice_style)
+    if brief_dict.get("_remotion_skill_injected"):
+        from python_agent.video_skills_orchestrator import remotion_skill_snippet
+
+        compose_text += "\n\n【Remotion 官方 Skill】\n" + remotion_skill_snippet()[:1500]
     print(
         f"[SlidesRender] compose scene={scene_key} style={style_key} "
         f"voice={voice_style.get('id', '-')}"
@@ -252,6 +318,9 @@ def _load_or_build_slides_script(
     plan = build_slide_template_plan(brief_dict, slides)
     save_template_plan(task_dir, plan)
     script["slides"] = apply_template_plan_to_slides(script.get("slides") or [], brief_dict)
+    from python_agent.slides_llm_director import direct_slides_script
+
+    script["slides"] = direct_slides_script(script.get("slides") or [], brief_dict, platform_id)
     _save_slides_artifact(task_dir, script)
     return script, brief_dict, scene_key, style_key, voice_style
 
@@ -294,7 +363,6 @@ def render_slides_video(
     slides, voice_style = _apply_platform_gv_to_slides(
         brief_dict, slides, task_dir, platform_id
     )
-    script["slides"] = slides
     brief_dict = prepare_brief_tts(brief_dict, platform_id, voice_style=voice_style or None)
     for slide in slides:
         vd = dict(slide.get("visual_design") or {})
@@ -316,8 +384,14 @@ def render_slides_video(
             image_mode=cfg.render_slides_image_mode,
             output_dir=str(images_dir),
         )
-        script["slides"] = slides
-        _save_slides_artifact(task_dir, script)
+        script_for_disk = dict(script)
+        script_for_disk["slides"] = slides
+        llm_dir = task_dir / "llm"
+        llm_dir.mkdir(parents=True, exist_ok=True)
+        (llm_dir / f"slides_render_plan_{platform_id}.json").write_text(
+            json.dumps(script_for_disk, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
 
     work = task_dir / "videos" / f"_slides_work_{platform_id}"
     work.mkdir(parents=True, exist_ok=True)

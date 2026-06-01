@@ -1,7 +1,8 @@
 import React from 'react';
 import {useCurrentFrame, useVideoConfig, spring, interpolate} from 'remotion';
 import type {MotionParams, MotionProfileId} from '../types';
-import {THEMES} from '../types';
+import {resolveMotionTheme} from '../types';
+import {DISPLAY_FONT} from '../fonts';
 import {
   accentOrangeLastWord,
   headingStyleForDecorations,
@@ -14,6 +15,7 @@ interface Props {
   params?: MotionParams;
   layout?: 'center' | 'top-heavy';
   cssDecorations?: string[];
+  colorMood?: string;
 }
 
 function splitWords(s: string): string[] {
@@ -24,14 +26,6 @@ function splitChars(s: string): string[] {
   return Array.from(s);
 }
 
-function themeFor(profile: string) {
-  const p = profile;
-  if (p.includes('github')) return THEMES.github;
-  if (p.includes('tiktok')) return THEMES.tiktok;
-  if (p.includes('terminal')) return THEMES.terminal;
-  if (p.includes('minimal')) return THEMES.minimal;
-  return THEMES.kinetic;
-}
 
 export const AnimatedHeading: React.FC<Props> = ({
   text,
@@ -40,25 +34,33 @@ export const AnimatedHeading: React.FC<Props> = ({
   params = {},
   layout = 'center',
   cssDecorations = [],
+  colorMood = '',
 }) => {
   const frame = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const {fps, width, height} = useVideoConfig();
   const p = String(profile);
-  const theme = themeFor(p);
+  const theme = resolveMotionTheme(p, colorMood);
   const stagger = params.staggerFrames ?? (p.includes('tight') ? 3 : 6);
   const damp = params.springDamping ?? 14;
   const stiff = params.springStiffness ?? 120;
 
   const wrapper: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width,
+    height,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: layout === 'top-heavy' ? 'flex-start' : 'center',
-    paddingTop: layout === 'top-heavy' ? 180 : 0,
-    paddingLeft: 64,
-    paddingRight: 64,
+    paddingTop: layout === 'top-heavy' ? 200 : 0,
+    paddingLeft: 56,
+    paddingRight: 56,
     textAlign: 'center',
     zIndex: 10,
+    boxSizing: 'border-box',
+    fontFamily: DISPLAY_FONT,
   };
 
   // 顶栏 Topic 跑马 + 居中标题（G13）
@@ -226,10 +228,10 @@ export const AnimatedHeading: React.FC<Props> = ({
   }
 
   const showGithubBadge =
-    (p.includes('github_daily') || cssDecorations.includes('github-badge')) &&
-    !p.includes('tiktok') &&
-    !p.includes('minimal') &&
-    !p.includes('kinetic_slam');
+    cssDecorations.includes('github-badge') ||
+    ((p.includes('github_daily') || p.includes('glitch')) &&
+      !p.includes('minimal') &&
+      !p.includes('kinetic_slam'));
 
   const badge = showGithubBadge && (
       <div
