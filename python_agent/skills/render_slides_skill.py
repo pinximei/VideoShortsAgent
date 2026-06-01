@@ -53,7 +53,20 @@ class RenderSlidesSkill:
 
             duration = tts_clip.get("duration", 5.0)
             tts_audio_path = tts_clip.get("path")
-            sentences = split_caption_sentences(tts_clip.get("sentences", []))
+            from python_agent.display_text import (
+                CAPTION_LINE_MAX_CHARS,
+                CAPTION_LINE_MAX_CHARS_DOUYIN,
+                split_caption_sentences,
+            )
+
+            cap_max = (
+                CAPTION_LINE_MAX_CHARS_DOUYIN
+                if slide.get("caption_mode") == "tiktok"
+                else CAPTION_LINE_MAX_CHARS
+            )
+            sentences = split_caption_sentences(
+                tts_clip.get("sentences", []), max_chars=cap_max
+            )
             slide = fit_slide_for_display(slide)
 
             print(f"  [Slide {i+1}/{len(slides)}] {slide.get('type', '?')}: "
@@ -198,6 +211,7 @@ class RenderSlidesSkill:
             "cssDecorations": css_dec,
             "headingStartFrame": heading_start_frame,
             "bulletStartFrames": bullet_start_frames,
+            "captionMode": slide.get("caption_mode", ""),
         }
         if sentences:
             props["sentences"] = sentences

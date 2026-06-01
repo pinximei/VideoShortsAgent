@@ -20,9 +20,9 @@ GITHUB_DAILY_TTS_BASELINE: dict[str, Any] = {
 PLATFORM_TTS_DEFAULTS: dict[str, dict[str, Any]] = {
     "douyin": {
         "tts_voice": "zh-CN-YunyangNeural",
-        "tts_rate": "+20%",
-        "tts_pitch": "+8Hz",
-        "sentence_pause_sec": 0.10,
+        "tts_rate": "+22%",
+        "tts_pitch": "+10Hz",
+        "sentence_pause_sec": 0.08,
     },
     "xhs": {
         "tts_voice": "zh-CN-XiaoxiaoNeural",

@@ -6,6 +6,7 @@ from typing import Any
 
 # 底栏单行安全字数（与 CaptionOverlay 动态字号对齐）
 CAPTION_LINE_MAX_CHARS = 12
+CAPTION_LINE_MAX_CHARS_DOUYIN = 10
 HEADING_MAX_CHARS = 14
 BULLET_MAX_CHARS = 20
 BULLET_MAX_COUNT = 4
@@ -123,8 +124,13 @@ def fit_slide_for_display(slide: dict[str, Any]) -> dict[str, Any]:
     return s
 
 
-def split_caption_sentences(sentences: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def split_caption_sentences(
+    sentences: list[dict[str, Any]],
+    *,
+    max_chars: int | None = None,
+) -> list[dict[str, Any]]:
     """长句按时轴均分为多段单行字幕，与口播进度对齐（不含换行符）。"""
+    cap = max_chars or CAPTION_LINE_MAX_CHARS
     out: list[dict[str, Any]] = []
     for seg in sentences or []:
         text = _plain(str(seg.get("text", "") or ""))
@@ -133,7 +139,7 @@ def split_caption_sentences(sentences: list[dict[str, Any]]) -> list[dict[str, A
         start = float(seg.get("start", 0))
         end = float(seg.get("end", start + 1))
         dur = max(0.25, end - start)
-        phrases = split_spoken_phrases(text)
+        phrases = split_spoken_phrases(text, max_chars=cap)
         if len(phrases) <= 1:
             out.append({"text": phrases[0] if phrases else text, "start": start, "end": end})
             continue

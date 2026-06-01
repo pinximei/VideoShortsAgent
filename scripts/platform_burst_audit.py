@@ -204,6 +204,9 @@ def _render_platform(task_dir: Path, platform: str, slides: list, brief: dict, v
     plat_slides = list(expanded.get("slides") or slides)
     picked, plan = build_github_daily_slide_plan(b, plat_slides)
     plat_slides = apply_github_daily_plan_to_slides(plat_slides, plan)
+    if platform == "douyin":
+        for s in plat_slides:
+            s["caption_mode"] = "tiktok"
     preset = get_platform_preset(platform)
     for slide in plat_slides:
         vd = dict(slide.get("visual_design") or {})
@@ -224,8 +227,11 @@ def _render_platform(task_dir: Path, platform: str, slides: list, brief: dict, v
     )
     tts_result = dubbing.execute([{"tts_text": s["tts_text"]} for s in plat_slides], str(work))
     tts_clips = tts_result.get("tts_clips", []) if isinstance(tts_result, dict) else tts_result
+    from python_agent.display_text import CAPTION_LINE_MAX_CHARS, CAPTION_LINE_MAX_CHARS_DOUYIN
+
     for clip in tts_clips:
-        clip["sentences"] = split_caption_sentences(clip.get("sentences", []))
+        cap = CAPTION_LINE_MAX_CHARS_DOUYIN if platform == "douyin" else CAPTION_LINE_MAX_CHARS
+        clip["sentences"] = split_caption_sentences(clip.get("sentences", []), max_chars=cap)
 
     renderer = RenderSlidesSkill()
     visual_style = get_style("github_dark")

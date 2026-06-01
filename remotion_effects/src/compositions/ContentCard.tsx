@@ -6,10 +6,9 @@ import {
   interpolate,
 } from 'remotion';
 import {SlideBackground} from './SlideBackground';
-import {CaptionOverlay} from './CaptionOverlay';
 import {MotionSlideShell} from '../motion/decorations/MotionSlideShell';
 import {AnimatedBullets} from '../motion/text/AnimatedBullets';
-import {TikTokActiveCaption} from '../motion/text/TikTokActiveCaption';
+import {SlideCaptionLayer} from '../motion/text/SlideCaptionLayer';
 import type {MotionParams} from '../motion/types';
 
 interface Sentence {
@@ -46,6 +45,7 @@ interface ContentCardProps {
   motionParams?: MotionParams;
   backgroundColor?: string;
   cssDecorations?: string[];
+  captionMode?: string;
 }
 
 export const ContentCard: React.FC<ContentCardProps> = ({
@@ -75,6 +75,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   motionParams = {},
   backgroundColor,
   cssDecorations = [],
+  captionMode = '',
 }) => {
   const hud = overlayMode === 'hud';
   const frame = useCurrentFrame();
@@ -99,17 +100,14 @@ export const ContentCard: React.FC<ContentCardProps> = ({
           params={motionParams}
           bulletStartFrames={bulletStartFrames}
         />
-        {motionProfile.includes('tiktok') && sentences.length > 0 ? (
-          <TikTokActiveCaption
-            words={sentences.map((s) => ({text: s.text + ' ', start: s.start, end: s.end}))}
-            profile={motionProfile}
-            wordsPerPageMs={motionParams.wordsPerPageMs ?? 1000}
-          />
-        ) : (
-          <div style={{position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none'}}>
-            <CaptionOverlay sentences={sentences} style={captionStyle} accentColor={accentColor} />
-          </div>
-        )}
+        <SlideCaptionLayer
+          sentences={sentences}
+          captionMode={captionMode}
+          motionProfile={motionProfile}
+          motionParams={motionParams}
+          captionStyle={captionStyle}
+          accentColor={accentColor}
+        />
       </MotionSlideShell>
     );
   }

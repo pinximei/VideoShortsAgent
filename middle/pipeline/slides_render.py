@@ -93,10 +93,16 @@ def _apply_platform_gv_to_slides(
             encoding="utf-8",
         )
         out_slides = apply_github_daily_plan_to_slides(out_slides, plan)
+        if platform_id == "douyin":
+            for s in out_slides:
+                s["caption_mode"] = "tiktok"
+                mp = dict(s.get("motion_params") or {})
+                mp.setdefault("wordsPerPageMs", 500)
+                s["motion_params"] = mp
         print(
             f"[SlidesRender] platform={platform_id} G={picked.get('id')} "
-            f"V={voice_style.get('id')} profiles="
-            f"{[s.get('motion_profile') for s in out_slides[:3]]}"
+            f"V={voice_style.get('id')} caption={out_slides[0].get('caption_mode', 'spring')} "
+            f"profiles={[s.get('motion_profile') for s in out_slides[:3]]}"
         )
     return out_slides, voice_style
 

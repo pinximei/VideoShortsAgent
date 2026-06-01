@@ -7,6 +7,7 @@ import {
 } from 'remotion';
 import {SlideBackground} from './SlideBackground';
 import {MotionSlideShell} from '../motion/decorations/MotionSlideShell';
+import {SlideCaptionLayer} from '../motion/text/SlideCaptionLayer';
 import type {MotionParams} from '../motion/types';
 
 /**
@@ -44,6 +45,7 @@ interface CTACardProps {
   motionParams?: MotionParams;
   backgroundColor?: string;
   cssDecorations?: string[];
+  captionMode?: string;
 }
 
 export const CTACard: React.FC<CTACardProps> = ({
@@ -70,6 +72,7 @@ export const CTACard: React.FC<CTACardProps> = ({
   motionParams = {},
   backgroundColor,
   cssDecorations = [],
+  captionMode = '',
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
@@ -106,6 +109,14 @@ export const CTACard: React.FC<CTACardProps> = ({
             {ctaText}
           </div>
         </div>
+        <SlideCaptionLayer
+          sentences={sentences}
+          captionMode={captionMode}
+          motionProfile={motionProfile}
+          motionParams={motionParams}
+          captionStyle={captionStyle}
+          accentColor={accentColor}
+        />
       </MotionSlideShell>
     );
   }

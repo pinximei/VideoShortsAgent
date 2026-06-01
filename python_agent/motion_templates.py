@@ -149,14 +149,16 @@ def is_github_daily_brief(brief: dict[str, Any]) -> bool:
     )
 
 
-def _profile_for_github_slide(style: dict[str, Any], slide_type: str) -> str:
+def _profile_for_github_slide(
+    style: dict[str, Any], slide_type: str, *, platform: str = ""
+) -> str:
+    plat = (platform or "").strip().lower()
     if slide_type == "title_card":
         return str(style.get("title_profile") or "github_daily_hook")
     if slide_type == "cta_card":
-        sid = str(style.get("id") or "")
-        if sid == "G18_cta_star_pulse":
-            return "cta_pulse_arrow"
         return "cta_pulse_arrow"
+    if plat == "douyin":
+        return "tiktok_word_pop"
     return str(style.get("content_profile") or "github_daily_bullets")
 
 
@@ -178,9 +180,11 @@ def build_github_daily_slide_plan(
     trans = str(picked.get("transition") or "fade")
     mparams = dict(picked.get("motion_params") or {})
     plan: list[dict[str, Any]] = []
+    platform = str(brief.get("platform") or "").strip().lower()
+    cap_ms = 500 if platform == "douyin" else int(style.get("wordsPerPageMs", 800))
     for i, slide in enumerate(slides):
         st = str(slide.get("type") or "content_card")
-        profile = _profile_for_github_slide(style, st)
+        profile = _profile_for_github_slide(style, st, platform=platform)
         slide_trans = trans if i < len(slides) - 1 else ""
         plan.append(
             {
@@ -189,7 +193,7 @@ def build_github_daily_slide_plan(
                 "slide_type": st,
                 "motion_profile": profile,
                 "motion_params": {
-                    "wordsPerPageMs": style.get("wordsPerPageMs", mparams.get("wordsPerPageMs", 800)),
+                    "wordsPerPageMs": cap_ms if platform == "douyin" else style.get("wordsPerPageMs", mparams.get("wordsPerPageMs", 800)),
                     "staggerFrames": mparams.get("staggerFrames", 5),
                     "springDamping": mparams.get("springDamping", 14),
                     "springStiffness": mparams.get("springStiffness", 120),

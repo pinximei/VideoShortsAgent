@@ -6,10 +6,9 @@ import {
   interpolate,
 } from 'remotion';
 import {SlideBackground} from './SlideBackground';
-import {CaptionOverlay} from './CaptionOverlay';
 import {MotionSlideShell} from '../motion/decorations/MotionSlideShell';
 import {AnimatedHeading} from '../motion/text/AnimatedHeading';
-import {TikTokActiveCaption} from '../motion/text/TikTokActiveCaption';
+import {SlideCaptionLayer} from '../motion/text/SlideCaptionLayer';
 import type {MotionParams} from '../motion/types';
 
 interface Sentence {
@@ -44,6 +43,7 @@ interface TitleCardProps {
   backgroundColor?: string;
   cssDecorations?: string[];
   githubDailyStyleId?: string;
+  captionMode?: string;
 }
 
 export const TitleCard: React.FC<TitleCardProps> = ({
@@ -71,6 +71,7 @@ export const TitleCard: React.FC<TitleCardProps> = ({
   motionParams = {},
   backgroundColor,
   cssDecorations = [],
+  captionMode = '',
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
@@ -78,10 +79,6 @@ export const TitleCard: React.FC<TitleCardProps> = ({
 
   // 动效档案驱动（v2）：按词弹射 / TikTok 高亮，锐背景
   if (motionProfile) {
-    const wordsFromSentences =
-      sentences.length > 0
-        ? sentences.map((s) => ({text: s.text + ' ', start: s.start, end: s.end}))
-        : [];
     return (
       <MotionSlideShell
         width={width}
@@ -100,18 +97,14 @@ export const TitleCard: React.FC<TitleCardProps> = ({
           layout={layoutStyle === 'top-heavy' ? 'top-heavy' : 'center'}
           cssDecorations={cssDecorations}
         />
-        {motionProfile.includes('tiktok') && wordsFromSentences.length > 0 && (
-          <TikTokActiveCaption
-            words={wordsFromSentences}
-            profile={motionProfile}
-            wordsPerPageMs={motionParams.wordsPerPageMs ?? 1000}
-          />
-        )}
-        {(!motionProfile.includes('tiktok') || wordsFromSentences.length === 0) && (
-          <div style={{position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none'}}>
-            <CaptionOverlay sentences={sentences} style={captionStyle} accentColor={accentColor} />
-          </div>
-        )}
+        <SlideCaptionLayer
+          sentences={sentences}
+          captionMode={captionMode}
+          motionProfile={motionProfile}
+          motionParams={motionParams}
+          captionStyle={captionStyle}
+          accentColor={accentColor}
+        />
       </MotionSlideShell>
     );
   }

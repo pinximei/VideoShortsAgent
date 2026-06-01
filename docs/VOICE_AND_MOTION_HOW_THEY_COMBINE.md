@@ -17,6 +17,8 @@
    - **抖音**：`V01_burst_hook_fast` + `G01_cyber_hook_yellow`（砸字钩子 + 赛博网格）
    - **小红书**：`V04_minimal_calm` + `G03_minimal_white_series`（女声慢讲 + 米白极简）
 4. 双平台**共用文案**、**分平台重套 G+V 再渲染**（`llm/github_daily_style_{platform}.json`）。
+5. **抖音底栏**：`caption_mode=tiktok` → 全镜 `TikTokActiveCaption` 逐词高亮（`wordsPerPageMs≈500`）；小红书仍用单行 `CaptionOverlay` fade。
+6. **抖音语速**：`Yunyang` `+22%`、句停顿 `0.08s`；内容镜 `tiktok_word_pop`。
 
 任务目录落盘：
 
