@@ -35,13 +35,13 @@ class RenderSkill:
         try:
             result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, timeout=5)
             version_line = result.stdout.split("\n")[0] if result.stdout else "unknown"
-            print(f"[RenderSkill] FFmpeg: {version_line} ✓")
+            print(f"[RenderSkill] FFmpeg: {version_line} OK")
         except Exception as e:
-            print(f"[RenderSkill] ⚠️ FFmpeg 不可用: {e}")
+            print(f"[RenderSkill] WARN FFmpeg unavailable: {e}")
 
         self._remotion_available = os.path.exists(os.path.join(REMOTION_DIR, "node_modules"))
         if self._remotion_available:
-            print(f"[RenderSkill] Remotion: {REMOTION_DIR} ✓")
+            print(f"[RenderSkill] Remotion: {REMOTION_DIR} OK")
         else:
             print(f"[RenderSkill] Remotion: 未安装（将使用 ASS 字幕模式）")
 

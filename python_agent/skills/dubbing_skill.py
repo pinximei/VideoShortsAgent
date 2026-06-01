@@ -97,7 +97,7 @@ class DubbingSkill:
         clips_with_tts = [c for c in clips if c.get("tts_text")]
 
         if not clips_with_tts:
-            print("[DubbingSkill] ⚠️ clips 中无 tts_text 字段")
+            print("[DubbingSkill] WARN: clips 中无 tts_text 字段")
             return {"tts_clips": []}
 
         print(f"[DubbingSkill] 开始生成 TTS: {len(clips_with_tts)} 个片段")
@@ -134,7 +134,7 @@ class DubbingSkill:
             }
 
         if not clip_jobs:
-            print("[DubbingSkill] ⚠️ clips 中无 tts_text 字段")
+            print("[DubbingSkill] WARN: clips 中无 tts_text 字段")
             return {"tts_clips": []}
 
         tts_clips: list[dict] = []
@@ -167,7 +167,7 @@ class DubbingSkill:
                 f"tts_partial_failure: {len(tts_clips)}/{len(clip_jobs)} clips synthesized"
             )
 
-        print(f"\n[DubbingSkill] ✅ 完成: {len(tts_clips)} 个 TTS 音频（句级精确计时）")
+        print(f"\n[DubbingSkill] OK: {len(tts_clips)} TTS clips (sentence timing)")
         return {"tts_clips": tts_clips}
 
     def _split_sentences(self, text: str) -> list:

@@ -1,0 +1,34 @@
+{
+  "platform": "douyin",
+  "plan_effects": {},
+  "applied_effects": {
+    "feed_kind": "github_daily",
+    "use_remotion": true,
+    "caption_remotion": true,
+    "preset": "科技",
+    "caption_style": "spring",
+    "transition": "circleopen",
+    "transition_duration": 0.22,
+    "gradient": false,
+    "gradient_colors": [
+      "#667eea",
+      "#764ba2"
+    ],
+    "intro_card": true,
+    "outro_card": false,
+    "content_highlight": false,
+    "intro_heading": "GitHub爆款",
+    "ffmpeg_preset": "fast",
+    "intro_subheading": "VSA E2E 证明"
+  },
+  "clip_caption_styles": [
+    "spring",
+    "spring",
+    "spring"
+  ],
+  "clip_transitions": [
+    "slideup",
+    "fade",
+    "fade"
+  ]
+}

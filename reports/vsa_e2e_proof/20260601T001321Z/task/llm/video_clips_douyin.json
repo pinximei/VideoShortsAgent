@@ -1,0 +1,56 @@
+{
+  "clips": [
+    {
+      "start": 0.0,
+      "end": 8.0,
+      "tts_text": "别划走，今天这个 GitHub 项目 Star 涨了一万，三分钟讲清它为什么火。",
+      "hook_text": "GitHub爆款",
+      "caption_style": "spring",
+      "transition_to_next": "slideup"
+    },
+    {
+      "start": 8.0,
+      "end": 18.0,
+      "tts_text": "它能自动抓趋势、生成短视频脚本，还支持一键配音，适合日更科技号。",
+      "hook_text": "日更神器",
+      "caption_style": "spring",
+      "transition_to_next": "fade"
+    },
+    {
+      "start": 18.0,
+      "end": 24.0,
+      "tts_text": "链接在评论区，点个关注，明天继续拆榜。",
+      "hook_text": "关注",
+      "caption_style": "spring",
+      "transition_to_next": "fade"
+    }
+  ],
+  "platform": "douyin",
+  "effects": {
+    "feed_kind": "github_daily",
+    "use_remotion": true,
+    "caption_remotion": true,
+    "preset": "科技",
+    "caption_style": "spring",
+    "transition": "circleopen",
+    "transition_duration": 0.22,
+    "gradient": false,
+    "gradient_colors": [
+      "#667eea",
+      "#764ba2"
+    ],
+    "intro_card": true,
+    "outro_card": false,
+    "content_highlight": false,
+    "intro_heading": "GitHub爆款",
+    "ffmpeg_preset": "fast",
+    "intro_subheading": "VSA E2E 证明"
+  },
+  "source": "e2e_proof",
+  "render_status": "ok",
+  "tts_durations": [
+    8.0,
+    10.0,
+    6.0
+  ]
+}
