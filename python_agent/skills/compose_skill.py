@@ -79,12 +79,16 @@ class ComposeSkill:
         total_chars = sum(len(s.get("tts_text", "")) for s in script.get("slides", []))
         print(f"[ComposeSkill] 双脑导演编排完毕: {total} 个分镜, 总旁白 {total_chars} 字")
         if self._voice_style:
-            from python_agent.voice_content_templates import ensure_script_tts_minimum
+            from python_agent.voice_content_templates import (
+                ensure_script_tts_minimum,
+                expand_script_tts_to_minimum,
+            )
 
+            script = expand_script_tts_to_minimum(script, self._voice_style)
             script, actual, need = ensure_script_tts_minimum(script, self._voice_style)
             if actual < need:
                 print(
-                    f"[ComposeSkill] 提示：口播 {actual} 字未达模板下限 {need}，成片可能显空、男声更显慢"
+                    f"[ComposeSkill] 提示：口播 {actual} 字未达模板下限 {need}，已自动补齐仍不足则显空"
                 )
         return script
 

@@ -13,7 +13,10 @@
 
 1. `slides_render` 先按 brief 选 **V** → 写入 `brief.tts_rate` / `tts_voice` / `tts_pitch` / `sentence_pause_sec`。
 2. 再按 brief 选 **G** → 写入每镜 `github_daily_style_id`、动效 plan。
-3. 可选配对：V 里 `reference_motion: "G01"` 表示「推荐与 G01 一起用」；**不是**强制绑定，哈希选型仍可拆开。
+3. **平台默认配对**（`python_agent/platform_gv_defaults.py`）：
+   - **抖音**：`V01_burst_hook_fast` + `G01_cyber_hook_yellow`（砸字钩子 + 赛博网格）
+   - **小红书**：`V04_minimal_calm` + `G03_minimal_white_series`（女声慢讲 + 米白极简）
+4. 双平台**共用文案**、**分平台重套 G+V 再渲染**（`llm/github_daily_style_{platform}.json`）。
 
 任务目录落盘：
 

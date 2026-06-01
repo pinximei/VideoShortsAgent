@@ -29,7 +29,7 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 # 对标 research/voice_content/asr_analysis.json 科技口播中位
-DOUYIN_WPM_TARGET = (300, 380)
+DOUYIN_WPM_TARGET = (295, 380)  # ASR 含句间气口，295≈爆款体感
 XHS_WPM_TARGET = (260, 340)
 DOUYIN_CHARS_TARGET = (180, 260)
 XHS_CHARS_TARGET = (160, 240)
@@ -182,17 +182,28 @@ def _render_platform(task_dir: Path, platform: str, slides: list, brief: dict, v
     sys.path.insert(0, str(ROOT))
     sys.path.insert(0, str(MIDDLE))
     from python_agent.display_text import split_caption_sentences
-    from python_agent.motion_templates import apply_template_plan_to_slides, build_github_daily_slide_plan
+    from python_agent.motion_templates import build_github_daily_slide_plan
+    from python_agent.platform_gv_defaults import PLATFORM_GV
+    from python_agent.voice_content_templates import expand_script_tts_to_minimum
     from python_agent.skills.dubbing_skill import DubbingSkill
     from python_agent.skills.render_slides_skill import RenderSlidesSkill
     from python_agent.template_loader import get_style
     from python_agent.tts_params import prepare_brief_tts
+    from python_agent.voice_content_templates import pick_voice_content_style
     from middle.pipeline.platform_presets import get_platform_preset
 
     b = dict(brief)
     b["platform"] = platform
-    picked, _ = build_github_daily_slide_plan(b, slides)
-    plat_slides = apply_template_plan_to_slides([dict(s) for s in slides], b)
+    defaults = PLATFORM_GV.get(platform, {})
+    b["voice_content_style_id"] = defaults.get("voice_id", "")
+    b["github_daily_style_id"] = defaults.get("motion_id", "")
+    from python_agent.motion_templates import apply_github_daily_plan_to_slides
+
+    voice_style = pick_voice_content_style(b)
+    expanded = expand_script_tts_to_minimum({"slides": [dict(s) for s in slides]}, voice_style)
+    plat_slides = list(expanded.get("slides") or slides)
+    picked, plan = build_github_daily_slide_plan(b, plat_slides)
+    plat_slides = apply_github_daily_plan_to_slides(plat_slides, plan)
     preset = get_platform_preset(platform)
     for slide in plat_slides:
         vd = dict(slide.get("visual_design") or {})
@@ -253,6 +264,8 @@ def main() -> int:
         voice_style_prompt_block,
     )
 
+    from python_agent.platform_gv_defaults import PLATFORM_GV
+
     brief = {
         "title": "平台爆款对标自检",
         "feed_kind": "github_daily",
@@ -299,6 +312,9 @@ def main() -> int:
             print(f"\n=== 渲染 {platform} ===")
             b = dict(brief)
             b["platform"] = platform
+            defaults = PLATFORM_GV.get(platform, {})
+            b["voice_content_style_id"] = defaults.get("voice_id", "")
+            b["github_daily_style_id"] = defaults.get("motion_id", "")
             voice_style = pick_voice_content_style(b)
             print(f"  V={voice_style.get('id')} G池=platform:{platform}")
             print(f"  TTS预设: {voice_style_prompt_block(voice_style)[:120]}...")

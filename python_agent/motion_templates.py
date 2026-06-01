@@ -174,10 +174,14 @@ def build_github_daily_slide_plan(
     """整片选一套 Gxx，按镜类型映射 profile + 装饰。"""
     picked = pick_github_daily_style(brief)
     style = dict(picked.get("github_daily_style") or {})
+    cap = str(picked.get("caption_style") or "spring")
+    trans = str(picked.get("transition") or "fade")
+    mparams = dict(picked.get("motion_params") or {})
     plan: list[dict[str, Any]] = []
     for i, slide in enumerate(slides):
         st = str(slide.get("type") or "content_card")
         profile = _profile_for_github_slide(style, st)
+        slide_trans = trans if i < len(slides) - 1 else ""
         plan.append(
             {
                 "id": style.get("id"),
@@ -185,17 +189,17 @@ def build_github_daily_slide_plan(
                 "slide_type": st,
                 "motion_profile": profile,
                 "motion_params": {
-                    "wordsPerPageMs": style.get("wordsPerPageMs", 800),
-                    "staggerFrames": 5,
-                    "springDamping": 14,
-                    "springStiffness": 120,
+                    "wordsPerPageMs": style.get("wordsPerPageMs", mparams.get("wordsPerPageMs", 800)),
+                    "staggerFrames": mparams.get("staggerFrames", 5),
+                    "springDamping": mparams.get("springDamping", 14),
+                    "springStiffness": mparams.get("springStiffness", 120),
                 },
                 "theme": _theme_for_bg(str(style.get("bg") or "#0d1117")),
                 "background": style.get("bg"),
                 "css_decorations": list(style.get("css") or []),
                 "github_daily_style_id": style.get("id"),
-                "caption_style": "spring",
-                "transition": "fade",
+                "caption_style": cap,
+                "transition": slide_trans,
             }
         )
     return picked, plan
@@ -336,6 +340,28 @@ def pick_github_daily_style(brief: dict[str, Any]) -> dict[str, Any]:
     styles = list(load_github_daily_catalog().get("styles") or [])
     if not styles:
         return pick_intro_template(brief)
+    from python_agent.platform_gv_defaults import resolve_platform_motion_style
+
+    chosen = resolve_platform_motion_style(brief, styles)
+    if chosen:
+        style = dict(chosen)
+        platform = str(brief.get("platform") or "").strip().lower()
+        return {
+            "id": style.get("id"),
+            "github_daily_style": style,
+            "motion_profile": style.get("title_profile", "github_daily_hook"),
+            "motion_params": {
+                "wordsPerPageMs": style.get("wordsPerPageMs", 800),
+                "staggerFrames": 3 if platform == "douyin" else 5,
+                "springDamping": 12 if platform == "douyin" else 14,
+                "springStiffness": 180 if platform == "douyin" else 120,
+            },
+            "theme": _theme_for_bg(str(style.get("bg") or "#0d1117")),
+            "caption_style": "fade" if platform == "xhs" else "spring",
+            "transition": "dissolve" if platform == "xhs" else "wipeleft",
+            "background": style.get("bg"),
+            "css_decorations": list(style.get("css") or []),
+        }
     seed = str(
         brief.get("content_key")
         or brief.get("article_id")

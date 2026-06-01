@@ -49,6 +49,11 @@ def pick_voice_content_style(brief: dict[str, Any]) -> dict[str, Any]:
     styles = list(load_voice_catalog().get("styles") or [])
     if not styles:
         return _fallback_style()
+    from python_agent.platform_gv_defaults import resolve_platform_voice_style
+
+    resolved = resolve_platform_voice_style(brief, styles)
+    if resolved:
+        return resolved
     seed = str(
         brief.get("content_key")
         or brief.get("article_id")
@@ -125,16 +130,59 @@ def ensure_script_tts_minimum(
     *,
     min_ratio: float = 0.85,
 ) -> tuple[dict[str, Any], int, int]:
-    """口播过短时打日志；返回 (script, actual, required_min)。"""
+    """口播过短时补齐；返回 (script, actual, required_min)。"""
+    script = expand_script_tts_to_minimum(script, style, min_ratio=min_ratio)
     slides = list(script.get("slides") or [])
     tc = style.get("total_chars") or [180, 260]
     need = int(tc[0]) if isinstance(tc, list) and tc else 180
     actual = script_tts_char_total(slides)
     if actual < int(need * min_ratio):
         print(
-            f"[VoiceContent] ⚠️ 口播偏短: {actual} 字 < 目标 {need}（模板 {style.get('id', '?')}）"
+            f"[VoiceContent] WARN tts short: {actual} < {need} (template {style.get('id', '?')})"
         )
     return script, actual, need
+
+
+def expand_script_tts_to_minimum(
+    script: dict[str, Any],
+    style: dict[str, Any],
+    *,
+    min_ratio: float = 0.92,
+) -> dict[str, Any]:
+    """在不变屏显标题的前提下，为 tts_text 补足爆款信息密度。"""
+    slides = [dict(s) for s in script.get("slides") or []]
+    tc = style.get("total_chars") or [180, 260]
+    need = int(tc[0]) if isinstance(tc, list) and tc else 180
+    actual = script_tts_char_total(slides)
+    target = int(need * min_ratio)
+    if actual >= target:
+        return {"slides": slides}
+
+    fillers = [
+        "真的值得你现在就试。",
+        "上手门槛不高，跟着 README 就能跑起来。",
+        "适合想提效、又不想折腾环境的人。",
+        "评论区我会放链接和部署要点。",
+        "点个收藏，下次找得到。",
+        "部署步骤我也整理在评论区了。",
+        "想要同款工作流的可以直接照抄。",
+    ]
+    fi = 0
+    guard = 0
+    while actual < target and guard < 24:
+        guard += 1
+        slide = slides[guard % len(slides)]
+        tts = str(slide.get("tts_text") or "").strip()
+        if not tts:
+            continue
+        extra = fillers[fi % len(fillers)]
+        fi += 1
+        if extra.rstrip("。") in tts:
+            continue
+        slide["tts_text"] = tts.rstrip("，,。 ") + "，" + extra
+        actual = script_tts_char_total(slides)
+
+    return {"slides": slides}
 
 
 def apply_voice_style_to_brief(

@@ -61,6 +61,46 @@ def _attach_cover_to_slides(slides: list[dict], cover_path: Path | None) -> None
         first.setdefault("needs_image", True)
 
 
+def _apply_platform_gv_to_slides(
+    brief_dict: dict[str, Any],
+    slides: list[dict[str, Any]],
+    task_dir: Path,
+    platform_id: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """按平台重套 G+V（双平台共用文案、分平台画风/口播参数）。"""
+    from python_agent.motion_templates import (
+        apply_github_daily_plan_to_slides,
+        build_github_daily_slide_plan,
+        is_github_daily_brief,
+    )
+    from python_agent.voice_content_templates import (
+        expand_script_tts_to_minimum,
+        pick_voice_content_style,
+    )
+
+    b = dict(brief_dict)
+    b["platform"] = platform_id
+    voice_style = pick_voice_content_style(b)
+    expanded = expand_script_tts_to_minimum({"slides": [dict(s) for s in slides]}, voice_style)
+    out_slides = list(expanded.get("slides") or slides)
+
+    if is_github_daily_brief(b):
+        picked, plan = build_github_daily_slide_plan(b, out_slides)
+        llm_dir = task_dir / "llm"
+        llm_dir.mkdir(parents=True, exist_ok=True)
+        (llm_dir / f"github_daily_style_{platform_id}.json").write_text(
+            json.dumps({"picked": picked, "per_slide": plan}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        out_slides = apply_github_daily_plan_to_slides(out_slides, plan)
+        print(
+            f"[SlidesRender] platform={platform_id} G={picked.get('id')} "
+            f"V={voice_style.get('id')} profiles="
+            f"{[s.get('motion_profile') for s in out_slides[:3]]}"
+        )
+    return out_slides, voice_style
+
+
 def _save_slides_artifact(task_dir: Path, script: dict[str, Any]) -> Path:
     path = task_dir / "llm" / "slides_script.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -126,17 +166,31 @@ def _load_or_build_slides_script(
     )
 
     preset = get_platform_preset(platform_id)
+    brief_dict["platform"] = platform_id
     voice_style: dict = {}
     if is_voice_style_brief(brief_dict) or platform_id in ("douyin", "xhs"):
-        voice_style = pick_voice_content_style(brief_dict)
+        vpath = task_dir / "llm" / f"voice_content_style_{platform_id}.json"
+        if vpath.is_file():
+            data = json.loads(vpath.read_text(encoding="utf-8-sig"))
+            voice_style = dict(data.get("style") or {})
+        else:
+            voice_style = pick_voice_content_style(brief_dict)
+            save_voice_style(task_dir, voice_style)
+            vpath.write_text(
+                json.dumps({"version": 1, "style": voice_style}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
         brief_dict = apply_voice_style_to_brief(
             brief_dict, voice_style, platform_voice=preset.voice
         )
-        if not (task_dir / "llm" / "voice_content_style.json").is_file():
-            save_voice_style(task_dir, voice_style)
 
     if script_path.is_file():
         script = json.loads(script_path.read_text(encoding="utf-8-sig"))
+        if voice_style:
+            from python_agent.voice_content_templates import expand_script_tts_to_minimum
+
+            script = expand_script_tts_to_minimum(script, voice_style)
+            _save_slides_artifact(task_dir, script)
         return script, brief_dict, scene_key, style_key, voice_style
 
     compose_text = brief_to_compose_text(brief_dict)
@@ -164,6 +218,9 @@ def _load_or_build_slides_script(
     if voice_style:
         from python_agent.voice_content_templates import ensure_script_tts_minimum
 
+        from python_agent.voice_content_templates import expand_script_tts_to_minimum
+
+        script = expand_script_tts_to_minimum(script, voice_style)
         script, actual, need = ensure_script_tts_minimum(script, voice_style)
         if actual < int(need * 0.6):
             raise RuntimeError(
@@ -224,6 +281,10 @@ def render_slides_video(
     )
     brief_dict["platform"] = platform_id
     slides = list(script.get("slides") or [])
+    slides, voice_style = _apply_platform_gv_to_slides(
+        brief_dict, slides, task_dir, platform_id
+    )
+    script["slides"] = slides
     brief_dict = prepare_brief_tts(brief_dict, platform_id, voice_style=voice_style or None)
     for slide in slides:
         vd = dict(slide.get("visual_design") or {})
