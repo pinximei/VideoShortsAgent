@@ -99,13 +99,30 @@ export const XhsEditorialCaption: React.FC<Props> = ({
             fontSize,
             fontWeight: 600,
             lineHeight: 1.45,
-            color: textColor,
             textAlign: 'center',
             wordBreak: 'keep-all',
             letterSpacing: 0.5,
           }}
         >
-          {page.text}
+          {page.tokens && page.tokens.length > 1 ? (
+            page.tokens.map((token) => {
+              const active =
+                token.fromMs <= timeMs && token.toMs > timeMs;
+              return (
+                <span
+                  key={`${token.fromMs}-${token.text}`}
+                  style={{
+                    color: active ? accentColor : textColor,
+                    fontWeight: active ? 700 : 600,
+                  }}
+                >
+                  {token.text}
+                </span>
+              );
+            })
+          ) : (
+            <span style={{color: textColor}}>{page.text}</span>
+          )}
         </div>
       </div>
     </div>

@@ -278,11 +278,22 @@ class DubbingSkill:
         for j, sa in enumerate(sentence_audios):
             start = current_time
             end = start + sa["duration"]
-            timeline.append({
+            row = {
                 "text": sa["text"],
                 "start": round(start, 3),
-                "end": round(end, 3)
-            })
+                "end": round(end, 3),
+            }
+            if sa.get("words"):
+                row["words"] = [
+                    {
+                        "text": w.get("text", ""),
+                        "start": round(start + float(w.get("start", 0)), 3),
+                        "end": round(start + float(w.get("end", 0)), 3),
+                    }
+                    for w in sa["words"]
+                    if w.get("text")
+                ]
+            timeline.append(row)
             current_time = end + (self.sentence_pause if j < len(sentence_audios) - 1 else 0)
 
         # 总时长 = 最后一句结束 + 尾部留白
@@ -317,31 +328,62 @@ class DubbingSkill:
 
     def _generate_tts_batch(self, sentences: list, tts_dir: str, clip_index: int) -> list:
         """顺序生成各句 TTS（限流 + 重试），避免 gather 触发 503。"""
+        from python_agent.tts_edge import word_boundaries_enabled
         from python_agent.tts_provider import run_async, synthesize_batch_sequential
 
         paths = [os.path.join(tts_dir, f"sent_{clip_index}_{j}.mp3")
                  for j in range(len(sentences))]
         items = list(zip(sentences, paths))
         cache_dir = self._tts_cache_dir(tts_dir)
+        use_wb = word_boundaries_enabled()
         try:
-            run_async(
-                synthesize_batch_sequential(
-                    items,
-                    voice=self.voice,
-                    cache_dir=cache_dir,
-                    rate=self.tts_rate,
-                    pitch=self.tts_pitch,
+            if use_wb:
+                from python_agent.tts_edge import synthesize_to_file_with_words
+
+                results = []
+                for sentence, path in items:
+                    _out, words = run_async(
+                        synthesize_to_file_with_words(
+                            sentence,
+                            self.voice,
+                            path,
+                            cache_dir=cache_dir,
+                            rate=self.tts_rate,
+                            pitch=self.tts_pitch,
+                        )
+                    )
+                    if os.path.exists(path) and os.path.getsize(path) > 80:
+                        results.append(
+                            {
+                                "text": sentence,
+                                "path": path,
+                                "duration": self._get_audio_duration(path),
+                                "words": words,
+                            }
+                        )
+            else:
+                run_async(
+                    synthesize_batch_sequential(
+                        items,
+                        voice=self.voice,
+                        cache_dir=cache_dir,
+                        rate=self.tts_rate,
+                        pitch=self.tts_pitch,
+                    )
                 )
-            )
+                results = []
+                for sentence, path in zip(sentences, paths):
+                    if os.path.exists(path) and os.path.getsize(path) > 80:
+                        results.append(
+                            {
+                                "text": sentence,
+                                "path": path,
+                                "duration": self._get_audio_duration(path),
+                            }
+                        )
         except RuntimeError as exc:
             print(f"[DubbingSkill] TTS 失败: {exc}")
             return []
-
-        results = []
-        for sentence, path in zip(sentences, paths):
-            if os.path.exists(path) and os.path.getsize(path) > 80:
-                duration = self._get_audio_duration(path)
-                results.append({"text": sentence, "path": path, "duration": duration})
         if len(results) < len(sentences):
             raise RuntimeError(
                 f"tts_sentence_partial: {len(results)}/{len(sentences)} clip={clip_index}"

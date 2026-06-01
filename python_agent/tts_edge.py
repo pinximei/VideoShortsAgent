@@ -204,6 +204,97 @@ def run_async(coro: Any) -> Any:
         return pool.submit(asyncio.run, coro).result(timeout=600)
 
 
+def word_boundaries_enabled() -> bool:
+    return os.getenv("TTS_WORD_BOUNDARIES", "1").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+    )
+
+
+async def synthesize_to_file_with_words(
+    text: str,
+    voice: str,
+    output_path: str | Path,
+    *,
+    cache_dir: str | Path | None = None,
+    rate: str = "+0%",
+    pitch: str = "+0Hz",
+    volume: str = "+0%",
+) -> tuple[Path, list[dict[str, float | str]]]:
+    """
+    流式合成并采集 WordBoundary（相对本句音频 0 秒起）。
+
+    失败时抛出异常；无词界时返回空 words 列表（由上层 estimate 兜底）。
+    """
+    import edge_tts
+
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("TTS 文本为空")
+
+    out = Path(output_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    rate = (rate or "+0%").strip()
+    pitch = (pitch or "+0Hz").strip()
+    volume = (volume or "+0%").strip()
+    key = cache_key(f"{text}|{rate}|{pitch}|{volume}|wb", voice)
+    words_sidecar: Path | None = None
+    if cache_dir and tts_cache_enabled():
+        words_sidecar = Path(cache_dir) / f"{key}.words.json"
+        if words_sidecar.is_file() and out.is_file() and out.stat().st_size > 80:
+            import json
+
+            return out, json.loads(words_sidecar.read_text(encoding="utf-8"))
+
+    words: list[dict[str, float | str]] = []
+    last_err: BaseException | None = None
+    retries = tts_max_retries()
+    base = tts_retry_base_sec()
+
+    for attempt in range(retries):
+        try:
+            await _throttle_before_request()
+            async with _get_ws_sem():
+                comm = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume=volume)
+                audio = bytearray()
+                async for chunk in comm.stream():
+                    if chunk["type"] == "audio":
+                        audio.extend(chunk["data"])
+                    elif chunk["type"] == "WordBoundary":
+                        start = float(chunk["offset"]) / 10_000_000.0
+                        dur = float(chunk["duration"]) / 10_000_000.0
+                        words.append(
+                            {
+                                "text": str(chunk["text"]),
+                                "start": round(start, 3),
+                                "end": round(start + dur, 3),
+                            }
+                        )
+                if len(audio) < 80:
+                    raise RuntimeError("edge_tts_empty_output")
+                out.write_bytes(audio)
+            if words_sidecar is not None:
+                import json
+
+                words_sidecar.write_text(
+                    json.dumps(words, ensure_ascii=False), encoding="utf-8"
+                )
+            return out, words
+        except Exception as exc:
+            last_err = exc
+            if not is_retryable_error(exc) or attempt >= retries - 1:
+                break
+            await asyncio.sleep(base * (2**attempt) + random.uniform(0, 0.4))
+            if out.is_file():
+                try:
+                    out.unlink()
+                except OSError:
+                    pass
+
+    raise RuntimeError(f"edge_tts_word_boundary_failed: {last_err}") from last_err
+
+
 async def synthesize_batch_sequential(
     items: list[tuple[str, str]],
     *,

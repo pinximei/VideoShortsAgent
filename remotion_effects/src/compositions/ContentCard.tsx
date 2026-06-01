@@ -70,6 +70,8 @@ interface ContentCardProps {
   midInfoLayout?: string;
   summaryRevealFrames?: number[];
   panelRevealFrame?: number;
+  midHeroMaxChars?: number;
+  midHeroFontScale?: number;
   captionPages?: Array<{
     text: string;
     startMs: number;
@@ -127,6 +129,8 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   midInfoLayout = 'keywords',
   summaryRevealFrames = [],
   panelRevealFrame = 0,
+  midHeroMaxChars = 16,
+  midHeroFontScale = 1,
   captionPages = [],
 }) => {
   const hud = overlayMode === 'hud';
@@ -171,6 +175,9 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             midInfoLayout={midInfoLayout}
             summaryRevealFrames={summaryRevealFrames}
             panelRevealFrame={panelRevealFrame}
+            captionPlatform={captionPlatform}
+            midHeroMaxChars={midHeroMaxChars}
+            midHeroFontScale={midHeroFontScale}
           />
         ) : (
           <AnimatedBullets

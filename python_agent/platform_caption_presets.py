@@ -28,6 +28,8 @@ _PRESETS: dict[str, dict[str, Any]] = {
         },
         "background_color": "#120908",
         "mid_hero_max_chars": 16,
+        "mid_hero_font_scale": 1.0,
+        "caption_word_highlight": True,
     },
     XHS: {
         "caption_mode": "semantic",
@@ -50,7 +52,10 @@ _PRESETS: dict[str, dict[str, Any]] = {
         },
         "background_color": "#151c28",
         "mid_hero_max_chars": 20,
+        "mid_hero_font_scale": 0.92,
+        "mid_effect_default": "glow_scan",
         "mid_info_layout": "steps",
+        "caption_word_highlight": True,
     },
 }
 
@@ -85,6 +90,15 @@ def apply_platform_caption_preset(slide: dict[str, Any], platform: str) -> dict[
 
     if pid == XHS and not s.get("mid_info_layout"):
         s["mid_info_layout"] = preset.get("mid_info_layout", "steps")
+    s["mid_hero_max_chars"] = int(
+        s.get("mid_hero_max_chars") or preset.get("mid_hero_max_chars") or 16
+    )
+    mp["midHeroFontScale"] = float(
+        mp.get("midHeroFontScale") or preset.get("mid_hero_font_scale") or 1.0
+    )
+    s["motion_params"] = mp
+    if not s.get("mid_effect") and preset.get("mid_effect_default"):
+        s["mid_effect"] = preset["mid_effect_default"]
 
     return s
 

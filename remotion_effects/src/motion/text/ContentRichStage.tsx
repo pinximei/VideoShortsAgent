@@ -30,6 +30,9 @@ interface Props {
   midInfoLayout?: string;
   summaryRevealFrames?: number[];
   panelRevealFrame?: number;
+  captionPlatform?: string;
+  midHeroMaxChars?: number;
+  midHeroFontScale?: number;
 }
 
 export const ContentRichStage: React.FC<Props> = ({
@@ -54,12 +57,17 @@ export const ContentRichStage: React.FC<Props> = ({
   midInfoLayout = 'keywords',
   summaryRevealFrames = [],
   panelRevealFrame = 0,
+  captionPlatform = '',
+  midHeroMaxChars = 16,
+  midHeroFontScale = 1,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
-  const theme = resolveMotionTheme('tiktok', colorMood);
+  const isXhs = captionPlatform === 'xhs' || colorMood === 'cool';
+  const theme = resolveMotionTheme(isXhs ? 'xhs' : 'tiktok', colorMood);
 
-  const hero = (summaryLines[0] || featureLabel || '核心亮点').slice(0, 16);
+  const heroMax = midHeroMaxChars || (isXhs ? 20 : 16);
+  const hero = (summaryLines[0] || featureLabel || '核心亮点').slice(0, heroMax);
   const subLines = summaryLines.length > 1 ? summaryLines.slice(1, 3) : [];
   const heroFrame = summaryRevealFrames[0] ?? 0;
   const panelFrame = panelRevealFrame > 0 ? panelRevealFrame : summaryRevealFrames[1] ?? 18;
@@ -80,10 +88,16 @@ export const ContentRichStage: React.FC<Props> = ({
   const enter = spring({
     frame: Math.max(0, frame - heroFrame),
     fps,
-    config: {damping: 16, stiffness: 140},
+    config: isXhs
+      ? {damping: 22, stiffness: 90}
+      : {damping: 16, stiffness: 140},
   });
   const chips = showKineticWall ? kineticPhrases.slice(0, 4) : [];
-  const heroSize = Math.min(72, Math.floor(width / Math.max(5, hero.length * 0.52)));
+  const heroBase = isXhs ? 58 : 72;
+  const heroSize = Math.min(
+    heroBase * midHeroFontScale,
+    Math.floor(width / Math.max(isXhs ? 6 : 5, hero.length * (isXhs ? 0.46 : 0.52))),
+  );
 
   const safeTop = Math.round(height * 0.14);
   const safeBottom = Math.round(height * 0.36);

@@ -30,6 +30,21 @@ _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 REMOTION_DIR = os.path.join(_PROJECT_ROOT, "remotion_effects")
 
 
+def _npx_cmd() -> str:
+    return "npx.cmd" if os.name == "nt" else "npx"
+
+
+def _montage_enabled(slide_count: int, remotion_available: bool) -> bool:
+    env = os.environ.get("REMOTION_MONTAGE", "").strip().lower()
+    if env in ("0", "false", "no"):
+        return False
+    if env in ("1", "true", "yes"):
+        return remotion_available and slide_count >= 2
+    if os.name == "nt":
+        return False
+    return remotion_available and slide_count >= 2
+
+
 class RenderSlidesSkill:
     """幻灯片式视频渲染"""
 
@@ -74,11 +89,7 @@ class RenderSlidesSkill:
         plat = (platform_id or "douyin").strip().lower()
 
         slides = attach_caption_preview(slides, tts_clips)
-        use_montage = (
-            os.environ.get("REMOTION_MONTAGE", "1") != "0"
-            and self._remotion_available
-            and len(slides) >= 2
-        )
+        use_montage = _montage_enabled(len(slides), self._remotion_available)
 
         print(f"[RenderSlidesSkill] 开始渲染 {len(slides)} 个 slides (platform={plat})...")
 
@@ -309,7 +320,7 @@ class RenderSlidesSkill:
         os.makedirs(seq_dir, exist_ok=True)
 
         cmd = [
-            "npx", "remotion", "render", "src/index.tsx", composition,
+            _npx_cmd(), "remotion", "render", "src/index.tsx", composition,
             f"--output={os.path.abspath(seq_dir).replace(chr(92), '/')}",
             f"--props={props_path.replace(chr(92), '/')}",
             "--image-format=png", "--sequence",
@@ -559,7 +570,7 @@ class RenderSlidesSkill:
         seq_dir = os.path.join(output_dir, "montage_seq")
         os.makedirs(seq_dir, exist_ok=True)
         cmd = [
-            "npx",
+            _npx_cmd(),
             "remotion",
             "render",
             "src/index.tsx",
@@ -832,6 +843,10 @@ class RenderSlidesSkill:
             "hookBeats": list(slide.get("hook_beats") or []),
             "midInfoLayout": str(slide.get("mid_info_layout") or "keywords"),
             "openingDurationFrames": int(slide.get("opening_duration_frames") or 0),
+            "midHeroMaxChars": int(slide.get("mid_hero_max_chars") or 16),
+            "midHeroFontScale": float(
+                (slide.get("motion_params") or {}).get("midHeroFontScale") or 1.0
+            ),
         }
         if sentences:
             props["sentences"] = sentences

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from python_agent.word_timing import words_to_caption_tokens
+
 from python_agent.display_text import (
     CAPTION_LINE_MAX_CHARS,
     CAPTION_LINE_MAX_CHARS_DOUYIN,
@@ -33,14 +35,17 @@ def sentences_to_caption_pages(
         end_s = float(s.get("end", start_s + 0.5))
         start_ms = max(0, int(start_s * 1000) - buffer_ms)
         end_ms = int(end_s * 1000) + buffer_ms
-        token_from = int(start_s * 1000)
-        token_to = max(token_from + 80, int(end_s * 1000))
+        tokens = words_to_caption_tokens(s, buffer_ms=0)
+        if not tokens:
+            token_from = int(start_s * 1000)
+            token_to = max(token_from + 80, int(end_s * 1000))
+            tokens = [{"text": text, "fromMs": token_from, "toMs": token_to}]
         pages.append(
             {
                 "text": text,
                 "startMs": start_ms,
                 "durationMs": max(280, end_ms - start_ms),
-                "tokens": [{"text": text, "fromMs": token_from, "toMs": token_to}],
+                "tokens": tokens,
             }
         )
 

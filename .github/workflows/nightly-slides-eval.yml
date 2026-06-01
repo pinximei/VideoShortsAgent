@@ -1,0 +1,23 @@
+name: Nightly slides eval
+
+on:
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Unit + mock eval
+        run: |
+          pip install pytest
+          pytest python_agent/tests/test_word_timing.py -q
+          python scripts/run_slides_eval.py --platform both --mock
+        env:
+          EVAL_MOCK_COMPOSE: "1"
+          TTS_WORD_BOUNDARIES: "0"
