@@ -45,6 +45,7 @@ interface TitleCardProps {
   cssDecorations?: string[];
   githubDailyStyleId?: string;
   captionMode?: string;
+  captionPlatform?: string;
   openingBurst?: boolean;
   hookBeats?: string[];
   openingDurationFrames?: number;
@@ -85,6 +86,7 @@ export const TitleCard: React.FC<TitleCardProps> = ({
   backgroundColor,
   cssDecorations = [],
   captionMode = '',
+  captionPlatform = '',
   openingBurst = false,
   hookBeats = [],
   openingDurationFrames = 0,
@@ -133,6 +135,7 @@ export const TitleCard: React.FC<TitleCardProps> = ({
           sentences={sentences}
           captionPages={captionPages}
           captionMode={captionMode}
+          captionPlatform={captionPlatform}
           motionProfile={motionProfile}
           motionParams={motionParams}
           captionStyle={captionStyle}

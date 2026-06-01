@@ -24,4 +24,10 @@ jobs:
             python_agent/tests/test_slides_quality_gates.py \
             python_agent/tests/test_montage_timing.py \
             python_agent/tests/test_summary_timing.py \
+            python_agent/tests/test_platform_caption_presets.py \
             -q --tb=short
+      - name: Slides eval (mock compose, no API)
+        run: |
+          python scripts/run_slides_eval.py --platform both --mock
+        env:
+          EVAL_MOCK_COMPOSE: "1"

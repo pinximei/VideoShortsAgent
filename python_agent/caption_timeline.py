@@ -69,11 +69,14 @@ def prepare_slide_captions(
     plat = (platform or slide.get("platform") or "douyin").strip().lower()
     use_tts = slide.get("caption_use_tts_timeline", True)
     cap_mode = slide.get("caption_mode") or ""
+    max_chars = int((slide.get("motion_params") or {}).get("maxCharsPerPage") or 0)
+    if not max_chars:
+        max_chars = 24 if plat == "xhs" else TIKTOK_PHRASE_MAX_CHARS
 
     if not raw_sentences:
         return [], []
 
-    if use_tts and cap_mode == "tiktok":
+    if use_tts and cap_mode in ("tiktok", "semantic"):
         sentences = [
             {
                 "text": str(s.get("text") or "").strip(),
@@ -87,15 +90,8 @@ def prepare_slide_captions(
         pages = sentences_to_caption_pages(sentences, buffer_ms=buf)
         return sentences, pages
 
-    max_chars = (
-        CAPTION_LINE_MAX_CHARS_DOUYIN
-        if cap_mode == "tiktok"
-        else CAPTION_LINE_MAX_CHARS
-    )
-    if cap_mode == "tiktok":
-        sentences = split_tiktok_caption_sentences(raw_sentences, max_chars=TIKTOK_PHRASE_MAX_CHARS)
-    else:
-        sentences = split_tiktok_caption_sentences(raw_sentences, max_chars=max_chars)
+    split_max = max_chars if cap_mode == "semantic" else TIKTOK_PHRASE_MAX_CHARS
+    sentences = split_tiktok_caption_sentences(raw_sentences, max_chars=split_max)
 
     buf = XHS_CAPTION_BUFFER_MS if plat == "xhs" else CAPTION_BUFFER_MS
     pages = sentences_to_caption_pages(sentences, buffer_ms=buf)

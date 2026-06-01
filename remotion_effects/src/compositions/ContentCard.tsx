@@ -47,6 +47,7 @@ interface ContentCardProps {
   backgroundColor?: string;
   cssDecorations?: string[];
   captionMode?: string;
+  captionPlatform?: string;
   colorMood?: string;
   particleType?: string;
   broadcastFrame?: boolean;
@@ -105,6 +106,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   backgroundColor,
   cssDecorations = [],
   captionMode = '',
+  captionPlatform = '',
   broadcastFrame = false,
   sceneFocus = false,
   sceneIndex = 0,
@@ -184,6 +186,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
           sentences={sentences}
           captionPages={captionPages}
           captionMode={captionMode}
+          captionPlatform={captionPlatform}
           motionProfile={motionProfile}
           motionParams={motionParams}
           captionStyle={captionStyle}

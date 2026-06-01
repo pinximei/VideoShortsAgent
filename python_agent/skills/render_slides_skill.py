@@ -157,17 +157,19 @@ class RenderSlidesSkill:
                 }
             )
 
-        parallel = (
-            os.environ.get("SLIDES_RENDER_PARALLEL", "1") != "0"
-            and len(jobs) > 1
-            and os.name != "nt"
-        )
-        workers = min(3, len(jobs)) if parallel else 1
+        parallel = os.environ.get("SLIDES_RENDER_PARALLEL", "1") != "0" and len(jobs) > 1
+        try:
+            max_w = int(os.environ.get("SLIDES_RENDER_WORKERS", "3"))
+        except ValueError:
+            max_w = 3
+        workers = min(max(1, max_w), len(jobs)) if parallel else 1
         segment_paths: list[str | None] = [None] * len(slides)
 
         def _run(job: dict) -> tuple[int, str | None]:
+            isolated = os.path.join(output_dir, f"_parallel_{job['index']}")
+            os.makedirs(isolated, exist_ok=True)
             return job["index"], self._render_segment_job(
-                job, visual_style, output_dir, cache_dir
+                job, visual_style, isolated, cache_dir
             )
 
         if workers > 1:
@@ -806,6 +808,9 @@ class RenderSlidesSkill:
             "headingStartFrame": heading_start_frame,
             "bulletStartFrames": bullet_start_frames,
             "captionMode": slide.get("caption_mode", ""),
+            "captionPlatform": str(
+                slide.get("caption_platform") or slide.get("platform") or ""
+            ),
             "openingBurst": bool(slide.get("opening_burst"))
             and slide.get("type") == "title_card",
             "sceneFocus": bool(slide.get("scene_focus")),

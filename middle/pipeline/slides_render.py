@@ -123,49 +123,6 @@ def _apply_platform_gv_to_slides(
             vd = dict(out_slides[0].get("visual_design") or {})
             vd["motion_profile"] = plan0["motion_profile"]
             out_slides[0]["visual_design"] = vd
-        for s in out_slides:
-            vd = dict(s.get("visual_design") or {})
-            if platform_id == "douyin":
-                s["caption_mode"] = "tiktok"
-                s["caption_use_tts_timeline"] = True
-                mp = dict(s.get("motion_params") or {})
-                mp.setdefault("wordsPerPageMs", 2400)
-                mp.setdefault("maxCharsPerPage", 18)
-                s["motion_params"] = mp
-                s["background_color"] = s.get("background_color") or "#120908"
-                vd.update(
-                    {
-                        "color_mood": "warm",
-                        "particle_type": "warm",
-                        "broadcast_frame": True,
-                        "text_color": "#fff8f0",
-                        "accent_color": "#FF9F43",
-                        "accent_color2": "#FFD93D",
-                    }
-                )
-            else:
-                s["caption_mode"] = "semantic"
-                s["caption_use_tts_timeline"] = True
-                mp = dict(s.get("motion_params") or {})
-                mp.setdefault("wordsPerPageMs", 3200)
-                mp.setdefault("maxCharsPerPage", 22)
-                s["motion_params"] = mp
-                s["background_color"] = s.get("background_color") or "#151c28"
-                vd.update(
-                    {
-                        "color_mood": "cool",
-                        "particle_type": "cool",
-                        "broadcast_frame": False,
-                        "text_color": "#e8eef7",
-                        "accent_color": "#3b82f6",
-                        "accent_color2": "#22d3ee",
-                    }
-                )
-            s["visual_design"] = vd
-            if platform_id == "douyin":
-                s["css_decorations"] = list(s.get("css_decorations") or vd.get("css_decorations") or [])
-            else:
-                s["css_decorations"] = list(s.get("css_decorations") or vd.get("css_decorations") or [])
         print(
             f"[SlidesRender] platform={platform_id} G={picked.get('id')} "
             f"V={voice_style.get('id')} caption={out_slides[0].get('caption_mode', 'spring')} "
@@ -175,6 +132,19 @@ def _apply_platform_gv_to_slides(
     from python_agent.slides_ai_enricher import enrich_slides_visual_payload
 
     out_slides = enrich_slides_visual_payload(out_slides, b, platform_id)
+
+    from python_agent.platform_caption_presets import apply_platform_presets_to_slides
+
+    out_slides = apply_platform_presets_to_slides(out_slides, platform_id)
+    for s in out_slides:
+        s["css_decorations"] = list(
+            s.get("css_decorations") or (s.get("visual_design") or {}).get("css_decorations") or []
+        )
+    if out_slides:
+        print(
+            f"[SlidesRender] caption_platform={out_slides[0].get('caption_platform')} "
+            f"mode={out_slides[0].get('caption_mode')}"
+        )
     return out_slides, voice_style
 
 

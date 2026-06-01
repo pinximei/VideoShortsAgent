@@ -1,6 +1,7 @@
 import React from 'react';
 import {CaptionOverlay} from '../../compositions/CaptionOverlay';
 import {TikTokActiveCaption} from './TikTokActiveCaption';
+import {XhsEditorialCaption} from './XhsEditorialCaption';
 import type {MotionParams} from '../types';
 
 interface Sentence {
@@ -20,6 +21,7 @@ interface Props {
   sentences: Sentence[];
   captionPages?: CaptionPageProp[];
   captionMode?: string;
+  captionPlatform?: string;
   motionProfile?: string;
   motionParams?: MotionParams;
   captionStyle?: 'spring' | 'fade' | 'typewriter';
@@ -34,6 +36,7 @@ export const SlideCaptionLayer: React.FC<Props> = ({
   sentences,
   captionPages,
   captionMode = '',
+  captionPlatform = '',
   motionProfile = '',
   motionParams = {},
   captionStyle = 'spring',
@@ -45,16 +48,33 @@ export const SlideCaptionLayer: React.FC<Props> = ({
   if (!sentences.length) {
     return null;
   }
-  const tikTok =
+  const plat = (captionPlatform || '').toLowerCase();
+  const isDouyin =
+    plat === 'douyin' ||
     captionMode === 'tiktok' ||
-    captionMode === 'semantic' ||
     String(motionProfile).includes('tiktok');
+  const isXhs = plat === 'xhs' || captionMode === 'semantic';
+
+  const wordList = sentences.map((s) => ({
+    text: s.text + ' ',
+    start: s.start,
+    end: s.end,
+  }));
 
   return (
     <>
-      {tikTok ? (
+      {isXhs && !isDouyin ? (
+        <XhsEditorialCaption
+          words={wordList}
+          captionPages={captionPages}
+          accentColor={accentColor}
+          textColor={textColor}
+          fontScale={motionParams.captionFontScale ?? 0.72}
+          bottomPx={motionParams.captionBottomPx ?? 200}
+        />
+      ) : isDouyin || captionMode === 'semantic' ? (
         <TikTokActiveCaption
-          words={sentences.map((s) => ({text: s.text + ' ', start: s.start, end: s.end}))}
+          words={wordList}
           captionPages={captionPages}
           profile={motionProfile}
           wordsPerPageMs={motionParams.wordsPerPageMs ?? 2400}
