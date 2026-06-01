@@ -28,6 +28,8 @@ interface Props {
   midIcon?: string;
   midEffect?: string;
   midInfoLayout?: string;
+  summaryRevealFrames?: number[];
+  panelRevealFrame?: number;
 }
 
 export const ContentRichStage: React.FC<Props> = ({
@@ -50,6 +52,8 @@ export const ContentRichStage: React.FC<Props> = ({
   midIcon = '',
   midEffect = 'glow_ring',
   midInfoLayout = 'keywords',
+  summaryRevealFrames = [],
+  panelRevealFrame = 0,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
@@ -57,6 +61,8 @@ export const ContentRichStage: React.FC<Props> = ({
 
   const hero = (summaryLines[0] || featureLabel || '核心亮点').slice(0, 16);
   const subLines = summaryLines.length > 1 ? summaryLines.slice(1, 3) : [];
+  const heroFrame = summaryRevealFrames[0] ?? 0;
+  const panelFrame = panelRevealFrame > 0 ? panelRevealFrame : summaryRevealFrames[1] ?? 18;
   const viz = (vizType || 'none').toLowerCase();
   const series = (chartSeries.length ? chartSeries : chartBars).filter((n) => Number(n) > 0);
   const showLine = showChart && viz === 'line' && series.length >= 3;
@@ -71,7 +77,11 @@ export const ContentRichStage: React.FC<Props> = ({
       : effects[sceneIndex % effects.length];
   const useTypewriter = effect === 'typewriter';
 
-  const enter = spring({frame, fps, config: {damping: 16, stiffness: 140}});
+  const enter = spring({
+    frame: Math.max(0, frame - heroFrame),
+    fps,
+    config: {damping: 16, stiffness: 140},
+  });
   const chips = showKineticWall ? kineticPhrases.slice(0, 4) : [];
   const heroSize = Math.min(72, Math.floor(width / Math.max(5, hero.length * 0.52)));
 
@@ -141,6 +151,7 @@ export const ContentRichStage: React.FC<Props> = ({
             fontSize={heroSize}
             color={theme.fg}
             accentColor={accentColor2}
+            startFrame={heroFrame}
           />
         ) : (
           <div
@@ -163,8 +174,9 @@ export const ContentRichStage: React.FC<Props> = ({
         )}
 
         {subLines.map((line, i) => {
+          const lineFrame = summaryRevealFrames[i + 1] ?? heroFrame + 12 + i * 10;
           const s = spring({
-            frame: Math.max(0, frame - 12 - i * 10),
+            frame: Math.max(0, frame - lineFrame),
             fps,
             config: {damping: 18, stiffness: 120},
           });
@@ -235,6 +247,8 @@ export const ContentRichStage: React.FC<Props> = ({
             kineticPhrases={kineticPhrases}
             accentColor={accentColor}
             accentColor2={accentColor2}
+            panelRevealFrame={panelFrame}
+            stepRevealFrames={summaryRevealFrames.slice(1)}
           />
         ) : null}
 

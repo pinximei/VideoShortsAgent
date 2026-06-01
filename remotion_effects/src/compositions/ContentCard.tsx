@@ -67,6 +67,8 @@ interface ContentCardProps {
   midIcon?: string;
   midEffect?: string;
   midInfoLayout?: string;
+  summaryRevealFrames?: number[];
+  panelRevealFrame?: number;
   captionPages?: Array<{
     text: string;
     startMs: number;
@@ -121,6 +123,8 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   midIcon = '',
   midEffect = 'auto',
   midInfoLayout = 'keywords',
+  summaryRevealFrames = [],
+  panelRevealFrame = 0,
   captionPages = [],
 }) => {
   const hud = overlayMode === 'hud';
@@ -163,6 +167,8 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             midIcon={midIcon}
             midEffect={midEffect}
             midInfoLayout={midInfoLayout}
+            summaryRevealFrames={summaryRevealFrames}
+            panelRevealFrame={panelRevealFrame}
           />
         ) : (
           <AnimatedBullets

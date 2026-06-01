@@ -6,8 +6,10 @@ interface Props {
   text: string;
   beats?: string[];
   accentColor?: string;
-  /** 每条爆点展示帧数 */
+  /** 每条爆点展示帧数（未指定 openingDurationFrames 时） */
   beatFrames?: number;
+  /** 开场 hook 总帧数上限（如 100≈3.3s） */
+  openingDurationFrames?: number;
 }
 
 /** 前 3 秒多句爆点轮播：大字砸入，避免整镜一句不变 */
@@ -16,6 +18,7 @@ export const HookBurst: React.FC<Props> = ({
   beats = [],
   accentColor = '#FFE135',
   beatFrames = 28,
+  openingDurationFrames = 0,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width} = useVideoConfig();
@@ -24,10 +27,20 @@ export const HookBurst: React.FC<Props> = ({
     return null;
   }
 
-  const idx = Math.min(lines.length - 1, Math.floor(frame / beatFrames));
-  const local = frame - idx * beatFrames;
+  const totalFrames =
+    openingDurationFrames > 0
+      ? openingDurationFrames
+      : beatFrames * lines.length + 12;
+  const perBeat = Math.max(
+    20,
+    openingDurationFrames > 0
+      ? Math.floor(openingDurationFrames / lines.length)
+      : beatFrames,
+  );
+
+  const idx = Math.min(lines.length - 1, Math.floor(frame / perBeat));
+  const local = frame - idx * perBeat;
   const t = lines[idx];
-  const totalFrames = beatFrames * lines.length + 12;
   if (frame > totalFrames) {
     return null;
   }
@@ -42,7 +55,7 @@ export const HookBurst: React.FC<Props> = ({
     local > 6 && local < 20 && local % 3 === 0 ? Math.sin(local * 4) * 5 : 0;
   const fadeOut = interpolate(
     local,
-    [beatFrames - 8, beatFrames],
+    [perBeat - 8, perBeat],
     [1, idx < lines.length - 1 ? 0.15 : 0],
     {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'},
   );

@@ -8,6 +8,10 @@ interface Props {
   kineticPhrases?: string[];
   accentColor?: string;
   accentColor2?: string;
+  /** 面板整体延迟入场（帧） */
+  panelRevealFrame?: number;
+  /** steps 每行入场帧 */
+  stepRevealFrames?: number[];
 }
 
 export const MidInfoPanels: React.FC<Props> = ({
@@ -16,10 +20,17 @@ export const MidInfoPanels: React.FC<Props> = ({
   kineticPhrases = [],
   accentColor = '#3b82f6',
   accentColor2 = '#22d3ee',
+  panelRevealFrame = 0,
+  stepRevealFrames = [],
 }) => {
   const frame = useCurrentFrame();
   const {fps, width} = useVideoConfig();
-  const enter = spring({frame, fps, config: {damping: 14, stiffness: 160}});
+  const localFrame = Math.max(0, frame - panelRevealFrame);
+  const enter = spring({
+    frame: localFrame,
+    fps,
+    config: {damping: 14, stiffness: 160},
+  });
 
   const lines = summaryLines.filter(Boolean).slice(0, 3);
   const chips = kineticPhrases.filter(Boolean).slice(0, 5);
@@ -39,7 +50,7 @@ export const MidInfoPanels: React.FC<Props> = ({
         }}
       >
         {steps.map((step, i) => {
-          const delay = i * 8;
+          const delay = stepRevealFrames[i] ?? panelRevealFrame + i * 12;
           const s = spring({
             frame: Math.max(0, frame - delay),
             fps,
@@ -149,8 +160,10 @@ export const MidInfoPanels: React.FC<Props> = ({
       }}
     >
       {tags.map((tag, i) => {
+        const delay =
+          stepRevealFrames[i] ?? panelRevealFrame + 8 + i * 8;
         const s = spring({
-          frame: Math.max(0, frame - i * 5),
+          frame: Math.max(0, frame - delay),
           fps,
           config: {damping: 14, stiffness: 200},
         });

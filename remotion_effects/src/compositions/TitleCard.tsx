@@ -117,6 +117,7 @@ export const TitleCard: React.FC<TitleCardProps> = ({
             text={burstText}
             beats={hookBeats.length ? hookBeats : undefined}
             accentColor={accentColor2 || accentColor}
+            openingDurationFrames={openingDurationFrames}
           />
         ) : null}
         <AnimatedHeading

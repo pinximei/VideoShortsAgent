@@ -35,8 +35,19 @@ class RenderSlidesSkill:
 
     def __init__(self, width=1080, height=1920):
         self.fps = 30
-        self.width = width
-        self.height = height
+        self._preview = os.environ.get("SLIDES_PREVIEW", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        if self._preview:
+            self.width = 720
+            self.height = 1280
+            print("[RenderSlidesSkill] SLIDES_PREVIEW=1 → 720x1280 快速预览")
+        else:
+            self.width = width
+            self.height = height
+        self._crf = "23" if self._preview else "18"
         self._check_remotion()
 
     def _check_remotion(self):
@@ -337,7 +348,7 @@ class RenderSlidesSkill:
             subprocess.run([
                 "ffmpeg", "-y", "-framerate", str(self.fps), "-i", pattern,
                 "-c:v", "libx264", "-pix_fmt", "yuv420p",
-                "-crf", "18", "-profile:v", "high", "-level", "4.1",
+                "-crf", self._crf, "-profile:v", "high", "-level", "4.1",
                 "-preset", "medium",
                 output_path
             ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
@@ -367,7 +378,7 @@ class RenderSlidesSkill:
             "-i", f"color=c={colors[0].lstrip('#')}:s={self.width}x{self.height}:d={duration}:r={self.fps}",
             "-vf", f"drawtext=text='{safe_title}':fontsize=72:fontcolor={text_color}:x=(w-text_w)/2:y=(h-text_h)/2",
             "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-crf", "18", "-profile:v", "high", "-level", "4.1",
+            "-crf", self._crf, "-profile:v", "high", "-level", "4.1",
             "-preset", "medium",
             "-t", str(duration), output_path
         ]
@@ -379,7 +390,7 @@ class RenderSlidesSkill:
                 "ffmpeg", "-y", "-f", "lavfi",
                 "-i", f"color=c={colors[0].lstrip('#')}:s={self.width}x{self.height}:d={duration}:r={self.fps}",
                 "-c:v", "libx264", "-pix_fmt", "yuv420p",
-                "-crf", "18", "-profile:v", "high", "-level", "4.1",
+                "-crf", self._crf, "-profile:v", "high", "-level", "4.1",
                 "-preset", "medium",
                 "-t", str(duration), output_path
             ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
@@ -440,7 +451,7 @@ class RenderSlidesSkill:
             "ffmpeg", "-y", "-i", video_path,
             "-vf", f"tpad=stop_mode=clone:stop_duration={pad_seconds:.3f}",
             "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-crf", "18", "-profile:v", "high", "-level", "4.1",
+            "-crf", self._crf, "-profile:v", "high", "-level", "4.1",
             "-preset", "medium", "-an",
             padded_path
         ]
@@ -516,7 +527,9 @@ class RenderSlidesSkill:
                 raw_sents, slide_fit, platform=platform_id
             )
             duration = float(tts_clip.get("duration", 5.0))
-            frames = max(1, int((duration + 0.3) * self.fps))
+            from python_agent.montage_timing import slide_duration_frames
+
+            frames = slide_duration_frames(duration, self.fps)
             props = self._build_remotion_props(
                 slide_fit,
                 visual_style,
@@ -616,28 +629,8 @@ class RenderSlidesSkill:
         if not self._concat_tts_audio(tts_clips, audio_path, output_dir):
             return False
 
-        cmd_mux = [
-            "ffmpeg",
-            "-y",
-            "-i",
-            silent_video,
-            "-i",
-            audio_path,
-            "-map",
-            "0:v",
-            "-map",
-            "1:a",
-            "-c:v",
-            "copy",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "192k",
-            "-shortest",
-            output_path,
-        ]
-        r = subprocess.run(cmd_mux, capture_output=True, timeout=180)
-        if r.returncode != 0 or not os.path.isfile(output_path):
+        seg_frame_list = [int(s["durationInFrames"]) for s in segments]
+        if not self._mux_montage_av(silent_video, audio_path, output_path, seg_frame_list):
             return False
         shutil.rmtree(seq_dir, ignore_errors=True)
         return True
@@ -666,6 +659,76 @@ class RenderSlidesSkill:
             output_path,
         ]
         r = subprocess.run(cmd, capture_output=True, timeout=120)
+        return r.returncode == 0 and os.path.isfile(output_path)
+
+    def _mux_montage_av(
+        self,
+        video_path: str,
+        audio_path: str,
+        output_path: str,
+        segment_frames: list[int],
+    ) -> bool:
+        """Montage 声画对齐：转场重叠导致视频变短时用 tpad 补齐。"""
+        from python_agent.montage_timing import montage_duration_seconds
+
+        target_video_dur = montage_duration_seconds(segment_frames, self.fps)
+        video_dur = self._get_duration(video_path) or target_video_dur
+        audio_dur = self._get_duration(audio_path)
+        work_video = video_path
+
+        if audio_dur > video_dur + 0.05:
+            pad_sec = audio_dur - video_dur
+            padded = video_path + ".aligned.mp4"
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    video_path,
+                    "-vf",
+                    f"tpad=stop_mode=clone:stop_duration={pad_sec:.3f}",
+                    "-c:v",
+                    "libx264",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-crf",
+                    self._crf,
+                    "-an",
+                    padded,
+                ],
+                capture_output=True,
+                timeout=120,
+            )
+            if os.path.isfile(padded):
+                work_video = padded
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            work_video,
+            "-i",
+            audio_path,
+            "-map",
+            "0:v",
+            "-map",
+            "1:a",
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-t",
+            str(max(target_video_dur, audio_dur)),
+            output_path,
+        ]
+        r = subprocess.run(cmd, capture_output=True, timeout=180)
+        if work_video != video_path and os.path.isfile(work_video):
+            try:
+                os.remove(work_video)
+            except OSError:
+                pass
         return r.returncode == 0 and os.path.isfile(output_path)
 
     def _build_remotion_props(
@@ -769,6 +832,21 @@ class RenderSlidesSkill:
             props["sentences"] = sentences
         if caption_pages:
             props["captionPages"] = caption_pages_for_props(caption_pages)
+
+        summary_lines = list(slide.get("summary_lines") or [])
+        if summary_lines and sentences:
+            from python_agent.summary_timing import (
+                compute_panel_reveal_frame,
+                compute_summary_reveal_frames,
+            )
+
+            props["summaryRevealFrames"] = compute_summary_reveal_frames(
+                summary_lines, sentences, fps=self.fps
+            )
+            props["panelRevealFrame"] = compute_panel_reveal_frame(
+                sentences, fps=self.fps
+            )
+
         if slide.get("image_path"):
             pub_images_dir = os.path.join(REMOTION_DIR, "public", "images")
             os.makedirs(pub_images_dir, exist_ok=True)
@@ -843,7 +921,7 @@ class RenderSlidesSkill:
             "-filter_complex", ";".join(filter_parts)
         ] + map_args + [
             "-c:v", "libx264", "-c:a", "aac", "-b:a", "192k",
-            "-crf", "18", "-profile:v", "high", "-level", "4.1",
+            "-crf", self._crf, "-profile:v", "high", "-level", "4.1",
             "-pix_fmt", "yuv420p", "-movflags", "+faststart",
             "-preset", "medium", output_path
         ]
@@ -860,7 +938,7 @@ class RenderSlidesSkill:
         cmd = [
             "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list,
             "-c:v", "libx264", "-c:a", "aac", "-b:a", "192k",
-            "-crf", "18", "-profile:v", "high", "-level", "4.1",
+            "-crf", self._crf, "-profile:v", "high", "-level", "4.1",
             "-pix_fmt", "yuv420p", "-movflags", "+faststart",
             "-preset", "medium", output_path
         ]
