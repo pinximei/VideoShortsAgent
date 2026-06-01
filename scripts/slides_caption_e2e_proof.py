@@ -88,9 +88,24 @@ def main() -> int:
 
     sys.path.insert(0, str(ROOT))
     from python_agent.display_text import CAPTION_LINE_MAX_CHARS, split_caption_sentences
+    from python_agent.motion_templates import (
+        apply_template_plan_to_slides,
+        build_github_daily_slide_plan,
+        save_github_daily_style,
+    )
     from python_agent.skills.dubbing_skill import DubbingSkill
     from python_agent.skills.render_slides_skill import RenderSlidesSkill
     from python_agent.template_loader import get_style
+
+    brief = {
+        "title": "Slides 字幕+动效证明",
+        "platform": "douyin",
+        "feed_kind": "github_daily",
+        "series": "每天一个GitHub项目",
+        "tts_voice": "zh-CN-YunyangNeural",
+        "tts_rate": "+14%",
+        "tts_pitch": "+8Hz",
+    }
 
     slides = [
         {
@@ -118,23 +133,18 @@ def main() -> int:
             "visual_design": {"caption_style": "spring", "transition_to_next": ""},
         },
     ]
+    picked, gplan = build_github_daily_slide_plan(brief, slides)
+    slides = apply_template_plan_to_slides(slides, brief)
+    save_github_daily_style(task_dir, picked, gplan)
+    style_id = picked.get("id") or slides[0].get("github_daily_style_id")
+    print(f"[motion] github_daily style={style_id} title_profile={picked.get('motion_profile')}")
+
     script = {"slides": slides}
     (llm_dir / "slides_script.json").write_text(
         json.dumps(script, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     (task_dir / "brief.json").write_text(
-        json.dumps(
-            {
-                "title": "Slides 字幕证明",
-                "platform": "douyin",
-                "tts_voice": "zh-CN-YunyangNeural",
-                "tts_rate": "+14%",
-                "tts_pitch": "+8Hz",
-            },
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
+        json.dumps(brief, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
     print("[1/3] Dubbing (split spoken phrases)…")
@@ -182,6 +192,9 @@ def main() -> int:
         ).stdout.strip(),
         "caption_check": sent_check,
         "cap_line_max": CAPTION_LINE_MAX_CHARS,
+        "motion_style_id": style_id,
+        "motion_profiles": [s.get("motion_profile") for s in slides],
+        "css_decorations": [s.get("css_decorations") for s in slides],
         "output": {
             "path": str(target.resolve()),
             "bytes": target.stat().st_size,

@@ -229,15 +229,23 @@ class RenderSlidesSkill:
             f"--frames=0-{frames - 1}",
         ]
 
+        print(
+            f"  [Remotion] {composition} profile={motion_profile} "
+            f"decor={len(css_dec)} frames={frames}"
+        )
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                                     timeout=600, cwd=REMOTION_DIR, shell=True)
             if result.returncode != 0:
-                print(f"  ⚠️ Remotion 渲染失败，降级为 FFmpeg")
+                err_tail = (result.stderr or result.stdout or "")[-800:]
+                print(f"  WARN Remotion failed -> FFmpeg fallback")
+                if err_tail.strip():
+                    print(f"  Remotion stderr: {err_tail}")
                 self._render_with_ffmpeg(slide, style, frames / self.fps, output_path)
                 return
+            print(f"  [Remotion] OK sequence -> {output_path}")
         except subprocess.TimeoutExpired:
-            print(f"  ⚠️ Remotion 渲染超时，降级为 FFmpeg")
+            print(f"  WARN Remotion timeout -> FFmpeg fallback")
             self._render_with_ffmpeg(slide, style, frames / self.fps, output_path)
             return
 
