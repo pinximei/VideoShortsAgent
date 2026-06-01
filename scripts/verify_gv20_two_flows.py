@@ -93,7 +93,7 @@ def flow1_catalog_audit(lines: list[str]) -> dict:
             if key not in s:
                 issues.append(f"{s.get('id')}: missing {key}")
         if "css" not in s:
-            issues.append(f"{s.get('id')}: missing css (may be empty)")
+            issues.append(f"{s.get('id')}: missing css key")
         for prof in (s.get("title_profile"), s.get("content_profile")):
             if prof and prof not in profiles_ok:
                 issues.append(f"{s.get('id')}: unknown profile {prof}")
