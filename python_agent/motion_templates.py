@@ -308,8 +308,31 @@ def load_github_daily_catalog() -> dict[str, Any]:
     return json.loads(_GITHUB_DAILY_CATALOG.read_text(encoding="utf-8"))
 
 
+# 平台画风池：抖音偏快切/暗色/TikTok；小红书偏浅底/卡片/柔和
+_DOUYIN_G_IDS = frozenset(
+    {
+        "G01_cyber_hook_yellow",
+        "G05_dark_top10_rank",
+        "G06_tiktok_follow_caption",
+        "G07_hook_glitch_github",
+        "G11_kinetic_word_slam",
+        "G13_marquee_topics",
+    }
+)
+_XHS_G_IDS = frozenset(
+    {
+        "G02_chart_card_stat",
+        "G03_minimal_white_series",
+        "G04_badge_pills_intro",
+        "G10_glass_three_points",
+        "G16_purple_gradient_soft",
+        "G20_clean_badge_orange",
+    }
+)
+
+
 def pick_github_daily_style(brief: dict[str, Any]) -> dict[str, Any]:
-    """「每天一个 GitHub」系列：从 20 套预研模板选一整片风格。"""
+    """「每天一个 GitHub」系列：从 20 套预研模板选一整片风格（按平台收窄池）。"""
     styles = list(load_github_daily_catalog().get("styles") or [])
     if not styles:
         return pick_intro_template(brief)
@@ -319,8 +342,18 @@ def pick_github_daily_style(brief: dict[str, Any]) -> dict[str, Any]:
         or brief.get("title")
         or "github_daily"
     )
-    idx = _seed_int(f"github_daily:{seed}") % len(styles)
-    style = dict(styles[idx])
+    platform = str(brief.get("platform") or "").strip().lower()
+    pool = list(styles)
+    if platform == "douyin":
+        fast = [s for s in pool if s.get("id") in _DOUYIN_G_IDS]
+        if len(fast) >= 4:
+            pool = fast
+    elif platform == "xhs":
+        soft = [s for s in pool if s.get("id") in _XHS_G_IDS]
+        if len(soft) >= 4:
+            pool = soft
+    idx = _seed_int(f"github_daily:{seed}:{platform or 'all'}") % len(pool)
+    style = dict(pool[idx])
     return {
         "id": style.get("id"),
         "github_daily_style": style,
@@ -330,8 +363,8 @@ def pick_github_daily_style(brief: dict[str, Any]) -> dict[str, Any]:
             "staggerFrames": 5,
         },
         "theme": "github" if style.get("bg", "#000") != "#000000" else "tiktok",
-        "caption_style": "spring",
-        "transition": "fade",
+        "caption_style": "fade" if platform == "xhs" else "spring",
+        "transition": "dissolve" if platform == "xhs" else "fade",
         "background": style.get("bg"),
         "css_decorations": style.get("css") or [],
     }

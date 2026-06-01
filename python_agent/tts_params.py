@@ -20,9 +20,9 @@ GITHUB_DAILY_TTS_BASELINE: dict[str, Any] = {
 PLATFORM_TTS_DEFAULTS: dict[str, dict[str, Any]] = {
     "douyin": {
         "tts_voice": "zh-CN-YunyangNeural",
-        "tts_rate": "+14%",
+        "tts_rate": "+20%",
         "tts_pitch": "+8Hz",
-        "sentence_pause_sec": 0.14,
+        "sentence_pause_sec": 0.10,
     },
     "xhs": {
         "tts_voice": "zh-CN-XiaoxiaoNeural",
@@ -111,6 +111,20 @@ def prepare_brief_tts(
     """合并 task brief、V 模板与平台默认 TTS 参数（slides / vsa 共用）。"""
     out = dict(brief)
     tts = resolve_tts_for_platform(out, platform_id, voice_style=voice_style)
+    plat = PLATFORM_TTS_DEFAULTS.get(platform_id, PLATFORM_TTS_DEFAULTS["douyin"])
+    # 平台音色优先：小红书必须女声，避免 V 模板里的男声覆盖
+    if platform_id == "xhs":
+        tts["tts_voice"] = plat["tts_voice"]
+        tts["tts_rate"] = plat["tts_rate"]
+        tts["tts_pitch"] = plat.get("tts_pitch", tts.get("tts_pitch"))
+        tts["sentence_pause_sec"] = float(plat.get("sentence_pause_sec", tts.get("sentence_pause_sec", 0.18)))
+    elif platform_id == "douyin":
+        tts["tts_voice"] = plat["tts_voice"]
+        tts["tts_rate"] = plat["tts_rate"]
+        tts["sentence_pause_sec"] = min(
+            float(tts.get("sentence_pause_sec") or 0.16),
+            float(plat.get("sentence_pause_sec", 0.12)),
+        )
     out["tts_voice"] = tts["tts_voice"]
     out["tts_rate"] = tts["tts_rate"]
     out["tts_pitch"] = tts["tts_pitch"]

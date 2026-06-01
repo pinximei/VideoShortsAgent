@@ -66,7 +66,16 @@ def pick_voice_content_style(brief: dict[str, Any]) -> dict[str, Any]:
         fast = [s for s in pool if s.get("id") not in SLOW_VOICE_STYLE_IDS]
         if len(fast) >= 8:
             pool = fast
-    idx = _seed_int(f"voice_content:{seed}") % len(pool)
+    elif platform == "xhs":
+        calm = [
+            s
+            for s in pool
+            if s.get("id") in ("V04_minimal_calm", "V06_chart_story", "V10_glass_three_points", "V20_clean_badge_friend")
+            or int((s.get("words_per_minute") or 300)) <= 320
+        ]
+        if len(calm) >= 3:
+            pool = calm
+    idx = _seed_int(f"voice_content:{seed}:{platform or 'all'}") % len(pool)
     return dict(pool[idx])
 
 

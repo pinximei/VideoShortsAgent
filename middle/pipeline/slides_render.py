@@ -217,11 +217,20 @@ def render_slides_video(
         ).get("default_style", "github_dark")
     )
 
+    brief_dict = load_brief(task_dir)
+    brief_dict["platform"] = platform_id
     script, brief_dict, scene_key, style_key, voice_style = _load_or_build_slides_script(
         cfg, task_dir, platform_id=platform_id
     )
+    brief_dict["platform"] = platform_id
     slides = list(script.get("slides") or [])
     brief_dict = prepare_brief_tts(brief_dict, platform_id, voice_style=voice_style or None)
+    for slide in slides:
+        vd = dict(slide.get("visual_design") or {})
+        if platform_id == "xhs":
+            vd["caption_style"] = preset.effects.get("caption_style", "fade")
+            slide["caption_style"] = vd["caption_style"]
+        slide["visual_design"] = vd
 
     shared_work = task_dir / "videos" / "_slides_work"
     shared_work.mkdir(parents=True, exist_ok=True)
