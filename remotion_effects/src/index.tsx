@@ -4,6 +4,7 @@ import {GradientBackground} from './compositions/GradientBackground';
 import {TitleCard} from './compositions/TitleCard';
 import {ContentCard} from './compositions/ContentCard';
 import {CTACard} from './compositions/CTACard';
+import {SlidesMontage, montageTotalFrames} from './compositions/SlidesMontage';
 
 /**
  * Remotion Root - 注册所有特效组件
@@ -92,6 +93,24 @@ export const RemotionRoot: React.FC = () => {
           colors: ['#e94560', '#533483'],
           textColor: '#ffffff',
           accentColor: '#ffdd57',
+        }}
+      />
+
+      <Composition
+        id="SlidesMontage"
+        component={SlidesMontage}
+        durationInFrames={9000}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          segments: [],
+        }}
+        calculateMetadata={({props}) => {
+          const segs = (props as {segments?: unknown[]}).segments || [];
+          return {
+            durationInFrames: montageTotalFrames(segs as Parameters<typeof montageTotalFrames>[0]),
+          };
         }}
       />
     </>

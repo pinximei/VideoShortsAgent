@@ -54,8 +54,14 @@ def enrich_slides_visual_payload(
             if s.get("viz_type") != "none":
                 s["show_kinetic_wall"] = False
             effects = ("glow_ring", "typewriter", "particle_dust", "bracket_slam", "glow_scan")
+            layouts = ("keywords", "steps", "compare")
             idx = int(s.get("scene_index") or 0)
             s.setdefault("mid_effect", effects[idx % len(effects)])
+            s.setdefault("mid_info_layout", layouts[idx % len(layouts)])
+            s.setdefault("caption_use_tts_timeline", True)
+        elif st == "title_card":
+            s.setdefault("opening_duration_frames", 100 if platform == "douyin" else 120)
+            s.setdefault("caption_use_tts_timeline", True)
         else:
             s["viz_type"] = "none"
             s["show_chart"] = False

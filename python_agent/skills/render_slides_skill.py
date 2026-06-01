@@ -11,12 +11,19 @@ import os
 import json
 import shutil
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from python_agent.display_text import (
-    fit_slide_for_display,
-    split_caption_sentences,
-    split_tiktok_caption_sentences,
+from python_agent.caption_timeline import (
+    caption_pages_for_props,
+    prepare_slide_captions,
 )
+from python_agent.display_text import fit_slide_for_display
+from python_agent.render_cache import (
+    slide_render_cache_key,
+    store_cache,
+    try_copy_cached,
+)
+from python_agent.slides_quality_gates import attach_caption_preview
 
 # Remotion 项目目录（相对于项目根）
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -40,79 +47,49 @@ class RenderSlidesSkill:
         if not self._remotion_available:
             print("[RenderSlidesSkill] ⚠️ Remotion 未安装，将使用 FFmpeg 纯渲染")
 
-    def execute(self, slides: list, tts_clips: list,
-                visual_style: dict, output_dir: str,
-                bgm_path: str = None) -> str:
-        """渲染视频"""
+    def execute(
+        self,
+        slides: list,
+        tts_clips: list,
+        visual_style: dict,
+        output_dir: str,
+        bgm_path: str = None,
+        *,
+        platform_id: str = "douyin",
+    ) -> str:
+        """渲染视频（TTS 对齐字幕 / 缓存 / 可选 Remotion Montage）。"""
         os.makedirs(output_dir, exist_ok=True)
-        segment_paths = []
+        cache_dir = os.path.join(output_dir, "_render_cache")
+        plat = (platform_id or "douyin").strip().lower()
 
-        print(f"[RenderSlidesSkill] 开始渲染 {len(slides)} 个 slides...")
+        slides = attach_caption_preview(slides, tts_clips)
+        use_montage = (
+            os.environ.get("REMOTION_MONTAGE", "1") != "0"
+            and self._remotion_available
+            and len(slides) >= 2
+        )
 
-        for i, slide in enumerate(slides):
-            tts_clip = tts_clips[i] if i < len(tts_clips) else None
-            if not tts_clip:
-                print(f"  [Slide {i+1}] ⚠️ 无 TTS 信息，跳过")
-                continue
+        print(f"[RenderSlidesSkill] 开始渲染 {len(slides)} 个 slides (platform={plat})...")
 
-            duration = tts_clip.get("duration", 5.0)
-            tts_audio_path = tts_clip.get("path")
-            from python_agent.display_text import (
-                CAPTION_LINE_MAX_CHARS,
-                CAPTION_LINE_MAX_CHARS_DOUYIN,
-                split_caption_sentences,
-            )
+        if use_montage:
+            montage_path = os.path.join(output_dir, "montage_output.mp4")
+            if self._try_render_montage(
+                slides, tts_clips, visual_style, montage_path, output_dir, plat
+            ):
+                final_path = os.path.join(output_dir, "output_slides.mp4")
+                if bgm_path and os.path.exists(bgm_path):
+                    self._mix_bgm(montage_path, bgm_path, final_path)
+                else:
+                    shutil.copy2(montage_path, final_path)
+                print(f"[RenderSlidesSkill] ✅ Montage 输出: {final_path}")
+                return final_path
 
-            raw_sents = tts_clip.get("sentences", [])
-            if slide.get("caption_mode") == "tiktok":
-                sentences = split_tiktok_caption_sentences(raw_sents)
-            else:
-                sentences = split_caption_sentences(
-                    raw_sents,
-                    max_chars=(
-                        CAPTION_LINE_MAX_CHARS_DOUYIN
-                        if slide.get("caption_mode") == "tiktok"
-                        else CAPTION_LINE_MAX_CHARS
-                    ),
-                )
-            slide = fit_slide_for_display(slide)
-
-            print(f"  [Slide {i+1}/{len(slides)}] {slide.get('type', '?')}: "
-                  f"{slide.get('heading', '')[:30]}... ({duration:.1f}s)")
-
-            # 1. 渲染画面（纯视频，无音频）
-            video_path = os.path.join(output_dir, f"slide_{i}_video.mp4")
-            self._render_slide_video(slide, visual_style, duration, sentences,
-                                     video_path, output_dir, i)
-
-            if not os.path.exists(video_path):
-                print(f"  [Slide {i+1}] ⚠️ 画面渲染失败，跳过")
-                continue
-
-            # 1.5 冻结末帧延长 0.3 秒（片段间呼吸暂停）
-            self._freeze_extend(video_path, 0.3)
-
-            # 2. 附加 TTS 音频
-            segment_path = os.path.join(output_dir, f"segment_{i}.mp4")
-            audio_ok = False
-
-            if tts_audio_path and os.path.exists(tts_audio_path):
-                audio_ok = self._attach_audio_with_pad(video_path, tts_audio_path, segment_path, 0.3)
-                if not audio_ok:
-                    print(f"  [Slide {i+1}] ⚠️ 音频附加失败，添加静音音轨")
-
-            if not audio_ok:
-                self._add_silent_audio(video_path, duration + 0.3, segment_path)
-
-            if os.path.exists(segment_path) and os.path.getsize(segment_path) > 1024:
-                segment_paths.append(segment_path)
-            else:
-                print(f"  [Slide {i+1}] ⚠️ segment 生成失败")
-
+        segment_paths = self._render_all_segments(
+            slides, tts_clips, visual_style, output_dir, cache_dir, plat
+        )
         if not segment_paths:
             raise RuntimeError("没有成功渲染的 slides")
 
-        # 3. 转场拼接
         print(f"[RenderSlidesSkill] 拼接 {len(segment_paths)} 个片段...")
         concat_path = os.path.join(output_dir, "concat_output.mp4")
         self._concat_slides(segment_paths, slides, concat_path, output_dir)
@@ -136,129 +113,180 @@ class RenderSlidesSkill:
         print(f"[RenderSlidesSkill] ✅ 输出: {final_path} ({file_size:.1f}MB)")
         return final_path
 
+    def _render_all_segments(
+        self,
+        slides: list,
+        tts_clips: list,
+        visual_style: dict,
+        output_dir: str,
+        cache_dir: str,
+        platform_id: str,
+    ) -> list[str]:
+        jobs: list[dict] = []
+        for i, slide in enumerate(slides):
+            tts_clip = tts_clips[i] if i < len(tts_clips) else None
+            if not tts_clip:
+                print(f"  [Slide {i+1}] ⚠️ 无 TTS 信息，跳过")
+                continue
+            raw_sents = tts_clip.get("sentences", [])
+            slide_fit = fit_slide_for_display(dict(slide))
+            slide_fit["platform"] = platform_id
+            sentences, caption_pages = prepare_slide_captions(
+                raw_sents, slide_fit, platform=platform_id
+            )
+            duration = float(tts_clip.get("duration", 5.0))
+            jobs.append(
+                {
+                    "index": i,
+                    "slide": slide_fit,
+                    "duration": duration,
+                    "sentences": sentences,
+                    "caption_pages": caption_pages,
+                    "tts_audio_path": tts_clip.get("path"),
+                }
+            )
+
+        parallel = (
+            os.environ.get("SLIDES_RENDER_PARALLEL", "1") != "0"
+            and len(jobs) > 1
+            and os.name != "nt"
+        )
+        workers = min(3, len(jobs)) if parallel else 1
+        segment_paths: list[str | None] = [None] * len(slides)
+
+        def _run(job: dict) -> tuple[int, str | None]:
+            return job["index"], self._render_segment_job(
+                job, visual_style, output_dir, cache_dir
+            )
+
+        if workers > 1:
+            print(f"[RenderSlidesSkill] 并行渲染 workers={workers}")
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futs = [pool.submit(_run, j) for j in jobs]
+                for fut in as_completed(futs):
+                    idx, path = fut.result()
+                    if path:
+                        segment_paths[idx] = path
+        else:
+            for job in jobs:
+                idx, path = _run(job)
+                if path:
+                    segment_paths[idx] = path
+
+        return [p for p in segment_paths if p]
+
+    def _render_segment_job(
+        self,
+        job: dict,
+        visual_style: dict,
+        output_dir: str,
+        cache_dir: str,
+    ) -> str | None:
+        i = job["index"]
+        slide = job["slide"]
+        duration = job["duration"]
+        sentences = job["sentences"]
+        caption_pages = job["caption_pages"]
+        tts_audio_path = job["tts_audio_path"]
+
+        print(
+            f"  [Slide {i+1}] {slide.get('type', '?')}: "
+            f"{slide.get('heading', '')[:30]}... ({duration:.1f}s)"
+        )
+
+        frames = max(1, int(duration * self.fps))
+        cache_key = slide_render_cache_key(
+            slide, visual_style, frames, sentences, caption_pages
+        )
+        video_path = os.path.join(output_dir, f"slide_{i}_video.mp4")
+        if try_copy_cached(cache_dir, cache_key, video_path):
+            print(f"  [Slide {i+1}] cache hit {cache_key[:8]}")
+        else:
+            self._render_slide_video(
+                slide,
+                visual_style,
+                duration,
+                sentences,
+                video_path,
+                output_dir,
+                i,
+                caption_pages=caption_pages,
+            )
+            if os.path.exists(video_path):
+                store_cache(cache_dir, cache_key, video_path)
+
+        if not os.path.exists(video_path):
+            print(f"  [Slide {i+1}] ⚠️ 画面渲染失败，跳过")
+            return None
+
+        self._freeze_extend(video_path, 0.3)
+        segment_path = os.path.join(output_dir, f"segment_{i}.mp4")
+        audio_ok = False
+        if tts_audio_path and os.path.exists(tts_audio_path):
+            audio_ok = self._attach_audio_with_pad(
+                video_path, tts_audio_path, segment_path, 0.3
+            )
+        if not audio_ok:
+            self._add_silent_audio(video_path, duration + 0.3, segment_path)
+
+        if os.path.exists(segment_path) and os.path.getsize(segment_path) > 1024:
+            return segment_path
+        print(f"  [Slide {i+1}] ⚠️ segment 生成失败")
+        return None
+
     # ========== 渲染单个 slide ==========
 
-    def _render_slide_video(self, slide, style, duration, sentences,
-                            output_path, output_dir, index):
+    def _render_slide_video(
+        self,
+        slide,
+        style,
+        duration,
+        sentences,
+        output_path,
+        output_dir,
+        index,
+        *,
+        caption_pages=None,
+    ):
         """渲染单个 slide 的画面视频（无音频）"""
         total_frames = max(1, int(duration * self.fps))
         if self._remotion_available:
-            self._render_with_remotion(slide, style, total_frames, sentences,
-                                       output_path, output_dir, index)
+            self._render_with_remotion(
+                slide,
+                style,
+                total_frames,
+                sentences,
+                output_path,
+                output_dir,
+                index,
+                caption_pages=caption_pages or [],
+            )
         else:
             self._render_with_ffmpeg(slide, style, duration, output_path)
 
-    def _render_with_remotion(self, slide, style, frames, sentences,
-                               output_path, output_dir, index):
+    def _render_with_remotion(
+        self,
+        slide,
+        style,
+        frames,
+        sentences,
+        output_path,
+        output_dir,
+        index,
+        *,
+        caption_pages=None,
+    ):
         """Remotion 渲染"""
-        composition_map = {
-            "title_card": "TitleCard",
-            "content_card": "ContentCard",
-            "cta_card": "CTACard",
-        }
-        composition = composition_map.get(slide.get("type", "content_card"), "ContentCard")
-
-        # 时轨对齐逻辑 (Audio-Visual Sync)
-        heading_trigger = slide.get("heading_trigger", "")
-        heading_start_frame = 0
-        if heading_trigger and sentences:
-            for seq in sentences:
-                if heading_trigger in seq.get("text", ""):
-                    heading_start_frame = int(seq.get("start", 0) * self.fps)
-                    break
-        
-        raw_bullets = slide.get("bullets", [])
-        final_bullets = []
-        bullet_start_frames = []
-        
-        for b_idx, b in enumerate(raw_bullets):
-            if isinstance(b, dict):
-                text = b.get("text", "")
-                trigger = b.get("trigger", "")
-            else:
-                text = str(b)
-                trigger = ""
-            
-            final_bullets.append(text)
-            
-            # 如果没匹配到，默认在 heading 后递增弹出
-            m_frame = heading_start_frame + 15 + b_idx * 15
-            if trigger and sentences:
-                for seq in sentences:
-                    if trigger in seq.get("text", ""):
-                        m_frame = int(seq.get("start", 0) * self.fps)
-                        break
-            bullet_start_frames.append(m_frame)
-            
-        visual_props = slide.get("visual_design", {}) or {}
-
-        motion_profile = slide.get("motion_profile") or visual_props.get("motion_profile", "github_daily_hook")
-        motion_params = slide.get("motion_params") or visual_props.get("motion_params") or {}
-
-        bg = slide.get("background_color") or visual_props.get("background_color")
-        css_dec = slide.get("css_decorations") or visual_props.get("css_decorations") or []
-
-        accent = visual_props.get("accent_color") or style.get("accent_color", "#58a6ff")
-        accent2 = visual_props.get("accent_color2") or "#FFD93D"
-        text_color = visual_props.get("text_color") or style.get("text_color", "#f0f6fc")
-
-        props = {
-            "heading": slide.get("heading", ""),
-            "subheading": slide.get("subheading", ""),
-            "bullets": final_bullets,
-            "ctaText": slide.get("cta_text", ""),
-            "hookText": slide.get("hook_text", ""),
-            "captionStyle": slide.get("caption_style", style.get("caption_style", "spring")),
-            "colors": style.get("colors", ["#1a100c", "#2d1810"]),
-            "textColor": text_color,
-            "accentColor": accent,
-            "accentColor2": accent2,
-            "colorMood": visual_props.get("color_mood", ""),
-            "particleType": visual_props.get("particle_type", ""),
-            "broadcastFrame": bool(visual_props.get("broadcast_frame")),
-            "layoutStyle": visual_props.get("layout_style", "center"),
-            "motionProfile": motion_profile,
-            "motionParams": motion_params,
-            "useWeb3Background": False,
-            "motionTemplateId": slide.get("motion_template_id", ""),
-            "githubDailyStyleId": slide.get("github_daily_style_id", ""),
-            "backgroundColor": bg,
-            "cssDecorations": css_dec,
-            "headingStartFrame": heading_start_frame,
-            "bulletStartFrames": bullet_start_frames,
-            "captionMode": slide.get("caption_mode", ""),
-            "openingBurst": bool(slide.get("opening_burst")) and slide.get("type") == "title_card",
-            "sceneFocus": bool(slide.get("scene_focus")),
-            "sceneIndex": int(slide.get("scene_index") or 0),
-            "sceneTotal": int(slide.get("scene_total") or 3),
-            "featureLabel": str(slide.get("feature_label") or ""),
-            "summaryLines": list(slide.get("summary_lines") or []),
-            "kineticPhrases": list(slide.get("kinetic_phrases") or []),
-            "vizType": str(slide.get("viz_type") or "none"),
-            "showChart": bool(slide.get("show_chart", False)),
-            "chartBars": list(slide.get("chart_bars") or slide.get("chart_series") or []),
-            "chartSeries": list(slide.get("chart_series") or slide.get("chart_bars") or []),
-            "chartLabel": str(slide.get("chart_label") or ""),
-            "chartUnit": str(slide.get("chart_unit") or ""),
-            "statValue": str(slide.get("stat_value") or ""),
-            "showKineticWall": bool(slide.get("show_kinetic_wall", False)),
-            "midIcon": str(slide.get("mid_icon") or ""),
-            "midEffect": str(slide.get("mid_effect") or "auto"),
-            "hookBeats": list(slide.get("hook_beats") or []),
-        }
-        if sentences:
-            props["sentences"] = sentences
-        if slide.get("image_path"):
-            # 将图片复制到 Remotion public/images/ 目录，使用相对路径加载
-            # （Chromium 安全策略阻止 file:/// 协议，public 目录由 Remotion 自动 serve）
-            pub_images_dir = os.path.join(REMOTION_DIR, "public", "images")
-            os.makedirs(pub_images_dir, exist_ok=True)
-            src_img = os.path.abspath(slide["image_path"])
-            ext = os.path.splitext(src_img)[1] or ".png"
-            pub_img_name = f"slide_{index}{ext}"
-            pub_img_path = os.path.join(pub_images_dir, pub_img_name)
-            shutil.copy2(src_img, pub_img_path)
-            props["imagePath"] = f"/images/{pub_img_name}"
+        composition = self._composition_id(slide)
+        props = self._build_remotion_props(
+            slide,
+            style,
+            frames,
+            sentences,
+            output_dir,
+            index,
+            caption_pages=caption_pages,
+        )
 
         props_path = os.path.abspath(os.path.join(output_dir, f"slide_props_{index}.json"))
         with open(props_path, "w", encoding="utf-8") as f:
@@ -456,6 +484,302 @@ class RenderSlidesSkill:
             print(f"  ⚠️ 输出视频无音频流")
             return False
         return True
+
+    def _composition_id(self, slide: dict) -> str:
+        return {
+            "title_card": "TitleCard",
+            "content_card": "ContentCard",
+            "cta_card": "CTACard",
+        }.get(slide.get("type", "content_card"), "ContentCard")
+
+    def _try_render_montage(
+        self,
+        slides: list,
+        tts_clips: list,
+        visual_style: dict,
+        output_path: str,
+        output_dir: str,
+        platform_id: str,
+    ) -> bool:
+        """Remotion TransitionSeries 单 pass 渲染（失败则回退 xfade）。"""
+        segments: list[dict] = []
+        trans_map = {"fade": "fade", "slideleft": "slide", "slideright": "slide", "wipeleft": "slide"}
+
+        for i, slide in enumerate(slides):
+            tts_clip = tts_clips[i] if i < len(tts_clips) else None
+            if not tts_clip:
+                return False
+            slide_fit = fit_slide_for_display(dict(slide))
+            slide_fit["platform"] = platform_id
+            raw_sents = tts_clip.get("sentences", [])
+            sentences, caption_pages = prepare_slide_captions(
+                raw_sents, slide_fit, platform=platform_id
+            )
+            duration = float(tts_clip.get("duration", 5.0))
+            frames = max(1, int((duration + 0.3) * self.fps))
+            props = self._build_remotion_props(
+                slide_fit,
+                visual_style,
+                frames,
+                sentences,
+                output_dir,
+                i,
+                caption_pages=caption_pages,
+            )
+            tr = slide_fit.get("transition_to_next", "fade") or "fade"
+            segments.append(
+                {
+                    "composition": self._composition_id(slide_fit),
+                    "durationInFrames": frames,
+                    "transition": trans_map.get(tr, "fade"),
+                    "props": props,
+                }
+            )
+
+        montage_props = {"segments": segments}
+        props_path = os.path.abspath(os.path.join(output_dir, "montage_props.json"))
+        with open(props_path, "w", encoding="utf-8") as f:
+            json.dump(montage_props, f, ensure_ascii=False)
+
+        seq_dir = os.path.join(output_dir, "montage_seq")
+        os.makedirs(seq_dir, exist_ok=True)
+        cmd = [
+            "npx",
+            "remotion",
+            "render",
+            "src/index.tsx",
+            "SlidesMontage",
+            f"--output={os.path.abspath(seq_dir).replace(chr(92), '/')}",
+            f"--props={props_path.replace(chr(92), '/')}",
+            "--image-format=png",
+            "--sequence",
+            f"--width={self.width}",
+            f"--height={self.height}",
+        ]
+        print("[RenderSlidesSkill] Remotion SlidesMontage (TransitionSeries)...")
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=900,
+                cwd=REMOTION_DIR,
+                shell=True,
+            )
+            if result.returncode != 0:
+                print(f"  WARN Montage failed: {(result.stderr or '')[-400:]}")
+                return False
+        except subprocess.TimeoutExpired:
+            print("  WARN Montage timeout")
+            return False
+
+        import glob
+        import re
+
+        png_files = sorted(glob.glob(os.path.join(seq_dir, "*.png")))
+        if not png_files:
+            return False
+        first = os.path.basename(png_files[0])
+        m = re.match(r"(.+?)(\d+)(\.png)$", first)
+        pattern = (
+            os.path.join(seq_dir, f"{m.group(1)}%0{len(m.group(2))}d.png")
+            if m
+            else os.path.join(seq_dir, "%d.png")
+        )
+        pattern = pattern.replace("\\", "/")
+        silent_video = os.path.join(output_dir, "montage_silent.mp4")
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-framerate",
+                str(self.fps),
+                "-i",
+                pattern,
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                "-crf",
+                "18",
+                silent_video,
+            ],
+            capture_output=True,
+            timeout=300,
+        )
+        if not os.path.isfile(silent_video):
+            return False
+
+        audio_path = os.path.join(output_dir, "montage_audio.mp3")
+        if not self._concat_tts_audio(tts_clips, audio_path, output_dir):
+            return False
+
+        cmd_mux = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            silent_video,
+            "-i",
+            audio_path,
+            "-map",
+            "0:v",
+            "-map",
+            "1:a",
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-shortest",
+            output_path,
+        ]
+        r = subprocess.run(cmd_mux, capture_output=True, timeout=180)
+        if r.returncode != 0 or not os.path.isfile(output_path):
+            return False
+        shutil.rmtree(seq_dir, ignore_errors=True)
+        return True
+
+    def _concat_tts_audio(self, tts_clips: list, output_path: str, output_dir: str) -> bool:
+        paths = [c.get("path") for c in tts_clips if c.get("path") and os.path.isfile(c["path"])]
+        if not paths:
+            return False
+        lst = os.path.join(output_dir, "tts_concat_list.txt")
+        with open(lst, "w", encoding="utf-8") as f:
+            for p in paths:
+                f.write(f"file '{os.path.abspath(p).replace(chr(92), '/')}'\n")
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            lst,
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            output_path,
+        ]
+        r = subprocess.run(cmd, capture_output=True, timeout=120)
+        return r.returncode == 0 and os.path.isfile(output_path)
+
+    def _build_remotion_props(
+        self,
+        slide,
+        style,
+        frames,
+        sentences,
+        output_dir,
+        index,
+        *,
+        caption_pages=None,
+    ) -> dict:
+        """构建单镜 Remotion props（供单镜与 Montage 复用）。"""
+        heading_trigger = slide.get("heading_trigger", "")
+        heading_start_frame = 0
+        if heading_trigger and sentences:
+            for seq in sentences:
+                if heading_trigger in seq.get("text", ""):
+                    heading_start_frame = int(seq.get("start", 0) * self.fps)
+                    break
+
+        raw_bullets = slide.get("bullets", [])
+        final_bullets = []
+        bullet_start_frames = []
+        for b_idx, b in enumerate(raw_bullets):
+            if isinstance(b, dict):
+                text = b.get("text", "")
+                trigger = b.get("trigger", "")
+            else:
+                text = str(b)
+                trigger = ""
+            final_bullets.append(text)
+            m_frame = heading_start_frame + 15 + b_idx * 15
+            if trigger and sentences:
+                for seq in sentences:
+                    if trigger in seq.get("text", ""):
+                        m_frame = int(seq.get("start", 0) * self.fps)
+                        break
+            bullet_start_frames.append(m_frame)
+
+        visual_props = slide.get("visual_design", {}) or {}
+        motion_profile = slide.get("motion_profile") or visual_props.get(
+            "motion_profile", "github_daily_hook"
+        )
+        motion_params = slide.get("motion_params") or visual_props.get("motion_params") or {}
+        bg = slide.get("background_color") or visual_props.get("background_color")
+        css_dec = slide.get("css_decorations") or visual_props.get("css_decorations") or []
+        accent = visual_props.get("accent_color") or style.get("accent_color", "#58a6ff")
+        accent2 = visual_props.get("accent_color2") or "#FFD93D"
+        text_color = visual_props.get("text_color") or style.get("text_color", "#f0f6fc")
+
+        props = {
+            "heading": slide.get("heading", ""),
+            "subheading": slide.get("subheading", ""),
+            "bullets": final_bullets,
+            "ctaText": slide.get("cta_text", ""),
+            "hookText": slide.get("hook_text", ""),
+            "captionStyle": slide.get("caption_style", style.get("caption_style", "spring")),
+            "colors": style.get("colors", ["#1a100c", "#2d1810"]),
+            "textColor": text_color,
+            "accentColor": accent,
+            "accentColor2": accent2,
+            "colorMood": visual_props.get("color_mood", ""),
+            "particleType": visual_props.get("particle_type", ""),
+            "broadcastFrame": bool(visual_props.get("broadcast_frame")),
+            "layoutStyle": visual_props.get("layout_style", "center"),
+            "motionProfile": motion_profile,
+            "motionParams": motion_params,
+            "useWeb3Background": False,
+            "motionTemplateId": slide.get("motion_template_id", ""),
+            "githubDailyStyleId": slide.get("github_daily_style_id", ""),
+            "backgroundColor": bg,
+            "cssDecorations": css_dec,
+            "headingStartFrame": heading_start_frame,
+            "bulletStartFrames": bullet_start_frames,
+            "captionMode": slide.get("caption_mode", ""),
+            "openingBurst": bool(slide.get("opening_burst"))
+            and slide.get("type") == "title_card",
+            "sceneFocus": bool(slide.get("scene_focus")),
+            "sceneIndex": int(slide.get("scene_index") or 0),
+            "sceneTotal": int(slide.get("scene_total") or 3),
+            "featureLabel": str(slide.get("feature_label") or ""),
+            "summaryLines": list(slide.get("summary_lines") or []),
+            "kineticPhrases": list(slide.get("kinetic_phrases") or []),
+            "vizType": str(slide.get("viz_type") or "none"),
+            "showChart": bool(slide.get("show_chart", False)),
+            "chartBars": list(slide.get("chart_bars") or slide.get("chart_series") or []),
+            "chartSeries": list(slide.get("chart_series") or slide.get("chart_bars") or []),
+            "chartLabel": str(slide.get("chart_label") or ""),
+            "chartUnit": str(slide.get("chart_unit") or ""),
+            "statValue": str(slide.get("stat_value") or ""),
+            "showKineticWall": bool(slide.get("show_kinetic_wall", False)),
+            "midIcon": str(slide.get("mid_icon") or ""),
+            "midEffect": str(slide.get("mid_effect") or "auto"),
+            "hookBeats": list(slide.get("hook_beats") or []),
+            "midInfoLayout": str(slide.get("mid_info_layout") or "keywords"),
+            "openingDurationFrames": int(slide.get("opening_duration_frames") or 0),
+        }
+        if sentences:
+            props["sentences"] = sentences
+        if caption_pages:
+            props["captionPages"] = caption_pages_for_props(caption_pages)
+        if slide.get("image_path"):
+            pub_images_dir = os.path.join(REMOTION_DIR, "public", "images")
+            os.makedirs(pub_images_dir, exist_ok=True)
+            src_img = os.path.abspath(slide["image_path"])
+            ext = os.path.splitext(src_img)[1] or ".png"
+            pub_img_name = f"slide_{index}{ext}"
+            pub_img_path = os.path.join(pub_images_dir, pub_img_name)
+            if not os.path.isfile(pub_img_path):
+                shutil.copy2(src_img, pub_img_path)
+            props["imagePath"] = f"/images/{pub_img_name}"
+        return props
 
     # ========== 拼接 ==========
 

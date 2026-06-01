@@ -25,6 +25,7 @@ export interface MotionParams {
   springDamping?: number;
   springStiffness?: number;
   wordsPerPageMs?: number;
+  maxCharsPerPage?: number;
   glitchFrames?: number;
 }
 

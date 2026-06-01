@@ -1,0 +1,16 @@
+[
+  {
+    "id": "github_daily_short",
+    "title": "今日 GitHub 榜首开源工具",
+    "hook": "别划走，这个 GitHub 神器真的炸裂",
+    "talking_points": ["Star 暴涨", "一键部署", "适合开发者"],
+    "cta": "链接在简介"
+  },
+  {
+    "id": "tool_compare",
+    "title": "两个 AI 工具怎么选",
+    "hook": "还在纠结选哪个？",
+    "talking_points": ["速度对比", "价格对比", "上手难度"],
+    "cta": "收藏备用"
+  }
+]

@@ -17,6 +17,13 @@ HOOK_MAX_CHARS = 22
 
 _CLAUSE_END = re.compile(r"[。！？；\n]")
 _SOFT_BREAK = re.compile(r"[，,、]")
+# 不可从中间切断：英文词、GitHub、数字+% 等
+_PROTECTED_SPAN = re.compile(
+    r"(?:GitHub|Open\s*Source|API|AI|LLM|Star|Stars|"
+    r"\d+(?:\.\d+)?(?:%|万|千|k|K)?|"
+    r"[A-Za-z][A-Za-z0-9_.-]{1,24})",
+    re.I,
+)
 
 
 def _plain(s: str) -> str:
@@ -41,6 +48,74 @@ def _merge_orphan_fragments(phrases: list[str], *, min_len: int = 4) -> list[str
     return out
 
 
+def _protected_spans(text: str) -> list[tuple[int, int]]:
+    return [(m.start(), m.end()) for m in _PROTECTED_SPAN.finditer(text)]
+
+
+def _cut_inside_protected(pos: int, spans: list[tuple[int, int]]) -> bool:
+    return any(a < pos < b for a, b in spans)
+
+
+def _split_long_at_boundary(clause: str, max_chars: int) -> list[str]:
+    """超长分句：优先逗号，再在非保护区内找切点，禁止硬截半词。"""
+    if len(clause) <= max_chars:
+        return [clause]
+    spans = _protected_spans(clause)
+    parts = [p.strip() for p in _SOFT_BREAK.split(clause) if p.strip()]
+    if len(parts) > 1:
+        out: list[str] = []
+        buf = ""
+        for part in parts:
+            candidate = _plain(buf + part) if buf else part
+            if len(candidate) <= max_chars:
+                buf = candidate
+            else:
+                if buf:
+                    out.append(buf)
+                if len(part) <= max_chars:
+                    buf = part
+                else:
+                    out.extend(_split_long_at_boundary(part, max_chars))
+                    buf = ""
+        if buf:
+            out.append(buf)
+        return _merge_orphan_fragments(out, min_len=TIKTOK_PHRASE_MIN_CHARS // 2)
+
+    # 无逗号：从 max_chars 往前找安全切点（2~4 字步进）
+    out = []
+    rest = clause
+    while len(rest) > max_chars:
+        cut = max_chars
+        while cut > max_chars // 2 and _cut_inside_protected(cut, spans):
+            cut -= 1
+        if cut <= max_chars // 2:
+            cut = max_chars
+        piece = rest[:cut].strip()
+        if piece:
+            out.append(piece)
+        rest = rest[cut:].strip()
+        spans = _protected_spans(rest)
+    if rest:
+        out.append(rest)
+    return _merge_orphan_fragments(out, min_len=TIKTOK_PHRASE_MIN_CHARS // 2)
+
+
+def find_unsafe_caption_splits(phrases: list[str]) -> list[str]:
+    """检测疑似半词/半句拆页（用于门禁）。"""
+    issues: list[str] = []
+    for i, p in enumerate(phrases):
+        t = _plain(p)
+        if len(t) < 4 and i + 1 < len(phrases):
+            issues.append(f"orphan_fragment:{t!r}")
+        if i + 1 < len(phrases):
+            nxt = _plain(phrases[i + 1])
+            if len(t) + len(nxt) <= TIKTOK_PHRASE_MAX_CHARS + 4:
+                if not _CLAUSE_END.search(t) and not _SOFT_BREAK.search(t):
+                    if t[-1:].isalnum() and nxt[:1].isalnum():
+                        issues.append(f"merge_candidate:{t}|{nxt}")
+    return issues
+
+
 def split_spoken_clauses(text: str, *, max_chars: int = CAPTION_LINE_MAX_CHARS) -> list[str]:
     """
     只按句号/问号/叹号/分号切大句；超长分句才按逗号拆，禁止固定字数硬切词。
@@ -60,21 +135,7 @@ def split_spoken_clauses(text: str, *, max_chars: int = CAPTION_LINE_MAX_CHARS) 
         if len(clause) <= max_chars:
             out.append(clause)
             continue
-        parts = [p.strip() for p in _SOFT_BREAK.split(clause) if p.strip()]
-        if len(parts) <= 1:
-            out.append(clause[:max_chars])
-            continue
-        buf = ""
-        for part in parts:
-            candidate = _plain(buf + part) if buf else part
-            if len(candidate) <= max_chars:
-                buf = candidate
-            else:
-                if buf:
-                    out.append(buf)
-                buf = part if len(part) <= max_chars else part[:max_chars]
-        if buf:
-            out.append(buf)
+        out.extend(_split_long_at_boundary(clause, max_chars))
 
     return _merge_orphan_fragments(out, min_len=TIKTOK_PHRASE_MIN_CHARS // 2)
 

@@ -18,8 +18,16 @@ interface Word {
   end: number;
 }
 
+export type PrebuiltCaptionPage = {
+  text: string;
+  startMs: number;
+  durationMs: number;
+  tokens: CaptionToken[];
+};
+
 interface Props {
   words: Word[];
+  captionPages?: PrebuiltCaptionPage[];
   profile?: string;
   wordsPerPageMs?: number;
   maxCharsPerPage?: number;
@@ -28,6 +36,7 @@ interface Props {
 
 export const TikTokActiveCaption: React.FC<Props> = ({
   words,
+  captionPages: prebuiltPages,
   profile,
   wordsPerPageMs = 2400,
   accentColor = '#FF9F43',
@@ -38,9 +47,17 @@ export const TikTokActiveCaption: React.FC<Props> = ({
   const {fps, width} = useVideoConfig();
 
   const pages: CaptionPage[] = useMemo(() => {
+    if (prebuiltPages && prebuiltPages.length > 0) {
+      return prebuiltPages.map((p) => ({
+        text: p.text,
+        startMs: p.startMs,
+        durationMs: p.durationMs,
+        tokens: p.tokens,
+      }));
+    }
     const caps = wordsToCaptions(words);
     return createTikTokPages(caps, wordsPerPageMs, maxCharsPerPage);
-  }, [words, wordsPerPageMs, maxCharsPerPage]);
+  }, [words, wordsPerPageMs, maxCharsPerPage, prebuiltPages]);
 
   const timeMs = (frame / fps) * 1000;
   let page: CaptionPage | null = pages[0] ?? null;

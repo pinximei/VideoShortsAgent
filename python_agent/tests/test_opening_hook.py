@@ -1,5 +1,6 @@
 from python_agent.capabilities.opening_hook import (
     enforce_opening_hook_on_copy,
+    enforce_opening_hook_on_slides_script,
     scroll_stopping_hook,
 )
 
@@ -42,3 +43,25 @@ def test_enforce_first_clip_opening() -> None:
     assert out["douyin"]["effects"]["intro_card"] is True
     assert not str(c0["tts_text"]).startswith("大家好")
     assert out["toutiao"]["body"].split("\n")[0]
+
+
+def test_enforce_slides_title_opening() -> None:
+    script = {
+        "slides": [
+            {
+                "type": "title_card",
+                "heading": "Star破万",
+                "tts_text": "大家好，今天介绍 GitHub 项目。",
+                "hook_text": "",
+            }
+        ]
+    }
+    out = enforce_opening_hook_on_slides_script(
+        script,
+        brief={"title": "某神器", "hook": "别划走", "feed_kind": "github_daily"},
+        platform="douyin",
+    )
+    s0 = out["slides"][0]
+    assert s0.get("opening_burst") is True
+    assert s0.get("hook_text")
+    assert not str(s0["tts_text"]).startswith("大家好")

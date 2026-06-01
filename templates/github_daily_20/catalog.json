@@ -63,7 +63,7 @@
       "slides": ["title_card", "content_card", "cta_card"],
       "title_profile": "tiktok_word_pop",
       "content_profile": "tiktok_word_pop",
-      "css": ["caption-bottom-safe"],
+      "css": ["grid-tunnel-bg", "github-badge", "daily-video-tag", "caption-bottom-safe"],
       "bg": "#000000",
       "wordsPerPageMs": 200
     },

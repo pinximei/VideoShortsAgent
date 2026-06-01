@@ -291,6 +291,8 @@ def enforce_opening_hook_on_slides_script(
         if not s0["hook_beats"]:
             s0["hook_beats"] = [screen, hook[:14] if len(hook) > 14 else hook]
     s0["opening_burst"] = True
+    plat = (platform or str(brief.get("platform") or "")).strip().lower()
+    s0.setdefault("opening_duration_frames", 100 if plat == "douyin" else 120)
 
     tts = str(s0.get("tts_text") or "").strip()
     hook_sent = hook.rstrip("。！？?!") + "！"
@@ -314,7 +316,6 @@ def enforce_opening_hook_on_slides_script(
                 cleaned = re.sub(r"^[^。！？?]+[。！？?]\s*", "", cleaned).strip() or cleaned
         s0["tts_text"] = f"{hook_sent}{cleaned}" if cleaned else hook_sent
 
-    plat = (platform or str(brief.get("platform") or "")).strip().lower()
     if plat == "douyin":
         mp = dict(s0.get("motion_params") or {})
         mp["staggerFrames"] = 2

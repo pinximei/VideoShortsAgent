@@ -6,6 +6,7 @@ import {AnimatedBarChart} from '../charts/AnimatedBarChart';
 import {AnimatedLineChart} from '../charts/AnimatedLineChart';
 import {MidStageEffects} from '../effects/MidStageEffects';
 import {HeroTypewriter} from './HeroTypewriter';
+import {MidInfoPanels} from '../info/MidInfoPanels';
 
 interface Props {
   featureLabel?: string;
@@ -26,6 +27,7 @@ interface Props {
   showKineticWall?: boolean;
   midIcon?: string;
   midEffect?: string;
+  midInfoLayout?: string;
 }
 
 export const ContentRichStage: React.FC<Props> = ({
@@ -47,6 +49,7 @@ export const ContentRichStage: React.FC<Props> = ({
   showKineticWall = false,
   midIcon = '',
   midEffect = 'glow_ring',
+  midInfoLayout = 'keywords',
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
@@ -225,7 +228,17 @@ export const ContentRichStage: React.FC<Props> = ({
           </div>
         ) : null}
 
-        {chips.length > 0 && !showLine && !showBar ? (
+        {!showLine && !showBar && !showStat ? (
+          <MidInfoPanels
+            layout={midInfoLayout}
+            summaryLines={summaryLines}
+            kineticPhrases={kineticPhrases}
+            accentColor={accentColor}
+            accentColor2={accentColor2}
+          />
+        ) : null}
+
+        {chips.length > 0 && !showLine && !showBar && midInfoLayout === 'none' ? (
           <div
             style={{
               display: 'flex',

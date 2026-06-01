@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -72,7 +73,22 @@ def _collect_steps_from_artifacts(task_dir: Path, platform_id: str, video: str |
     steps.append({"skill": "slides_ai_enricher", "ok": plan.is_file(), "viz_type_counts": viz})
     gv = llm / f"github_daily_style_{platform_id}.json"
     steps.append({"skill": "platform_gv_motion", "ok": gv.is_file()})
+    gate_path = llm / f"slides_quality_gate_{platform_id}.json"
+    gate_ok = True
+    gate_warnings: list = []
+    if gate_path.is_file():
+        gate_data = json.loads(gate_path.read_text(encoding="utf-8-sig"))
+        gate_ok = bool(gate_data.get("ok", True))
+        gate_warnings = list(gate_data.get("warnings") or [])[:5]
+
     vp = Path(video) if video else None
+    steps.append(
+        {
+            "skill": "slides_quality_gates",
+            "ok": gate_ok,
+            "warnings": gate_warnings,
+        }
+    )
     steps.append(
         {
             "skill": "dubbing_and_render_slides",
@@ -80,6 +96,8 @@ def _collect_steps_from_artifacts(task_dir: Path, platform_id: str, video: str |
             "path": video,
             "bytes": vp.stat().st_size if vp and vp.is_file() else 0,
             "remotion_skill": "remotion-dev/skills",
+            "remotion_montage": os.environ.get("REMOTION_MONTAGE", "1") != "0",
+            "caption_tts_sync": True,
         }
     )
     return steps
@@ -186,7 +204,8 @@ def run_full_orchestration(
             {"id": "slides_ai_enricher", "role": "视觉兜底"},
             {"id": "platform_gv_motion", "role": "G20 + V20"},
             {"id": "dubbing_skill", "role": "Edge TTS"},
-            {"id": "render_slides_skill", "role": "Remotion CLI + xfade"},
+            {"id": "slides_quality_gates", "role": "渲染前字幕/图表/中部门禁"},
+            {"id": "render_slides_skill", "role": "Remotion TTS 字幕 + TransitionSeries Montage"},
             {"id": "video_orchestrate", "role": "SkillRegistry 入口 skills/video_orchestrate"},
         ],
         "remotion_mcp": "https://www.remotion.dev/docs/ai/mcp",

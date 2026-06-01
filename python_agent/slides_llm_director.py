@@ -93,6 +93,8 @@ brief 标题={brief.get('title','')} hook={brief.get('hook','')}
   - summary_lines: 2~3 条中部大字（≤12字，不是口播复述）
   - kinetic_phrases: 0~4 个短词（可选，无图表镜可 3~5 个）
   - mid_icon: 单个 emoji 或空字符串（仅强调概念时，如 📈 ⚡ 🛠️）
+  - mid_effect: glow_ring | typewriter | particle_dust | bracket_slam | glow_scan | none
+  - mid_info_layout: none | keywords | steps | compare（viz=none 时优先 steps/compare/keywords，禁止连续 2 镜全空）
   - viz_type: none | line | bar | stat
   - chart_series: 仅 line/bar 且口播含趋势/增长/对比数据时填写 4~6 个数
   - chart_label, stat_value: 仅对应 viz 时填
@@ -268,6 +270,9 @@ def direct_slides_script(
                 effect = str(row.get("mid_effect") or "auto")
                 s["mid_effect"] = effect
                 s["show_kinetic_wall"] = effect == "kinetic_wall" and s.get("viz_type") == "none"
+                layout = str(row.get("mid_info_layout") or "").lower()
+                if layout in ("keywords", "steps", "compare", "none"):
+                    s["mid_info_layout"] = layout
 
         elif st == "title_card":
             s["hook_beats"] = _split_hook_beats(
@@ -287,4 +292,31 @@ def direct_slides_script(
         out.append(s)
 
     _enforce_viz_budget(out)
+    _enforce_mid_density(out)
     return out
+
+
+def _enforce_mid_density(slides: list[dict[str, Any]]) -> None:
+    """禁止连续 2 个内容镜缺少 summary_lines。"""
+    empty_run = 0
+    layouts = ("keywords", "steps", "compare")
+    li = 0
+    for s in slides:
+        if not (s.get("scene_focus") or str(s.get("type")) == "content_card"):
+            continue
+        lines = [str(x).strip() for x in (s.get("summary_lines") or []) if str(x).strip()]
+        if not lines:
+            empty_run += 1
+            h = str(s.get("heading") or s.get("feature_label") or "核心亮点")[:14]
+            s["summary_lines"] = [h, "值得一看"]
+            s.setdefault("mid_info_layout", layouts[li % len(layouts)])
+            li += 1
+        else:
+            empty_run = 0
+            if not str(s.get("mid_info_layout") or "").strip():
+                s["mid_info_layout"] = layouts[li % len(layouts)]
+                li += 1
+        if empty_run >= 2:
+            s["kinetic_phrases"] = s.get("kinetic_phrases") or ["收藏", "开源", "好用"]
+            s["show_kinetic_wall"] = True
+            empty_run = 0

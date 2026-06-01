@@ -66,6 +66,13 @@ interface ContentCardProps {
   showKineticWall?: boolean;
   midIcon?: string;
   midEffect?: string;
+  midInfoLayout?: string;
+  captionPages?: Array<{
+    text: string;
+    startMs: number;
+    durationMs: number;
+    tokens: Array<{text: string; fromMs: number; toMs: number}>;
+  }>;
 }
 
 export const ContentCard: React.FC<ContentCardProps> = ({
@@ -113,6 +120,8 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   showKineticWall = false,
   midIcon = '',
   midEffect = 'auto',
+  midInfoLayout = 'keywords',
+  captionPages = [],
 }) => {
   const hud = overlayMode === 'hud';
   const frame = useCurrentFrame();
@@ -153,6 +162,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             showKineticWall={showKineticWall}
             midIcon={midIcon}
             midEffect={midEffect}
+            midInfoLayout={midInfoLayout}
           />
         ) : (
           <AnimatedBullets
@@ -166,6 +176,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
         )}
         <SlideCaptionLayer
           sentences={sentences}
+          captionPages={captionPages}
           captionMode={captionMode}
           motionProfile={motionProfile}
           motionParams={motionParams}

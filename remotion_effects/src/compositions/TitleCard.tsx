@@ -47,6 +47,13 @@ interface TitleCardProps {
   captionMode?: string;
   openingBurst?: boolean;
   hookBeats?: string[];
+  openingDurationFrames?: number;
+  captionPages?: Array<{
+    text: string;
+    startMs: number;
+    durationMs: number;
+    tokens: Array<{text: string; fromMs: number; toMs: number}>;
+  }>;
   colorMood?: string;
   particleType?: string;
   broadcastFrame?: boolean;
@@ -80,6 +87,8 @@ export const TitleCard: React.FC<TitleCardProps> = ({
   captionMode = '',
   openingBurst = false,
   hookBeats = [],
+  openingDurationFrames = 0,
+  captionPages = [],
   broadcastFrame = false,
 }) => {
   const frame = useCurrentFrame();
@@ -121,6 +130,7 @@ export const TitleCard: React.FC<TitleCardProps> = ({
         />
         <SlideCaptionLayer
           sentences={sentences}
+          captionPages={captionPages}
           captionMode={captionMode}
           motionProfile={motionProfile}
           motionParams={motionParams}

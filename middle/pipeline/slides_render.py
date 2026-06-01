@@ -127,6 +127,7 @@ def _apply_platform_gv_to_slides(
             vd = dict(s.get("visual_design") or {})
             if platform_id == "douyin":
                 s["caption_mode"] = "tiktok"
+                s["caption_use_tts_timeline"] = True
                 mp = dict(s.get("motion_params") or {})
                 mp.setdefault("wordsPerPageMs", 2400)
                 mp.setdefault("maxCharsPerPage", 18)
@@ -143,7 +144,12 @@ def _apply_platform_gv_to_slides(
                     }
                 )
             else:
-                s.pop("caption_mode", None)
+                s["caption_mode"] = "semantic"
+                s["caption_use_tts_timeline"] = True
+                mp = dict(s.get("motion_params") or {})
+                mp.setdefault("wordsPerPageMs", 3200)
+                mp.setdefault("maxCharsPerPage", 22)
+                s["motion_params"] = mp
                 s["background_color"] = s.get("background_color") or "#151c28"
                 vd.update(
                     {
@@ -423,8 +429,29 @@ def render_slides_video(
     bgm_key = (cfg.render_bgm or "").strip() or get_scene(scene_key).get("default_bgm", "upbeat_tech")
     bgm_path = get_bgm_path(bgm_key) if bgm_key and bgm_key != "none" else None
 
+    from python_agent.slides_quality_gates import (
+        auto_fix_slides,
+        validate_slides_before_render,
+    )
+
+    slides = auto_fix_slides(slides, platform_id=platform_id)
+    gate = validate_slides_before_render(slides, platform=platform_id)
+    gate_path = task_dir / "llm" / f"slides_quality_gate_{platform_id}.json"
+    gate_path.write_text(json.dumps(gate, ensure_ascii=False, indent=2), encoding="utf-8")
+    if gate.get("warnings"):
+        print(f"[SlidesRender] quality warnings: {gate['warnings'][:5]}")
+    if not gate.get("ok"):
+        raise RuntimeError(f"slides_quality_gate_failed: {gate.get('errors')}")
+
     renderer = RenderSlidesSkill(width=preset.width, height=preset.height)
-    out_slides = renderer.execute(slides, tts_clips, visual_style, str(work), bgm_path)
+    out_slides = renderer.execute(
+        slides,
+        tts_clips,
+        visual_style,
+        str(work),
+        bgm_path,
+        platform_id=platform_id,
+    )
 
     videos_dir = task_dir / "videos"
     videos_dir.mkdir(parents=True, exist_ok=True)
