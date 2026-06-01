@@ -42,13 +42,44 @@ test_audio.wav
 !test_video.*
 middle/config.yaml
 
-# Motion research: keep manifests/keyframes; skip bulk video captures in git
+# === 本地验收 / 成片 / 中间产物（禁止提交 GitHub）===
+reports/
+!reports/.gitkeep
+reports_*.log
+_gv20_*.log
+_slides_*.log
+_platform_*.log
+
+data/output/
+**/videos/_slides_work*/
+**/videos/_audit_*/
+**/flow1_v20_audio/
+**/flow2_task/
+
+*.db
+_*.db
+_ci_*.db
+_pytest_*.db
+_test_result.txt
+
+*_sample.json
+*_sample.md
+trending_*.json
+repos_detail.json
+github_*.json
+product_hunt_*.md
+
+# Motion research（抓帧与 G20 验收可本地重跑）
 research/motion/github_daily/captures/**/*.png
 research/motion/github_daily/captures_v2/**/*.png
 research/motion/github_daily/captures_v3/**/*.png
+research/motion/github_daily/verify_g20/
+!research/motion/github_daily/verify_g20/.gitkeep
+research/motion/github_daily/ours/*.mp4
 research/voice_content/cookies.txt
 research/voice_content/media/**/*
 !research/voice_content/media/**/asr_dashscope.json
-research/motion/github_daily/verify_g20/**/*.mp4
-research/motion/github_daily/ours/*.mp4
+
+docs/GITHUB_DAILY_VERIFICATION_REPORT.md
+
 _py_test.py

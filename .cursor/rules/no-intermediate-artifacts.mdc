@@ -1,0 +1,18 @@
+---
+description: Never commit or push local verification outputs and render artifacts
+alwaysApply: true
+---
+
+# 中间产物不进 Git
+
+下列内容**只落本地**，禁止 `git add` / push：
+
+- `reports/`（E2E、audit、platform_burst、gv20_two_flows、vsa_e2e_proof 等）
+- `research/motion/github_daily/verify_g20/`（G20 预览 mp4/关键帧/props）
+- `middle/data/`、`data/output/`、任务目录下的 `videos/`、`*_slides_work*`
+- `*.db`、`_test_result.txt`、`*_sample.json`、`trending_*.json`
+- 自动生成的 `docs/GITHUB_DAILY_VERIFICATION_REPORT.md`
+
+只提交：**源码**、**模板 catalog**（`templates/github_daily_20`、`templates/voice_content_20`）、**脚本**、**测试**、**hand-written docs**。
+
+验收命令照常运行，输出写入上述目录即可。

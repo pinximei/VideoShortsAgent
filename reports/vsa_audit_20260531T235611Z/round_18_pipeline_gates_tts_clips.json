@@ -1,8 +1,0 @@
-{
-  "id": 18,
-  "name": "pipeline_gates_tts_clips",
-  "ok": true,
-  "evidence": {
-    "has_tts_check": true
-  }
-}
