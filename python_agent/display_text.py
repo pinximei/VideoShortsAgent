@@ -1,12 +1,11 @@
-"""屏显文案适配竖屏 1080×1920：换行、截断、字幕分句（口播 tts_text 不裁）。"""
+"""屏显与底栏字幕：单行、跟口播时间轴；标题/要点短截断；tts_text 不裁。"""
 from __future__ import annotations
 
 import re
 from typing import Any
 
-# 竖屏安全区（与 CaptionOverlay padding 对齐）
-CAPTION_MAX_CHARS_PER_LINE = 14
-CAPTION_MAX_LINES = 3
+# 底栏单行安全字数（与 CaptionOverlay 动态字号对齐）
+CAPTION_LINE_MAX_CHARS = 12
 HEADING_MAX_CHARS = 14
 BULLET_MAX_CHARS = 20
 BULLET_MAX_COUNT = 4
@@ -17,35 +16,61 @@ def _plain(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip())
 
 
-def wrap_lines(text: str, *, max_chars: int, max_lines: int) -> str:
-    """按字数换行，超出 max_lines 时末行省略号。"""
+def _split_fixed_chunks(text: str, *, max_chars: int) -> list[str]:
+    """无标点时按字数切分为单行片段。"""
     t = _plain(text)
     if not t:
-        return ""
-    lines: list[str] = []
+        return []
+    if len(t) <= max_chars:
+        return [t]
+    out: list[str] = []
     i = 0
-    while i < len(t) and len(lines) < max_lines:
+    while i < len(t):
         chunk = t[i : i + max_chars]
         if len(chunk) < max_chars:
-            lines.append(chunk)
+            out.append(chunk)
             break
-        # 尽量在标点处断行
         break_at = -1
-        for p in "，,。！？；;、":
+        for p in "，,。！？；;、 ":
             pos = chunk.rfind(p)
             if pos > max_chars // 3:
                 break_at = pos + 1
                 break
         if break_at > 0:
-            lines.append(chunk[:break_at].strip())
+            out.append(chunk[:break_at].strip())
             i += break_at
         else:
-            if len(lines) == max_lines - 1 and i + max_chars < len(t):
-                lines.append(chunk[: max(1, max_chars - 1)] + "…")
-                break
-            lines.append(chunk)
+            out.append(chunk)
             i += max_chars
-    return "\n".join(lines)
+    return [x for x in out if x]
+
+
+def split_spoken_phrases(text: str, *, max_chars: int = CAPTION_LINE_MAX_CHARS) -> list[str]:
+    """拆成口播/底栏同步用的单行字幕（每段对应一次 TTS + 一屏一行）。"""
+    t = _plain(text)
+    if not t:
+        return []
+    parts = re.split(r"[。！？；\n]+", t)
+    parts = [p.strip() for p in parts if p.strip()]
+    if not parts:
+        parts = [t]
+    out: list[str] = []
+    for part in parts:
+        if len(part) <= max_chars:
+            out.append(part)
+            continue
+        sub = re.split(r"[，,、]+", part)
+        sub = [s.strip() for s in sub if s.strip()]
+        if len(sub) > 1:
+            for s in sub:
+                out.extend(
+                    _split_fixed_chunks(s, max_chars=max_chars)
+                    if len(s) > max_chars
+                    else [s]
+                )
+        else:
+            out.extend(_split_fixed_chunks(part, max_chars=max_chars))
+    return out if out else [t]
 
 
 def fit_heading(text: str, *, max_chars: int = HEADING_MAX_CHARS) -> str:
@@ -99,8 +124,7 @@ def fit_slide_for_display(slide: dict[str, Any]) -> dict[str, Any]:
 
 
 def split_caption_sentences(sentences: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """过长单句拆成多段字幕，避免底栏 nowrap 裁切。"""
-    max_chars = CAPTION_MAX_CHARS_PER_LINE * CAPTION_MAX_LINES
+    """长句按时轴均分为多段单行字幕，与口播进度对齐（不含换行符）。"""
     out: list[dict[str, Any]] = []
     for seg in sentences or []:
         text = _plain(str(seg.get("text", "") or ""))
@@ -108,43 +132,28 @@ def split_caption_sentences(sentences: list[dict[str, Any]]) -> list[dict[str, A
             continue
         start = float(seg.get("start", 0))
         end = float(seg.get("end", start + 1))
-        dur = max(0.3, end - start)
-        if len(text) <= max_chars:
-            out.append({"text": text, "start": start, "end": end})
+        dur = max(0.25, end - start)
+        phrases = split_spoken_phrases(text)
+        if len(phrases) <= 1:
+            out.append({"text": phrases[0] if phrases else text, "start": start, "end": end})
             continue
-        # 按标点或固定长度切分
-        parts: list[str] = []
-        buf = ""
-        for ch in text:
-            buf += ch
-            if ch in "，,。！？；;、 " and buf.strip():
-                parts.append(buf.strip())
-                buf = ""
-            elif len(buf) >= CAPTION_MAX_CHARS_PER_LINE:
-                parts.append(buf)
-                buf = ""
-        if buf.strip():
-            parts.append(buf.strip())
-        if not parts:
-            parts = [text[:max_chars]]
-        step = dur / len(parts)
+        total = sum(max(1, len(p)) for p in phrases)
         t0 = start
-        for i, p in enumerate(parts):
-            chunk = wrap_lines(p, max_chars=CAPTION_MAX_CHARS_PER_LINE, max_lines=CAPTION_MAX_LINES)
-            t1 = end if i == len(parts) - 1 else t0 + step
-            out.append({"text": chunk, "start": round(t0, 3), "end": round(t1, 3)})
+        for i, p in enumerate(phrases):
+            frac = max(1, len(p)) / total
+            t1 = end if i == len(phrases) - 1 else t0 + dur * frac
+            out.append({"text": p, "start": round(t0, 3), "end": round(t1, 3)})
             t0 = t1
     return out
 
 
-def caption_font_size_for_text(text: str, *, base: int = 52, min_size: int = 32) -> int:
-    """根据字数估算底栏字号。"""
-    plain = text.replace("\n", "")
-    n = len(plain)
-    if n <= 16:
+def caption_font_size_for_text(text: str, *, base: int = 52, min_size: int = 30) -> int:
+    """单行底栏字号（字越多越小，保证一行内显示）。"""
+    n = len(_plain(text))
+    if n <= 8:
         return base
-    if n <= 28:
+    if n <= 12:
         return 46
-    if n <= 40:
+    if n <= 16:
         return 40
     return min_size

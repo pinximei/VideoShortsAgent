@@ -12,7 +12,7 @@ import {
  * 特效：毛玻璃底栏、双层文字、弹入+放大动画、关键词高亮、进度条
  *
  * 支持两种输入：
- * 1. sentences 数组（精确时间轴）：按时间逐句显示
+ * 1. sentences 数组（精确时间轴）：同一时间只显示当前口播那一行（单行切换，不叠多行）
  * 2. text 字符串（兜底）：全程显示单条文字
  */
 interface Sentence {
@@ -132,17 +132,10 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
   const progressWidth = sentenceProgress * 100;
 
   const strippedText = stripBold(displayText);
-  const lineCount = Math.max(1, displayText.split('\n').length);
-  const maxLineLen = Math.max(
-    ...displayText.split('\n').map((ln) => stripBold(ln).length),
-    1,
-  );
+  const charLen = strippedText.length || 1;
   const fontSize = Math.min(
     52,
-    Math.max(
-      30,
-      Math.floor(720 / Math.max(maxLineLen, 8)) - (lineCount - 1) * 4,
-    ),
+    Math.max(30, Math.floor(900 / Math.max(charLen * 1.08, 6))),
   );
 
   return (
@@ -200,21 +193,21 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
           bottom: 0,
           left: 0,
           right: 0,
-          minHeight: 200,
-          maxHeight: 280,
+          height: 200,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '16px 48px 28px',
+          padding: '0 48px 24px',
           opacity: textOpacity,
           boxSizing: 'border-box',
         }}
       >
-        {/* 双层文字容器：允许多行换行，避免长句被裁切 */}
+        {/* 同一时间只显示口播当前一句（单行，随 sentences 时间轴切换） */}
         <div style={{
           position: 'relative',
           transform: `translateY(${textY}px) scale(${textScale})`,
-          maxWidth: '92%',
+          maxWidth: '94%',
+          overflow: 'hidden',
         }}>
           {/* 底层：描边文字 */}
           <div
@@ -227,13 +220,12 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
               fontWeight: 800,
               color: 'transparent',
               textAlign: 'center',
-              lineHeight: 1.45,
+              lineHeight: 1.35,
               fontFamily: '"Microsoft YaHei", "PingFang SC", sans-serif',
               letterSpacing: 1,
               WebkitTextStroke: '3px rgba(255,255,255,0.3)',
               pointerEvents: 'none',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
+              whiteSpace: 'nowrap',
             }}
           >
             {strippedText}
@@ -247,12 +239,11 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
               fontWeight: 800,
               color: '#FFFFFF',
               textAlign: 'center',
-              lineHeight: 1.45,
+              lineHeight: 1.35,
               textShadow: '0 2px 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.8)',
               fontFamily: '"Microsoft YaHei", "PingFang SC", sans-serif',
               letterSpacing: 1,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
+              whiteSpace: 'nowrap',
             }}
           >
             {parseHighlightedText(displayText, accentColor)}

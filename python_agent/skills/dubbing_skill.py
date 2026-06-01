@@ -171,22 +171,11 @@ class DubbingSkill:
         return {"tts_clips": tts_clips}
 
     def _split_sentences(self, text: str) -> list:
-        """按标点拆分句子"""
-        # 先按句号等拆
-        sentences = re.split(r'[。！？；\n]+', text)
-        sentences = [s.strip() for s in sentences if s.strip()]
+        """按口播单行字幕粒度拆分（与底栏逐句显示对齐）。"""
+        from python_agent.display_text import split_spoken_phrases
 
-        # 长句按逗号二次拆分
-        result = []
-        for s in sentences:
-            if len(s) > 20:
-                parts = re.split(r'[，,、]+', s)
-                parts = [p.strip() for p in parts if p.strip()]
-                result.extend(parts)
-            else:
-                result.append(s)
-
-        return result if result else [text]
+        phrases = split_spoken_phrases(text)
+        return phrases if phrases else [text.strip() or text]
 
     def _concat_sentence_audios(self, sentence_audios: list,
                                  output_path: str, tts_dir: str,
