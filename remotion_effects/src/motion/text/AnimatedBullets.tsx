@@ -62,7 +62,14 @@ export const AnimatedBullets: React.FC<Props> = ({
               maxWidth: 880,
             }}
           >
-            <div style={{fontSize: 34, fontWeight: 600, color: theme.fg, lineHeight: 1.35}}>{b}</div>
+            <div style={{
+              fontSize: 34,
+              fontWeight: 600,
+              color: theme.fg,
+              lineHeight: 1.35,
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
+            }}>{b}</div>
           </div>
         </div>
       );
@@ -90,7 +97,15 @@ export const AnimatedBullets: React.FC<Props> = ({
             transformOrigin: 'top',
           }}
         />
-        <div style={{fontSize: 36, fontWeight: 600, color: theme.fg, lineHeight: 1.35}}>{b}</div>
+        <div style={{
+          fontSize: 36,
+          fontWeight: 600,
+          color: theme.fg,
+          lineHeight: 1.35,
+          maxWidth: 820,
+          wordBreak: 'break-word',
+          whiteSpace: 'pre-wrap',
+        }}>{b}</div>
       </div>
     );
   };
@@ -106,6 +121,10 @@ export const AnimatedBullets: React.FC<Props> = ({
             marginBottom: 48,
             opacity: headSpring,
             transform: `translateX(${(1 - headSpring) * (fromRight ? 80 : -40)}px)`,
+            maxWidth: '92%',
+            lineHeight: 1.25,
+            wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap',
           }}
         >
           {heading}

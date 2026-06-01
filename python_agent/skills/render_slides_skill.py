@@ -12,6 +12,8 @@ import json
 import shutil
 import subprocess
 
+from python_agent.display_text import fit_slide_for_display, split_caption_sentences
+
 # Remotion 项目目录（相对于项目根）
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 REMOTION_DIR = os.path.join(_PROJECT_ROOT, "remotion_effects")
@@ -51,7 +53,8 @@ class RenderSlidesSkill:
 
             duration = tts_clip.get("duration", 5.0)
             tts_audio_path = tts_clip.get("path")
-            sentences = tts_clip.get("sentences", [])
+            sentences = split_caption_sentences(tts_clip.get("sentences", []))
+            slide = fit_slide_for_display(slide)
 
             print(f"  [Slide {i+1}/{len(slides)}] {slide.get('type', '?')}: "
                   f"{slide.get('heading', '')[:30]}... ({duration:.1f}s)")

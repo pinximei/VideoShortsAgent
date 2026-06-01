@@ -160,7 +160,7 @@ class ComposeSkill:
 无论前四种如何搭配，必须保证：
 1. 提取极具张力的短字幕或标题显示在屏幕上！绝对不允许在画面上留白不显文字！
 2. 屏幕上标题/大字要短、有冲击力；但 "tts_text" 必须原封不动抄写完整旁白（不得删减口播字数）："{tts}"
-3. "heading": "凝练的大标题(屏显10字以内，口播长短不受影响)"
+3. "heading": "凝练的大标题(屏显最多14字，超出会被截断；口播 tts_text 长短不受影响)"
 4. "hook_text": "左上角标签词"
 
 【智能时轨 - Audio/Visual Sync】
@@ -326,8 +326,13 @@ class ComposeSkill:
         raise ValueError(f"无法从大模型提取 JSON:\n{content}")
 
     def _validate_script(self, script: dict) -> dict:
+        from python_agent.display_text import fit_slide_for_display
+
         if "slides" not in script:
             raise ValueError("脚本缺失 slides 字段")
+        script["slides"] = [
+            fit_slide_for_display(s) for s in script["slides"]
+        ]
         for i, slide in enumerate(script["slides"]):
             if "visual_design" not in slide:
                 slide["visual_design"] = {
