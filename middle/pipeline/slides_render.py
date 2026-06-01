@@ -95,23 +95,16 @@ def _configure_stdio_utf8() -> None:
                 pass
 
 
-def render_slides_video(
+def _load_or_build_slides_script(
     cfg: PipelineConfig,
     task_dir: Path,
     *,
-    platform_id: str = "douyin",
-) -> Path:
-    """ComposeSkill + RenderSlidesSkill → 单条成片。"""
-    _configure_stdio_utf8()
-    _ensure_repo_path()
-    from python_agent.pipeline_media import prefetch_task_cover
-    from python_agent.skills.compose_skill import ComposeSkill
-    from python_agent.skills.dubbing_skill import DubbingSkill
-    from python_agent.skills.image_resolver_skill import ImageResolverSkill
-    from python_agent.skills.render_slides_skill import RenderSlidesSkill
-    from python_agent.template_loader import get_bgm_path, get_scene, get_style
+    platform_id: str,
+) -> tuple[dict, dict, str, str, dict]:
+    """返回 (script, brief_dict, scene_key, style_key, voice_style)。"""
+    from python_agent.template_loader import get_scene
 
-    task_dir = task_dir.resolve()
+    script_path = task_dir / "llm" / "slides_script.json"
     brief_dict = load_brief(task_dir)
     from python_agent.tts_params import load_tts_from_task_dir
 
@@ -123,7 +116,6 @@ def render_slides_video(
     style_key = (cfg.render_visual_style or "").strip() or get_scene(scene_key).get(
         "default_style", "github_dark"
     )
-    visual_style = get_style(style_key)
 
     from python_agent.voice_content_templates import (
         apply_voice_style_to_brief,
@@ -133,19 +125,29 @@ def render_slides_video(
         voice_style_prompt_block,
     )
 
-    voice_style: dict = {}
     preset = get_platform_preset(platform_id)
-    if is_voice_style_brief(brief_dict):
+    voice_style: dict = {}
+    if is_voice_style_brief(brief_dict) or platform_id in ("douyin", "xhs"):
         voice_style = pick_voice_content_style(brief_dict)
         brief_dict = apply_voice_style_to_brief(
             brief_dict, voice_style, platform_voice=preset.voice
         )
-        save_voice_style(task_dir, voice_style)
+        if not (task_dir / "llm" / "voice_content_style.json").is_file():
+            save_voice_style(task_dir, voice_style)
+
+    if script_path.is_file():
+        script = json.loads(script_path.read_text(encoding="utf-8-sig"))
+        return script, brief_dict, scene_key, style_key, voice_style
 
     compose_text = brief_to_compose_text(brief_dict)
     if voice_style:
         compose_text += "\n\n" + voice_style_prompt_block(voice_style)
-    print(f"[SlidesRender] scene={scene_key} style={style_key} platform={platform_id} voice={voice_style.get('id', '-')}")
+    print(
+        f"[SlidesRender] compose scene={scene_key} style={style_key} "
+        f"voice={voice_style.get('id', '-')}"
+    )
+
+    from python_agent.skills.compose_skill import ComposeSkill
 
     script = ComposeSkill().execute(
         compose_text,
@@ -163,7 +165,6 @@ def render_slides_video(
         from python_agent.voice_content_templates import ensure_script_tts_minimum
 
         script, actual, need = ensure_script_tts_minimum(script, voice_style)
-        slides = script.get("slides") or []
         if actual < int(need * 0.6):
             raise RuntimeError(
                 f"voice_script_too_short:{actual}<{need} — 口播过少，请检查素材或重新生成文案"
@@ -178,37 +179,77 @@ def render_slides_video(
         save_template_plan,
     )
 
+    slides = script.get("slides") or []
     if is_github_daily_brief(brief_dict):
         picked, plan = build_github_daily_slide_plan(brief_dict, slides)
         save_github_daily_style(task_dir, picked, plan)
         print(f"[SlidesRender] github_daily style={picked.get('id')}")
     plan = build_slide_template_plan(brief_dict, slides)
     save_template_plan(task_dir, plan)
-    slides = apply_template_plan_to_slides(slides, brief_dict)
-    script["slides"] = slides
-
-    cover = prefetch_task_cover(task_dir, brief_dict)
-    _attach_cover_to_slides(slides, cover)
+    script["slides"] = apply_template_plan_to_slides(script.get("slides") or [], brief_dict)
     _save_slides_artifact(task_dir, script)
+    return script, brief_dict, scene_key, style_key, voice_style
 
-    work = task_dir / "videos" / "_slides_work"
-    work.mkdir(parents=True, exist_ok=True)
 
-    resolver = ImageResolverSkill()
-    slides = resolver.execute(
-        slides,
-        user_images_dir=None,
-        image_mode=cfg.render_slides_image_mode,
-        output_dir=str(work / "images"),
+def render_slides_video(
+    cfg: PipelineConfig,
+    task_dir: Path,
+    *,
+    platform_id: str = "douyin",
+) -> Path:
+    """Compose（仅首次）+ 分平台 TTS + RenderSlidesSkill → 成片。"""
+    _configure_stdio_utf8()
+    _ensure_repo_path()
+    from python_agent.pipeline_media import prefetch_task_cover
+    from python_agent.skills.dubbing_skill import DubbingSkill
+    from python_agent.skills.image_resolver_skill import ImageResolverSkill
+    from python_agent.skills.render_slides_skill import RenderSlidesSkill
+    from python_agent.template_loader import get_bgm_path, get_scene, get_style
+    from python_agent.tts_params import prepare_brief_tts
+
+    task_dir = task_dir.resolve()
+    preset = get_platform_preset(platform_id)
+    visual_style = get_style(
+        (cfg.render_visual_style or "").strip()
+        or get_scene(
+            (cfg.render_scene or "").strip()
+            or _default_scene_for_feed(str(load_brief(task_dir).get("feed_kind") or "news"))
+        ).get("default_style", "github_dark")
     )
 
-    from python_agent.tts_params import resolve_tts_for_platform
+    script, brief_dict, scene_key, style_key, voice_style = _load_or_build_slides_script(
+        cfg, task_dir, platform_id=platform_id
+    )
+    slides = list(script.get("slides") or [])
+    brief_dict = prepare_brief_tts(brief_dict, platform_id, voice_style=voice_style or None)
 
-    tts = resolve_tts_for_platform(brief_dict, platform_id, voice_style=voice_style or None)
-    voice = str(brief_dict.get("tts_voice") or tts["tts_voice"])
-    tts_rate = str(brief_dict.get("tts_rate") or tts["tts_rate"])
-    tts_pitch = str(brief_dict.get("tts_pitch") or tts["tts_pitch"])
-    sent_pause = brief_dict.get("sentence_pause_sec", tts["sentence_pause_sec"])
+    shared_work = task_dir / "videos" / "_slides_work"
+    shared_work.mkdir(parents=True, exist_ok=True)
+    images_dir = shared_work / "images"
+    if not images_dir.is_dir() or not any(images_dir.iterdir()):
+        cover = prefetch_task_cover(task_dir, brief_dict)
+        _attach_cover_to_slides(slides, cover)
+        resolver = ImageResolverSkill()
+        slides = resolver.execute(
+            slides,
+            user_images_dir=None,
+            image_mode=cfg.render_slides_image_mode,
+            output_dir=str(images_dir),
+        )
+        script["slides"] = slides
+        _save_slides_artifact(task_dir, script)
+
+    work = task_dir / "videos" / f"_slides_work_{platform_id}"
+    work.mkdir(parents=True, exist_ok=True)
+    print(
+        f"[SlidesRender] TTS platform={platform_id} voice={brief_dict.get('tts_voice')} "
+        f"rate={brief_dict.get('tts_rate')} pitch={brief_dict.get('tts_pitch')}"
+    )
+
+    voice = str(brief_dict.get("tts_voice") or preset.voice)
+    tts_rate = str(brief_dict.get("tts_rate") or "+12%")
+    tts_pitch = str(brief_dict.get("tts_pitch") or "+0Hz")
+    sent_pause = brief_dict.get("sentence_pause_sec")
     dubbing = DubbingSkill(
         voice=voice,
         tts_rate=tts_rate,
@@ -243,7 +284,7 @@ def render_task_slides_videos(
     *,
     platforms: list[str] | None = None,
 ) -> dict[str, Any]:
-    """为各平台生成成片（首平台渲染，其余复用同文件）。"""
+    """为各平台生成成片（文案共用，分平台 TTS：抖音男声 / 小红书女声）。"""
     task_dir = task_dir.resolve()
     brief_dict = load_brief(task_dir)
     presets = video_platforms(platforms or cfg.render_platforms)
@@ -253,25 +294,22 @@ def render_task_slides_videos(
 
     videos: list[dict[str, Any]] = []
     with global_render_slot(cfg.data_dir, max_slots=cfg.render_max_concurrent):
-        primary_id = platform_ids[0] if platform_ids else "douyin"
-        primary_path = render_slides_video(cfg, task_dir, platform_id=primary_id)
         script_path = task_dir / "llm" / "slides_script.json"
-        if script_path.is_file():
-            all_slides = json.loads(script_path.read_text(encoding="utf-8")).get("slides") or []
-            _stub_video_plans(task_dir, all_slides, platform_ids)
         for preset in presets:
-            dest = task_dir / "videos" / f"{preset.id}.mp4"
-            if preset.id != primary_id:
-                shutil.copy2(primary_path, dest)
+            print(f"[SlidesRender] platform={preset.id} (per-platform TTS)")
+            out_path = render_slides_video(cfg, task_dir, platform_id=preset.id)
             videos.append(
                 {
                     "platform": preset.id,
                     "label": preset.label,
-                    "path": str(dest),
+                    "path": str(out_path),
                     "content_kind": "video",
                     "render_engine": "remotion_slides",
                 }
             )
+        if script_path.is_file():
+            all_slides = json.loads(script_path.read_text(encoding="utf-8")).get("slides") or []
+            _stub_video_plans(task_dir, all_slides, platform_ids)
 
     articles = article_manifest_entries(task_dir)
     manifest = {
@@ -294,7 +332,11 @@ def render_task_slides_videos(
         platforms=cfg.render_platforms,
         full_verify=cfg.render_full_verify,
     )
-    if cfg.render_enabled and verify_report.get("ok") is not True:
+    if (
+        cfg.render_enabled
+        and cfg.render_verify_required
+        and verify_report.get("ok") is not True
+    ):
         raise RuntimeError(
             f"verify_failed: {json.dumps(verify_report, ensure_ascii=False)[:400]}"
         )

@@ -11,9 +11,10 @@ RenderSkill - 视频渲染技能
 2. 逐段 ASS 字幕生成 + 烧录
 3. FFmpeg concat 拼接所有片段为最终视频
 """
-import os
 import json
+import os
 import subprocess
+import sys
 
 
 REMOTION_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "remotion_effects")
@@ -849,26 +850,33 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             out_target = output_path.replace(".webm", ".mov")
         out_fwd = os.path.abspath(out_target).replace("\\", "/")
 
-        fast_cmd = [
-            "npx", "remotion", "render", "src/index.tsx", composition,
-            f"--output={out_fwd}",
-            f"--props={props_path_fwd}",
-            "--codec=vp8",
-            "--pixel-format=yuva420p",
-            f"--width={width}", f"--height={height}",
-            f"--frames=0-{frames - 1}",
-        ]
-        try:
-            self._run_cmd(fast_cmd, f"Remotion:{composition}:fast", cwd=REMOTION_DIR,
-                          timeout=420, shell=True)
-            if os.path.isfile(out_target) and os.path.getsize(out_target) > 200:
-                if output_path != out_target and output_path.endswith(".webm"):
-                    os.replace(out_target, output_path)
-                if os.path.exists(props_path):
-                    os.remove(props_path)
-                return
-        except Exception:
-            pass
+        # Windows 上 vp8 直出常因 Remotion video-codec 报错；跳过 fast 路径减少 ~3 次失败重试
+        if sys.platform != "win32":
+            fast_cmd = [
+                "npx", "remotion", "render", "src/index.tsx", composition,
+                f"--output={out_fwd}",
+                f"--props={props_path_fwd}",
+                "--codec=vp8",
+                "--pixel-format=yuva420p",
+                f"--width={width}", f"--height={height}",
+                f"--frames=0-{frames - 1}",
+            ]
+            try:
+                self._run_cmd(
+                    fast_cmd,
+                    f"Remotion:{composition}:fast",
+                    cwd=REMOTION_DIR,
+                    timeout=420,
+                    shell=True,
+                )
+                if os.path.isfile(out_target) and os.path.getsize(out_target) > 200:
+                    if output_path != out_target and output_path.endswith(".webm"):
+                        os.replace(out_target, output_path)
+                    if os.path.exists(props_path):
+                        os.remove(props_path)
+                    return
+            except Exception:
+                pass
 
         # 降级：PNG 序列帧（兼容旧 Remotion / 直出失败）
         seq_dir = os.path.join(output_dir, f"remotion_seq_{tag}")

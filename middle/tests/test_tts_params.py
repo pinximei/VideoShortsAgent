@@ -44,6 +44,16 @@ def test_xhs_keeps_female_voice():
     assert t["tts_voice"] == "zh-CN-XiaoxiaoNeural"
 
 
+def test_prepare_brief_tts_differs_by_platform():
+    from python_agent.tts_params import prepare_brief_tts
+
+    b = prepare_brief_tts({"feed_kind": "github_daily"}, "douyin")
+    x = prepare_brief_tts({"feed_kind": "github_daily"}, "xhs")
+    assert b["tts_voice"] != x["tts_voice"]
+    assert "Yunyang" in b["tts_voice"] or "Yunxi" not in b["tts_voice"]
+    assert x["tts_voice"] == "zh-CN-XiaoxiaoNeural"
+
+
 def test_slow_subtitle_gets_lower_pitch():
     t = resolve_tts_params(
         {"subtitle_switch_ms": 4000, "validation_note": "phash_bottom_band", "phash_only": True},

@@ -102,6 +102,22 @@ def resolve_tts_for_platform(
     }
 
 
+def prepare_brief_tts(
+    brief: dict[str, Any],
+    platform_id: str,
+    *,
+    voice_style: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """合并 task brief、V 模板与平台默认 TTS 参数（slides / vsa 共用）。"""
+    out = dict(brief)
+    tts = resolve_tts_for_platform(out, platform_id, voice_style=voice_style)
+    out["tts_voice"] = tts["tts_voice"]
+    out["tts_rate"] = tts["tts_rate"]
+    out["tts_pitch"] = tts["tts_pitch"]
+    out["sentence_pause_sec"] = tts["sentence_pause_sec"]
+    return out
+
+
 def load_tts_from_task_dir(task_dir: str | Path) -> dict[str, Any]:
     """读取 task 已保存的 brief + voice_content_style。"""
     root = Path(task_dir)

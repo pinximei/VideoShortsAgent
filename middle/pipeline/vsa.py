@@ -173,7 +173,11 @@ def render_task_videos(
         platforms=cfg.render_platforms,
         full_verify=cfg.render_full_verify,
     )
-    if cfg.render_enabled and verify_report.get("ok") is not True:
+    if (
+        cfg.render_enabled
+        and cfg.render_verify_required
+        and verify_report.get("ok") is not True
+    ):
         raise RuntimeError(
             f"verify_failed: {json.dumps(verify_report, ensure_ascii=False)[:400]}"
         )

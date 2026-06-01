@@ -26,7 +26,15 @@ def _minimal_ready_task(cfg: PipelineConfig, *, with_video: bool = True) -> Path
         "channels": {"douyin": {"label": "抖音"}},
     }
     (task / "brief.json").write_text(
-        json.dumps({"publish_bindings": bindings}, ensure_ascii=False),
+        json.dumps(
+            {
+                "publish_bindings": bindings,
+                "feed_kind": "github_daily",
+                "hook": "别划走，今天这个开源项目真的炸裂",
+                "talking_points": ["第一点", "第二点", "第三点"],
+            },
+            ensure_ascii=False,
+        ),
         encoding="utf-8",
     )
     (task / "publish_meta.json").write_text(
@@ -37,7 +45,11 @@ def _minimal_ready_task(cfg: PipelineConfig, *, with_video: bool = True) -> Path
         (task / "llm" / f"video_clips_{pid}.json").write_text(
             json.dumps(
                 {
-                    "clips": [{"start": 0, "end": 5, "tts_text": "hello"}],
+                    "clips": [
+                        {"start": 0, "end": 5, "tts_text": "hello one"},
+                        {"start": 5, "end": 10, "tts_text": "hello two"},
+                        {"start": 10, "end": 15, "tts_text": "hello three"},
+                    ],
                     "tts_durations": [4.5],
                     "source": "pipeline_llm",
                     "render_status": "ok",
