@@ -15,7 +15,10 @@ from python_agent.platform_caption_presets import reconcile_platform_slides
 from python_agent.slides_quality_gates import auto_fix_slides
 
 
-def apply_registry_layout_tiers(slides: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def apply_registry_layout_tiers(
+    slides: list[dict[str, Any]],
+    brief: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     """L00 片头 / L01–L10 内容 / L99 CTA（与十轮排型表一致）。"""
     out: list[dict[str, Any]] = []
     ci = 0
@@ -23,11 +26,16 @@ def apply_registry_layout_tiers(slides: list[dict[str, Any]]) -> list[dict[str, 
         slide = dict(s)
         st = str(slide.get("type") or "")
         if st == "title_card":
-            dec = list(slide.get("css_decorations") or [])
-            for d in TITLE_LAYOUT["css"]:
-                if d not in dec:
-                    dec.append(d)
-            slide["css_decorations"] = css_pack(dec)
+            from python_agent.douyin_news_style import NEWS_TITLE_CSS, is_news_brief
+
+            if is_news_brief(brief):
+                slide["css_decorations"] = list(NEWS_TITLE_CSS)
+            else:
+                dec = list(slide.get("css_decorations") or [])
+                for d in TITLE_LAYOUT["css"]:
+                    if d not in dec:
+                        dec.append(d)
+                slide["css_decorations"] = css_pack(dec)
             slide.setdefault("opening_burst", True)
             slide["opening_duration_frames"] = min(
                 int(slide.get("opening_duration_frames") or DOUYIN_OPENING_BURST_FRAMES),
