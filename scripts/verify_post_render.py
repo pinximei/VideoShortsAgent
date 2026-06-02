@@ -34,9 +34,13 @@ def _plan_checks(slides: list[dict], plat: str) -> list[str]:
     if plat == "douyin":
         if not any(str(s.get("caption_mode")) == "tiktok" for s in slides):
             issues.append(f"{plat}:caption_not_tiktok")
-        from python_agent.pinned_regression import validate_pinned_douyin_plan
+        from python_agent.pinned_ai_news_regression import validate_pinned_plan
 
-        reg = validate_pinned_douyin_plan(slides)
+        brief_guess = {}
+        bp = task_dir / "brief.json"
+        if bp.is_file():
+            brief_guess = json.loads(bp.read_text(encoding="utf-8-sig"))
+        reg = validate_pinned_plan(slides, brief=brief_guess)
         for err in reg.get("errors") or []:
             issues.append(f"{plat}:pinned:{err}")
         s0 = slides[0] if slides else {}

@@ -145,10 +145,27 @@ def _apply_platform_gv_to_slides(
 
     out_slides = apply_platform_presets_to_slides(out_slides, platform_id)
     if platform_id == "douyin":
-        from python_agent.douyin_plan_finalize import finalize_douyin_slides
+        from python_agent.douyin_news_style import is_news_brief
         from python_agent.motion_templates import is_github_daily_brief
 
-        if is_github_daily_brief(b):
+        if is_news_brief(b):
+            from python_agent.douyin_news_finalize import finalize_douyin_news_slides
+            from python_agent.pinned_ai_news_template import pick_ai_news_template
+
+            tmpl = pick_ai_news_template(b)
+            b["pinned_ai_news_template_id"] = tmpl.get("id")
+            (task_dir / "llm").mkdir(parents=True, exist_ok=True)
+            (task_dir / "llm" / "pinned_ai_news_template.json").write_text(
+                json.dumps(tmpl, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            out_slides = finalize_douyin_news_slides(out_slides, b)
+            print(
+                f"[SlidesRender] ai_news pinned template={tmpl.get('id')} "
+                f"({tmpl.get('label')})"
+            )
+        elif is_github_daily_brief(b):
+            from python_agent.douyin_plan_finalize import finalize_douyin_slides
             from python_agent.douyin_shot_stylist import (
                 DouyinShotDesignError,
                 apply_douyin_shot_styles,
@@ -167,11 +184,13 @@ def _apply_platform_gv_to_slides(
                 _json.dumps(export_shot_plan(out_slides), ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
-            print("[SlidesRender] douyin_shot_styles (github_daily)")
+            out_slides = finalize_douyin_slides(out_slides, b, layout_tiers=True)
+            print("[SlidesRender] douyin github_daily + plan_finalize")
         else:
-            print("[SlidesRender] douyin news path: skip github shot LLM")
-        out_slides = finalize_douyin_slides(out_slides, b, layout_tiers=True)
-        print("[SlidesRender] douyin_plan_finalize: layout tiers + hook + auto_fix")
+            from python_agent.douyin_plan_finalize import finalize_douyin_slides
+
+            out_slides = finalize_douyin_slides(out_slides, b, layout_tiers=True)
+            print("[SlidesRender] douyin_plan_finalize (generic)")
     for s in out_slides:
         s["css_decorations"] = list(
             s.get("css_decorations") or (s.get("visual_design") or {}).get("css_decorations") or []
@@ -236,10 +255,13 @@ def _load_or_build_slides_script(
     scene_key = (cfg.render_scene or "").strip() or _default_scene_for_feed(
         str(brief_dict.get("feed_kind") or "news")
     )
-    fk_style = str(brief_dict.get("feed_kind") or "news")
+    from python_agent.douyin_news_style import is_news_brief
+
     default_style = get_scene(scene_key).get("default_style", "github_dark")
-    if fk_style == "news" and default_style == "github_dark":
-        default_style = "warm_gold"
+    if is_news_brief(brief_dict):
+        from python_agent.douyin_news_finalize import ai_news_visual_style
+
+        default_style = ai_news_visual_style(brief_dict)
     style_key = (cfg.render_visual_style or "").strip() or default_style
 
     from python_agent.voice_content_templates import (
@@ -279,6 +301,13 @@ def _load_or_build_slides_script(
         return script, brief_dict, scene_key, style_key, voice_style
 
     compose_text = brief_to_compose_text(brief_dict)
+    if is_news_brief(brief_dict):
+        from python_agent.pinned_ai_news_template import pick_ai_news_template
+
+        tmpl = pick_ai_news_template(brief_dict)
+        hint = str(tmpl.get("compose_hint") or "").strip()
+        if hint:
+            compose_text += f"\n\n【爱资讯版式·{tmpl.get('label')}】\n{hint}"
     if voice_style:
         compose_text += "\n\n" + voice_style_prompt_block(voice_style)
     if brief_dict.get("_remotion_skill_injected"):
@@ -465,9 +494,9 @@ def render_slides_video(
         slides = fix_all_layout_collisions(slides)
     gate = validate_slides_before_render(slides, platform=platform_id, brief=brief_dict)
     if platform_id == "douyin":
-        from python_agent.pinned_regression import validate_pinned_douyin_plan
+        from python_agent.pinned_ai_news_regression import validate_pinned_plan
 
-        reg = validate_pinned_douyin_plan(slides, brief=brief_dict)
+        reg = validate_pinned_plan(slides, brief=brief_dict)
         gate.setdefault("pinned_regression", reg)
         if not reg.get("ok"):
             gate["ok"] = False

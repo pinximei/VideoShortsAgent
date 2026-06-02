@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from python_agent.pinned_regression import validate_pinned_douyin_plan
+from python_agent.pinned_ai_news_regression import validate_pinned_plan
 
 
 def _grade(score: int) -> str:
@@ -66,7 +66,7 @@ def score_douyin_render(
     score = 100
     deductions: list[dict[str, str | int]] = []
 
-    reg = validate_pinned_douyin_plan(slides, brief=brief)
+    reg = validate_pinned_plan(slides, brief=brief)
     for err in reg.get("errors") or []:
         score -= 12
         deductions.append({"points": 12, "reason": f"pinned:{err}"})

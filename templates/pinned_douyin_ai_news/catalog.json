@@ -1,0 +1,153 @@
+{
+  "family": "douyin_ai_news",
+  "label": "抖音·爱资讯（多款式轮换）",
+  "pinned_at": "2026-06-02",
+  "platform": "douyin",
+  "feed_kind": "news",
+  "rotation": "article_id_hash",
+  "variants": [
+    {
+      "id": "ai_news_breaking_v1",
+      "label": "突发快讯·暖橙",
+      "visual_style": "warm_gold",
+      "voice_id": "V13_marquee_news",
+      "title": {
+        "motion_profile": "tiktok_word_pop",
+        "css": ["text-stroke-yellow", "sparkle-dots", "corner-brackets", "caption-bottom-safe"],
+        "background_colors": ["#1a1208", "#221510", "#1f120c"]
+      },
+      "opening": {
+        "duration_frames": 78,
+        "max_hook_beats": 2,
+        "hook_tone": "breaking"
+      },
+      "content_slots": [
+        {
+          "motion_profile": "glass_card_stack",
+          "css": ["glass-card", "sparkle-dots", "pill-badge"],
+          "mid_effect": "glow_ring",
+          "mid_info_layout": "steps"
+        },
+        {
+          "motion_profile": "bullet_stagger_up",
+          "css": ["soft-purple-gradient", "sparkle-dots", "float-icon"],
+          "mid_effect": "typewriter",
+          "mid_info_layout": "framed"
+        },
+        {
+          "motion_profile": "shake_emphasis",
+          "css": ["sparkle-dots", "glass-card"],
+          "mid_effect": "glow_scan",
+          "mid_info_layout": "keywords"
+        }
+      ],
+      "cta": {
+        "motion_profile": "cta_pulse_arrow",
+        "css": ["soft-purple-gradient", "pulse-button", "sparkle-dots", "caption-bottom-safe"]
+      },
+      "caption": {
+        "mode": "tiktok",
+        "max_chars_per_page": 22,
+        "caption_bottom_px": 320,
+        "mid_safe_bottom_ratio": 0.4
+      },
+      "compose_hint": "突发资讯：片头「别划走/刚刚」+ 一句话新闻点；禁止 Star、开源、仓库、GitHub；口语短句。"
+    },
+    {
+      "id": "ai_news_bulletin_v1",
+      "label": "科技简报·冷蓝",
+      "visual_style": "tech_blue",
+      "voice_id": "V13_marquee_news",
+      "title": {
+        "motion_profile": "kinetic_slam_tight",
+        "css": ["glass-card", "sparkle-dots", "caption-bottom-safe"],
+        "background_colors": ["#0f172a", "#1e293b", "#172033"]
+      },
+      "opening": {
+        "duration_frames": 84,
+        "max_hook_beats": 2,
+        "hook_tone": "bulletin"
+      },
+      "content_slots": [
+        {
+          "motion_profile": "tiktok_phrase_pages",
+          "css": ["glass-card", "pill-badge", "sparkle-dots"],
+          "mid_effect": "glow_scan",
+          "mid_info_layout": "framed"
+        },
+        {
+          "motion_profile": "glass_card_stack",
+          "css": ["soft-purple-gradient", "glass-card"],
+          "mid_effect": "glow_ring",
+          "mid_info_layout": "steps"
+        },
+        {
+          "motion_profile": "bullet_stagger_up",
+          "css": ["float-icon", "sparkle-dots"],
+          "mid_effect": "particle_dust",
+          "mid_info_layout": "keywords"
+        }
+      ],
+      "cta": {
+        "motion_profile": "cta_pulse_arrow",
+        "css": ["glass-card", "pulse-button", "caption-bottom-safe"]
+      },
+      "caption": {
+        "mode": "tiktok",
+        "max_chars_per_page": 20,
+        "caption_bottom_px": 300,
+        "mid_safe_bottom_ratio": 0.42
+      },
+      "compose_hint": "科技简报：标题≤14字像新闻标题；客观陈述；禁止 Star/仓库话术；2–3 条要点竖卡。"
+    },
+    {
+      "id": "ai_news_editorial_v1",
+      "label": "深度解读·紫雾",
+      "visual_style": "dark_purple",
+      "voice_id": "V04_minimal_calm",
+      "title": {
+        "motion_profile": "flash_hook_smash",
+        "css": ["soft-purple-gradient", "sparkle-dots", "text-stroke-yellow", "caption-bottom-safe"],
+        "background_colors": ["#1a0f24", "#241530", "#1e1228"]
+      },
+      "opening": {
+        "duration_frames": 84,
+        "max_hook_beats": 2,
+        "hook_tone": "editorial"
+      },
+      "content_slots": [
+        {
+          "motion_profile": "shake_emphasis",
+          "css": ["soft-purple-gradient", "sparkle-dots"],
+          "mid_effect": "bracket_slam",
+          "mid_info_layout": "keywords"
+        },
+        {
+          "motion_profile": "kinetic_slam_tight",
+          "css": ["glass-card", "float-icon"],
+          "mid_effect": "glow_ring",
+          "mid_info_layout": "framed"
+        },
+        {
+          "motion_profile": "glass_card_stack",
+          "css": ["pill-badge", "sparkle-dots"],
+          "mid_effect": "typewriter",
+          "mid_info_layout": "compare"
+        }
+      ],
+      "cta": {
+        "motion_profile": "cta_pulse_arrow",
+        "css": ["soft-purple-gradient", "pulse-button", "sparkle-dots"]
+      },
+      "caption": {
+        "mode": "tiktok",
+        "max_chars_per_page": 24,
+        "caption_bottom_px": 340,
+        "mid_safe_bottom_ratio": 0.38
+      },
+      "compose_hint": "深度解读：片头悬念 + 影响/怎么办；禁止 Star；副标题卡 3–4 条，偏分析口吻。"
+    }
+  ],
+  "quality_score": { "min_pass": 75, "grade_a": 90 },
+  "notes": "按 article_id 哈希轮换三款式，避免全站同一视觉；与 douyin_github_daily_v1 完全分离。"
+}

@@ -126,7 +126,10 @@ def build_brief(article: dict[str, Any], *, public_base_url: str, theme_id: str 
         cta=cta,
         tags=tags,
         worth_score=_worth_score(article),
-        feed_kind=str(article.get("feed_kind") or "apps"),
+        feed_kind=str(
+            article.get("feed_kind")
+            or ("news" if (theme_id or "").strip().lower() == "ai_news" else "apps")
+        ),
         source_key=str(article.get("admin_source_key") or ""),
         theme_id=theme_id,
         detail_url=detail_url,

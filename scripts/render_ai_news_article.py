@@ -72,17 +72,24 @@ def main() -> int:
         return 1
 
     brief = build_brief(article, public_base_url=cfg.public_base_url, theme_id="ai_news")
+    from python_agent.pinned_ai_news_template import pick_ai_news_template
+
+    tmpl = pick_ai_news_template(brief.to_dict())
+    brief_dict = brief.to_dict()
+    brief_dict["feed_kind"] = "news"
+    brief_dict["pinned_ai_news_template_id"] = tmpl.get("id")
+    print(f"template={tmpl.get('id')} ({tmpl.get('label')}) style={tmpl.get('visual_style')}")
     task_dir = cfg.output_root / str(article_id)
     task_dir.mkdir(parents=True, exist_ok=True)
     prefetch_task_cover(task_dir, brief.to_dict())
     (task_dir / "brief.json").write_text(
-        json.dumps(brief.to_dict(), ensure_ascii=False, indent=2),
+        json.dumps(brief_dict, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     print(f"article_id={article_id}")
-    print(f"title={brief.title}")
-    print(f"hook={brief.hook}")
-    print(f"feed_kind={brief.feed_kind}")
+    print(f"title={brief_dict.get('title')}")
+    print(f"hook={brief_dict.get('hook')}")
+    print(f"feed_kind={brief_dict.get('feed_kind')}")
     print(f"task_dir={task_dir}")
 
     platforms = ("douyin", "xhs") if args.platform == "both" else (args.platform,)
