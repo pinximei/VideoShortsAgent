@@ -161,18 +161,28 @@ def auto_fix_slides(
             slide["show_chart"] = False
             if platform == "douyin":
                 slide["suppress_bottom_caption"] = True
-    _ensure_github_viz(out, brief)
-    from python_agent.douyin_shot_stylist import sync_github_stars_on_slides
+    fk_end = str((brief or {}).get("feed_kind") or "").lower()
+    if platform == "douyin" and fk_end == "news":
+        from python_agent.douyin_news_style import apply_douyin_news_style, is_news_brief
+        from python_agent.pinned_ai_news_template import apply_pinned_ai_news_plan, pick_ai_news_template
 
-    sync_github_stars_on_slides(out, brief)
-    for i, slide in enumerate(out):
-        if _is_content_slide(slide):
-            from python_agent.douyin_shot_stylist import resolve_content_hero_title
+        if is_news_brief(brief):
+            tmpl = pick_ai_news_template(brief or {})
+            out = apply_pinned_ai_news_plan(out, brief or {}, tmpl)
+            out = apply_douyin_news_style(out, brief)
+    else:
+        _ensure_github_viz(out, brief)
+        from python_agent.douyin_shot_stylist import sync_github_stars_on_slides
 
-            hero = resolve_content_hero_title(slide, brief)
-            slide["feature_label"] = hero
-            slide["heading"] = hero
-            out[i] = sanitize_slide_hero(slide, brief)
+        sync_github_stars_on_slides(out, brief)
+        for i, slide in enumerate(out):
+            if _is_content_slide(slide):
+                from python_agent.douyin_shot_stylist import resolve_content_hero_title
+
+                hero = resolve_content_hero_title(slide, brief)
+                slide["feature_label"] = hero
+                slide["heading"] = hero
+                out[i] = sanitize_slide_hero(slide, brief)
     if platform == "douyin":
         out = dedupe_subtitles_across_slides(out, brief=brief)
     out = fix_all_layout_collisions(out)
@@ -180,7 +190,8 @@ def auto_fix_slides(
         from python_agent.douyin_effect_policy import apply_douyin_effect_policy
 
         out = apply_douyin_effect_policy(out, platform=platform)
-        out = ensure_douyin_content_diversity(out)
+        if fk_end != "news":
+            out = ensure_douyin_content_diversity(out)
     return out
 
 
