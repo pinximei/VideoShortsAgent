@@ -123,6 +123,11 @@ def auto_fix_slides(
                 slide["motion_params"] = mp
 
         slide.setdefault("caption_use_tts_timeline", True)
+        from python_agent.tts_copy_rules import sanitize_tts_text
+
+        tts_clean = sanitize_tts_text(str(slide.get("tts_text") or ""))
+        if tts_clean:
+            slide["tts_text"] = tts_clean
         out.append(slide)
     for i, slide in enumerate(out):
         if platform == "douyin" and _is_content_slide(slide):
