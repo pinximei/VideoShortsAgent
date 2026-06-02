@@ -71,7 +71,6 @@ def evaluate_variant(
     from python_agent.layout_collision import fix_all_layout_collisions
 
     trial = fix_all_layout_collisions(trial)
-    trial = auto_fix_slides(trial, platform="douyin", brief=brief)
     gate = validate_slides_before_render(trial, platform="douyin", brief=brief)
     score = score_douyin_render(
         trial,

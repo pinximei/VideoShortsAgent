@@ -136,6 +136,7 @@ def verify_post_render(task_dir: Path, *, report: dict | None = None) -> dict:
 
 
 def main() -> int:
+    sys.path.insert(0, str(ROOT))
     if len(sys.argv) < 2:
         print("Usage: verify_post_render.py <task_dir> [VERIFY_REPORT.json]")
         return 2
