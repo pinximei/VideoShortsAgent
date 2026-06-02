@@ -469,6 +469,14 @@ def render_slides_video(
     if not gate.get("ok"):
         raise RuntimeError(f"slides_quality_gate_failed: {gate.get('errors')}")
 
+    llm_dir = task_dir / "llm"
+    llm_dir.mkdir(parents=True, exist_ok=True)
+    plan_disk = {"slides": slides, "platform": platform_id}
+    (llm_dir / f"slides_render_plan_{platform_id}.json").write_text(
+        json.dumps(plan_disk, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
     if platform_id == "douyin":
         from python_agent.render_quality_score import score_douyin_render
 
