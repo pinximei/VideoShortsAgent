@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from python_agent.pinned_template import DOUYIN_OPENING_BURST_FRAMES
+
 DOUYIN = "douyin"
 XHS = "xhs"
 
@@ -32,7 +34,7 @@ _PRESETS: dict[str, dict[str, Any]] = {
         "background_color": "#120908",
         "mid_hero_max_chars": 16,
         "mid_hero_font_scale": 0.92,
-        "opening_duration_frames": 165,
+        "opening_duration_frames": DOUYIN_OPENING_BURST_FRAMES,
         "caption_word_highlight": True,
     },
     XHS: {
@@ -108,10 +110,7 @@ def apply_platform_caption_preset(slide: dict[str, Any], platform: str) -> dict[
             mp["captionBottomPx"] = max(int(mp.get("captionBottomPx") or 300), 360)
     if st == "cta_card":
         mp["captionBottomPx"] = max(int(mp.get("captionBottomPx") or 300), 380)
-        if pid == XHS:
-            s["suppress_bottom_caption"] = True
-        else:
-            s.pop("suppress_bottom_caption", None)
+        s["suppress_bottom_caption"] = True
 
     s["motion_params"] = mp
 
@@ -151,8 +150,11 @@ def apply_platform_caption_preset(slide: dict[str, Any], platform: str) -> dict[
     s["motion_params"] = mp
     if not s.get("mid_effect") and preset.get("mid_effect_default"):
         s["mid_effect"] = preset["mid_effect_default"]
-    if preset.get("opening_duration_frames"):
-        s.setdefault("opening_duration_frames", int(preset["opening_duration_frames"]))
+    if preset.get("opening_duration_frames") and st == "title_card":
+        burst = int(preset["opening_duration_frames"])
+        if pid == DOUYIN:
+            burst = min(burst, DOUYIN_OPENING_BURST_FRAMES)
+        s["opening_duration_frames"] = burst
 
     return s
 

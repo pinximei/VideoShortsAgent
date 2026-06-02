@@ -92,7 +92,9 @@ def _split_subtitles(tts: str, *, max_card: int = 12) -> tuple[str, list[str]]:
     """大标题 + 框线副标题（按语义断句，非机械切半）。"""
     t = re.sub(r"\s+", "", (tts or "").strip())
     if not t:
-        return "核心亮点", ["一步上手", "值得收藏"]
+        from python_agent.pinned_template import GENERIC_HERO_FALLBACK
+
+        return GENERIC_HERO_FALLBACK, ["一步上手", "值得收藏"]
 
     clauses = [c for c in re.split(r"(?<=[。！？；])", t) if c.strip()]
     if len(clauses) >= 2:

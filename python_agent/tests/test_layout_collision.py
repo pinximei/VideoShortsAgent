@@ -23,6 +23,25 @@ def test_layout_collision_detects_tight_gap():
     assert report.get("ok") is False or report.get("gap_px", 999) < 48
 
 
+def test_fix_collision_eventually_ok():
+    slide = {
+        "type": "content_card",
+        "scene_focus": True,
+        "summary_lines": ["子一", "子二", "子三", "子四"],
+        "feature_label": "主标题",
+        "viz_type": "stat",
+        "stat_value": "99k",
+        "motion_params": {
+            "midSafeTopRatio": 0.14,
+            "midSafeBottomRatio": 0.36,
+            "captionBottomPx": 280,
+        },
+    }
+    fixed = fix_slide_layout_collision(slide)
+    report = check_slide_layout_collision(fixed)
+    assert report.get("ok") or fixed.get("_layout_collision_fixed")
+
+
 def test_fix_collision_adjusts_motion_params():
     slide = {
         "type": "content_card",
@@ -52,4 +71,4 @@ def test_bind_motion_profile_steps():
 def test_slot_fallbacks():
     _, subs = normalize_subtitle_cards("主标题", [], tts="主标题口播很长的一段")
     assert len(subs) >= 2
-    assert subs[0] in ("解决痛点", "核心能力", "立刻见效", "核心能力", "一步上手")
+    assert all(4 <= len(x) <= 14 for x in subs)

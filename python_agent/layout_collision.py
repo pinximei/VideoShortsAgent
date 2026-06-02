@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from python_agent.subtitle_copy import SUBTITLE_MAX_CHARS
+
 # 竖屏 1080x1920 近似
 DEFAULT_HEIGHT = 1920
 DEFAULT_WIDTH = 1080
@@ -12,6 +14,7 @@ SUBTITLE_ROW_PX = 88
 SUBTITLE_GAP_PX = 38
 ICON_PX = 56
 VIZ_BLOCK_PX = 220
+_MAX_FIX_ROUNDS = 8
 
 
 def _is_content_slide(s: dict[str, Any]) -> bool:
@@ -87,27 +90,58 @@ def check_slide_layout_collision(
     }
 
 
+def _trim_summary_lines(slide: dict[str, Any], *, max_lines: int) -> None:
+    lines = [str(x).strip()[:SUBTITLE_MAX_CHARS] for x in (slide.get("summary_lines") or []) if str(x).strip()]
+    if len(lines) > max_lines:
+        slide["summary_lines"] = lines[:max_lines]
+
+
+def _apply_collision_tweaks(slide: dict[str, Any], issues: list[str]) -> None:
+    mp = dict(slide.get("motion_params") or {})
+    issue_blob = " ".join(issues)
+
+    if "mid_block_too_tall" in issue_blob:
+        mp["midSafeBottomRatio"] = max(float(mp.get("midSafeBottomRatio") or 0.40), 0.44)
+        mp["midHeroFontScale"] = min(float(mp.get("midHeroFontScale") or 1.0), 0.88)
+        vt = str(slide.get("viz_type") or "none").lower()
+        if vt == "stat" and len(slide.get("summary_lines") or []) >= 3:
+            slide["viz_type"] = "none"
+            slide["show_chart"] = False
+        elif len(slide.get("summary_lines") or []) > 3:
+            _trim_summary_lines(slide, max_lines=3)
+
+    if "caption_mid_gap" in issue_blob:
+        mp["midSafeBottomRatio"] = min(0.50, float(mp.get("midSafeBottomRatio") or 0.40) + 0.05)
+        mp["captionBottomPx"] = max(int(mp.get("captionBottomPx") or 300), 340)
+
+    lines = [str(x).strip()[:SUBTITLE_MAX_CHARS] for x in (slide.get("summary_lines") or []) if str(x).strip()]
+    slide["summary_lines"] = lines
+    slide["motion_params"] = mp
+
+
 def fix_slide_layout_collision(slide: dict[str, Any], *, height: int = DEFAULT_HEIGHT) -> dict[str, Any]:
     s = dict(slide)
     if not _is_content_slide(s):
         return s
-    report = check_slide_layout_collision(s, height=height)
-    if report["ok"]:
+    if str(s.get("type")) == "cta_card":
+        s["suppress_bottom_caption"] = True
         return s
-    mp = dict(s.get("motion_params") or {})
-    lines = [str(x).strip() for x in (s.get("summary_lines") or []) if str(x).strip()]
-    vt = str(s.get("viz_type") or "none").lower()
 
-    if "mid_block_too_tall" in str(report["issues"]):
-        mp["midSafeBottomRatio"] = max(float(mp.get("midSafeBottomRatio") or 0.40), 0.44)
-        mp["midHeroFontScale"] = min(float(mp.get("midHeroFontScale") or 1.0), 0.9)
+    for _ in range(_MAX_FIX_ROUNDS):
+        report = check_slide_layout_collision(s, height=height)
+        if report["ok"]:
+            break
+        _apply_collision_tweaks(s, list(report.get("issues") or []))
+        s["_layout_collision_fixed"] = True
 
-    if "caption_mid_gap" in str(report["issues"]):
-        mp["midSafeBottomRatio"] = min(0.48, float(mp.get("midSafeBottomRatio") or 0.40) + 0.04)
-        mp["captionBottomPx"] = max(int(mp.get("captionBottomPx") or 300), 320)
+    if not check_slide_layout_collision(s, height=height).get("ok"):
+        _trim_summary_lines(s, max_lines=2)
+        mp = dict(s.get("motion_params") or {})
+        mp["midSafeBottomRatio"] = 0.50
+        mp["captionBottomPx"] = max(int(mp.get("captionBottomPx") or 300), 360)
+        s["motion_params"] = mp
+        s["_layout_collision_fixed"] = True
 
-    s["motion_params"] = mp
-    s["_layout_collision_fixed"] = True
     return s
 
 

@@ -85,7 +85,7 @@ export const ContentRichStage: React.FC<Props> = ({
   });
 
   const heroMax = midHeroMaxChars || (isXhs ? 14 : 16);
-  const hero = (featureLabel || summaryLines[0] || '核心亮点').slice(0, heroMax);
+  const hero = (featureLabel || summaryLines[0] || '').slice(0, heroMax);
   const layoutKind = (midInfoLayout || '').toLowerCase();
   const panelMax = isXhs ? 2 : layoutKind === 'steps' || layoutKind === 'framed' ? 4 : 3;
   const panelLines = featureLabel

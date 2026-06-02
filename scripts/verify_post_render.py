@@ -34,6 +34,21 @@ def _plan_checks(slides: list[dict], plat: str) -> list[str]:
     if plat == "douyin":
         if not any(str(s.get("caption_mode")) == "tiktok" for s in slides):
             issues.append(f"{plat}:caption_not_tiktok")
+        from python_agent.hero_copy import is_generic_hero
+        from python_agent.pinned_template import DOUYIN_OPENING_BURST_FRAMES
+
+        for i, s in enumerate(slides):
+            if s.get("scene_focus") or str(s.get("type")) == "content_card":
+                hero = str(s.get("feature_label") or s.get("heading") or "")
+                if is_generic_hero(hero):
+                    issues.append(f"{plat}:slide_{i}_generic_hero:{hero}")
+            if str(s.get("type")) == "cta_card" and not s.get("suppress_bottom_caption"):
+                issues.append(f"{plat}:cta_missing_suppress_caption")
+        s0 = slides[0] if slides else {}
+        if str(s0.get("type")) == "title_card":
+            burst = int(s0.get("opening_duration_frames") or 0)
+            if burst > DOUYIN_OPENING_BURST_FRAMES:
+                issues.append(f"{plat}:opening_frames_over_cap:{burst}")
     profiles = {str(s.get("motion_profile") or "") for s in content}
     if len(content) >= 2 and len(profiles) < 2:
         issues.append(f"{plat}:content_profiles_not_diverse")

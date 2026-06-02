@@ -84,9 +84,14 @@ def test_xhs_reconcile_overrides_minimal_g():
     assert len(out[0]["summary_lines"][0]) <= 10
 
 
-def test_cta_shows_caption_on_douyin():
+def test_douyin_opening_frames_pinned():
+    s = apply_platform_caption_preset({"type": "title_card"}, "douyin")
+    assert int(s.get("opening_duration_frames") or 0) == 84
+
+
+def test_cta_suppress_caption_on_douyin():
     s = apply_platform_caption_preset({"type": "cta_card"}, "douyin")
-    assert not s.get("suppress_bottom_caption")
+    assert s.get("suppress_bottom_caption") is True
 
 
 def test_cta_suppress_caption_xhs():

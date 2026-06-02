@@ -7,15 +7,22 @@ from typing import Any
 from python_agent.caption_timeline import validate_caption_pages
 from python_agent.display_text import find_unsafe_caption_splits
 from python_agent.layout_collision import check_slide_layout_collision, fix_all_layout_collisions
+from python_agent.hero_copy import is_generic_hero, sanitize_slide_hero
+from python_agent.pinned_template import (
+    DOUYIN_MAX_HOOK_BEATS,
+    DOUYIN_OPENING_BURST_FRAMES,
+    GENERIC_HERO_TITLES,
+)
 from python_agent.subtitle_copy import (
     SUBTITLE_MAX_CHARS,
     SUBTITLE_MIN_CHARS,
+    dedupe_subtitles_across_slides,
     ensure_douyin_content_diversity,
     normalize_slide_mid_copy,
 )
 
-_MAX_HOOK_BEATS = 2
-_MAX_OPENING_BURST_FRAMES = 84  # 2.8s @30fps
+_MAX_HOOK_BEATS = DOUYIN_MAX_HOOK_BEATS
+_MAX_OPENING_BURST_FRAMES = DOUYIN_OPENING_BURST_FRAMES
 from python_agent.tts_copy_rules import validate_slides_tts_copy
 
 _VIZ_TYPES = frozenset({"none", "line", "bar", "stat"})
@@ -113,17 +120,22 @@ def auto_fix_slides(
             slide["mid_info_layout"] = "none"
             slide["viz_type"] = "none"
             slide["show_chart"] = False
+            if platform == "douyin":
+                slide["suppress_bottom_caption"] = True
     _ensure_github_viz(out, brief)
     from python_agent.douyin_shot_stylist import sync_github_stars_on_slides
 
     sync_github_stars_on_slides(out, brief)
-    for slide in out:
+    for i, slide in enumerate(out):
         if _is_content_slide(slide):
             from python_agent.douyin_shot_stylist import resolve_content_hero_title
 
             hero = resolve_content_hero_title(slide, brief)
             slide["feature_label"] = hero
             slide["heading"] = hero
+            out[i] = sanitize_slide_hero(slide, brief)
+    if platform == "douyin":
+        out = dedupe_subtitles_across_slides(out, brief=brief)
     out = fix_all_layout_collisions(out)
     if platform == "douyin":
         out = ensure_douyin_content_diversity(out)
@@ -235,6 +247,8 @@ def validate_slides_before_render(
                         warnings.append(f"slide_{i}_subtitle_{j}_too_long")
                     if hero and line == hero:
                         warnings.append(f"slide_{i}_subtitle_dup_hero")
+                    if hero and is_generic_hero(hero):
+                        errors.append(f"slide_{i}_generic_hero:{hero}")
 
             vt = str(s.get("viz_type") or "none")
             if vt not in _VIZ_TYPES:
@@ -301,10 +315,16 @@ def validate_slides_before_render(
             ):
                 errors.append("xhs_content_broadcast_frame")
 
-    if platform == "xhs":
-        for s in slides:
-            if str(s.get("type")) == "cta_card" and not s.get("suppress_bottom_caption"):
-                warnings.append("cta_should_suppress_bottom_caption")
+    for s in slides:
+        if str(s.get("type")) == "cta_card" and not s.get("suppress_bottom_caption"):
+            warnings.append("cta_should_suppress_bottom_caption")
+
+    if platform == "douyin" and slides:
+        s0 = slides[0]
+        if str(s0.get("type")) == "title_card":
+            burst = int(s0.get("opening_duration_frames") or 0)
+            if burst > _MAX_OPENING_BURST_FRAMES:
+                warnings.append(f"opening_duration_over_cap:{burst}>{_MAX_OPENING_BURST_FRAMES}")
 
     ok = not errors if strict else len(errors) == 0
     return {

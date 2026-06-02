@@ -159,7 +159,7 @@ export const MidInfoPanels: React.FC<Props> = ({
   }
 
   if (mode === 'framed') {
-    const pad = ['核心亮点', '一步上手', '值得收藏', '马上能用'];
+    const pad = ['一步上手', '值得收藏', '马上能用', '省时省力'];
     const cards = (lines.length ? lines : pad).slice(0, 4);
     if (cards.length < 3) {
       cards.push(...pad.filter((x) => !cards.includes(x)).slice(0, 4 - cards.length));

@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 # 固定模板见 templates/pinned_douyin_github_daily_v1.json（2026-05 验证基线）
-PINNED_DOUYIN_TEMPLATE_ID = "douyin_github_daily_v1"
+from python_agent.pinned_template import PINNED_DOUYIN_TEMPLATE_ID  # noqa: F401
 
 # 抖音：快钩子 + 砸字；小红书：极简白底 + 柔和讲解
 PLATFORM_GV: dict[str, dict[str, str]] = {

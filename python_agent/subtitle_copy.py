@@ -152,10 +152,63 @@ def _fill_from_kinetic(
     return out
 
 
+def infer_mid_layout_from_tts(tts: str) -> str:
+    """按口播结构选中部版式（列举 / 对比 / 默认框线）。"""
+    t = (tts or "").strip()
+    if re.search(r"对比|相比|更.+(?:好|快|省|稳)|不如|胜过", t):
+        return "compare"
+    if re.search(r"第一|第二|第三|步骤|首先|其次|最后|一是|二是", t):
+        return "steps"
+    if re.search(r"关键词|标签|三个词|三个特点", t):
+        return "keywords"
+    return "framed"
+
+
+def dedupe_subtitles_across_slides(
+    slides: list[dict[str, Any]],
+    *,
+    brief: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """跨镜去重子标题，避免连续内容镜复述同一句。"""
+    seen: set[str] = set()
+    out: list[dict[str, Any]] = []
+    for s in slides:
+        slide = dict(s)
+        if not (slide.get("scene_focus") or str(slide.get("type")) == "content_card"):
+            out.append(slide)
+            continue
+        slide = normalize_slide_mid_copy(slide, brief)
+        hero = str(slide.get("feature_label") or "")
+        lines: list[str] = []
+        for raw in slide.get("summary_lines") or []:
+            c = _clamp_subtitle(str(raw))
+            if not c or _too_similar(c, hero):
+                continue
+            nk = _norm_key(c)
+            if nk in seen:
+                continue
+            lines.append(c)
+            seen.add(nk)
+        min_c, max_c = _subtitle_card_budget(slide)
+        tts = str(slide.get("tts_text") or "")
+        if len(lines) < min_c:
+            _, filled = normalize_subtitle_cards(hero, lines, tts=tts, min_cards=min_c, max_cards=max_c)
+            for c in filled:
+                nk = _norm_key(c)
+                if nk not in seen and not any(_too_similar(c, x) for x in lines):
+                    lines.append(c)
+                    seen.add(nk)
+                if len(lines) >= max_c:
+                    break
+        slide["summary_lines"] = lines[:max_c]
+        out.append(slide)
+    return out
+
+
 def _clause_cards_from_tts(tts: str, hero: str, *, max_n: int = 4) -> list[str]:
-    """从口播拆短句，补全子标题（与 hero 不重复）。"""
+    """从口播按停顿拆短句，补全子标题（与 hero 不重复）。"""
     out: list[str] = []
-    for part in re.split(r"[，,。！？；;\n]", tts):
+    for part in re.split(r"[，,、；;。！？\n]", tts):
         c = _clamp_subtitle(part)
         if not c or len(c) < 4:
             continue
@@ -241,10 +294,15 @@ def normalize_slide_mid_copy(slide: dict[str, Any], brief: dict[str, Any] | None
     s = dict(slide)
     tts = str(s.get("tts_text") or "")
     hero = str(s.get("feature_label") or s.get("heading") or "").strip()
-    if not hero or hero in ("核心亮点", "核心能力"):
-        from python_agent.douyin_shot_stylist import resolve_content_hero_title
+    from python_agent.hero_copy import is_generic_hero, sanitize_hero_title
 
-        hero = resolve_content_hero_title(s, brief)
+    hero = str(s.get("feature_label") or s.get("heading") or "").strip()
+    if is_generic_hero(hero):
+        hero = sanitize_hero_title(
+            hero,
+            tts=tts,
+            repo_name=str((brief or {}).get("repo_name") or (brief or {}).get("title") or ""),
+        )
     lines = _subtitle_sources(s)
     shot = s.get("shot_design") or {}
     protected = frozenset(
@@ -295,10 +353,19 @@ def ensure_douyin_content_diversity(slides: list[dict[str, Any]]) -> list[dict[s
     used_profiles: set[str] = set()
     for n, i in enumerate(content_idxs):
         s = out[i]
-        layout = str(s.get("mid_info_layout") or "").lower()
+        if not s.get("shot_design_source"):
+            tts = str(s.get("tts_text") or "")
+            layout = infer_mid_layout_from_tts(tts)
+        else:
+            layout = str(s.get("mid_info_layout") or "").lower()
         if layout in used_layouts or layout not in _MID_LAYOUT_ROTATION:
-            layout = _MID_LAYOUT_ROTATION[n % len(_MID_LAYOUT_ROTATION)]
-            s["mid_info_layout"] = layout
+            picked = None
+            for cand in _MID_LAYOUT_ROTATION:
+                if cand not in used_layouts:
+                    picked = cand
+                    break
+            layout = picked or _MID_LAYOUT_ROTATION[n % len(_MID_LAYOUT_ROTATION)]
+        s["mid_info_layout"] = layout
         used_layouts.add(layout)
 
         prof = str(s.get("motion_profile") or "")

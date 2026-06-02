@@ -62,17 +62,8 @@ def format_stars_display(count: int) -> str:
     return str(count)
 
 
-GENERIC_HERO_TITLES = frozenset(
-    {
-        "核心亮点",
-        "核心能力",
-        "一步上手",
-        "这个仓库",
-        "开源神器",
-        "值得收藏",
-        "解决痛点",
-    }
-)
+from python_agent.hero_copy import is_generic_hero, sanitize_hero_title
+from python_agent.pinned_template import GENERIC_HERO_TITLES
 
 
 def resolve_content_hero_title(
@@ -93,19 +84,14 @@ def resolve_content_hero_title(
     ]
     for raw in candidates:
         h = re.sub(r"\s+", "", (raw or "").strip())[:14]
-        if len(h) >= 2 and h not in GENERIC_HERO_TITLES:
+        if not is_generic_hero(h):
             return h
 
-    tts = str(slide.get("tts_text") or "")
-    hero, _ = _split_subtitles(tts)
-    hero = re.sub(r"\s+", "", hero)[:14]
-    if len(hero) >= 2 and hero not in GENERIC_HERO_TITLES:
-        return hero
-
-    repo = short_repo_name(str(b.get("repo_name") or b.get("title") or ""))
-    if repo and repo not in GENERIC_HERO_TITLES:
-        return repo[:14]
-    return "开源神器"[:14]
+    return sanitize_hero_title(
+        "",
+        tts=str(slide.get("tts_text") or ""),
+        repo_name=str(b.get("repo_name") or b.get("title") or ""),
+    )
 
 
 def sync_github_stars_on_slides(

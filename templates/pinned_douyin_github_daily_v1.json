@@ -19,7 +19,8 @@
   },
   "opening": {
     "max_hook_beats": 2,
-    "max_burst_frames": 84
+    "max_burst_frames": 84,
+    "opening_duration_frames": 84
   },
   "content": {
     "subtitle_min": 3,
