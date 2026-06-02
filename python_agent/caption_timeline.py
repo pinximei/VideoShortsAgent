@@ -91,6 +91,29 @@ def prepare_slide_captions(
             for s in raw_sentences
             if str(s.get("text") or "").strip()
         ]
+        expanded: list[dict[str, Any]] = []
+        split_max = min(max_chars, TIKTOK_PHRASE_MAX_CHARS)
+        for s in sentences:
+            text = str(s.get("text") or "").strip()
+            start = float(s.get("start", 0))
+            end = float(s.get("end", start + 0.5))
+            dur = max(0.35, end - start)
+            phrases = split_tiktok_caption_sentences(
+                [{"text": text, "start": start, "end": end}],
+                max_chars=split_max,
+            )
+            if len(phrases) <= 1:
+                expanded.append(s)
+                continue
+            for p in phrases:
+                expanded.append(
+                    {
+                        "text": str(p.get("text") or "").strip(),
+                        "start": float(p.get("start", start)),
+                        "end": float(p.get("end", end)),
+                    }
+                )
+        sentences = [x for x in expanded if str(x.get("text") or "").strip()]
         buf = XHS_CAPTION_BUFFER_MS if plat == "xhs" else CAPTION_BUFFER_MS
         pages = sentences_to_caption_pages(sentences, buffer_ms=buf)
         return sentences, pages

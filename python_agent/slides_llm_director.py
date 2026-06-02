@@ -14,18 +14,37 @@ def _plain(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip())
 
 
-def _split_hook_beats(hook: str, tts: str, *, n: int = 4) -> list[str]:
+def _dedupe_hook_beats(beats: list[str], *, max_n: int = 2) -> list[str]:
+    """屏显爆点去重，避免与口播同句轮播三遍。"""
+    out: list[str] = []
+    seen: set[str] = set()
+    for raw in beats:
+        c = _plain(raw)[:18]
+        if len(c) < 3:
+            continue
+        key = c[:6]
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(c)
+        if len(out) >= max_n:
+            break
+    return out
+
+
+def _split_hook_beats(hook: str, tts: str = "", *, n: int = 2) -> list[str]:
+    """仅从 hook 拆屏显句，不混入 tts（防止口播与爆点同文重复）。"""
     parts: list[str] = []
-    for src in (hook, tts):
-        for chunk in re.split(r"(?<=[。！？?!，,])", src):
-            c = _plain(chunk).strip("，,。！？?! ")
-            if 4 <= len(c) <= 18:
-                parts.append(c)
-            if len(parts) >= n:
-                break
+    for chunk in re.split(r"(?<=[。！？?!，,])", hook):
+        c = _plain(chunk).strip("，,。！？?! ")
+        if 4 <= len(c) <= 18:
+            parts.append(c)
         if len(parts) >= n:
             break
-    return parts[:n] or [_plain(hook)[:18] or "别划走"]
+    if not parts:
+        h = _plain(hook)[:18] or "别划走"
+        parts = [h]
+    return _dedupe_hook_beats(parts, max_n=n)
 
 
 def _client():
@@ -90,11 +109,14 @@ brief 标题={brief.get('title','')} hook={brief.get('hook','')}
 - tts_text, heading(≤14字)
 - title_card: hook_beats 3~4 条（每条不同）
 - content_card / scene_focus:
-  - summary_lines: 2~3 条中部大字（≤12字，不是口播复述）
+  - summary_lines: 2~3 条框线子标题（每条6~14字，写能力/结果；勿与 heading 同义；勿复述口播）
   - kinetic_phrases: 0~4 个短词（可选，无图表镜可 3~5 个）
   - mid_icon: 单个 emoji 或空字符串（仅强调概念时，如 📈 ⚡ 🛠️）
   - mid_effect: glow_ring | typewriter | particle_dust | bracket_slam | glow_scan | none
-  - mid_info_layout: none | keywords | steps | compare（viz=none 时优先 steps/compare/keywords，禁止连续 2 镜全空）
+  - mid_info_layout: none | keywords | steps | compare | framed（按本镜口播语义选，禁止三镜同款）
+  - motion_profile: glass_card_stack | bullet_stagger_up | kinetic_slam_tight | shake_emphasis | tiktok_phrase_pages
+  - css_decorations: 2~4 个（如 odometer-stars, float-icon, text-stroke-yellow, sparkle-dots, github-badge）
+  - design_rationale: 一句话说明「为何这一镜用这种版式/动效」
   - viz_type: none | line | bar | stat
   - chart_series: 仅 line/bar 且口播含趋势/增长/对比数据时填写 4~6 个数
   - chart_label, stat_value: 仅对应 viz 时填
@@ -105,7 +127,13 @@ brief 标题={brief.get('title','')} hook={brief.get('hook','')}
 3. bar 仅用于：两项/多项对比（before/after）。
 4. stat 仅用于：一个醒目数字（如 Star 1.2万）。
 5. 无数字、无趋势、讲功能/流程的镜 → 必须 none，用 summary_lines + mid_icon，禁止 chart。
-6. 中部屏显不得与底栏口播逐字相同。
+6. 中部子标题不得与底栏口播逐字相同；heading 居中主标题，子标题组内左对齐（由渲染层处理）。
+7. 三镜 content 的 mid_info_layout 与 motion_profile 均需有差异。
+
+【口播价值 — 必须遵守】
+1. 只讲项目做什么、解决谁的什么问题、带来什么结果（省时/少踩坑/能完成什么任务）。
+2. 禁止堆砌：开源协议名(MIT/GPL)、仓库地址、README安装、评论区领链接/部署表、Star曲线、照抄配置。
+3. summary_lines 写「能力/场景/结果」，不要写协议、链接、安装命令。
 
 只返回 JSON。"""
 
@@ -271,7 +299,7 @@ def direct_slides_script(
                 s["mid_effect"] = effect
                 s["show_kinetic_wall"] = effect == "kinetic_wall" and s.get("viz_type") == "none"
                 layout = str(row.get("mid_info_layout") or "").lower()
-                if layout in ("keywords", "steps", "compare", "none"):
+                if layout in ("keywords", "steps", "compare", "framed", "none"):
                     s["mid_info_layout"] = layout
 
         elif st == "title_card":
@@ -292,14 +320,15 @@ def direct_slides_script(
         out.append(s)
 
     _enforce_viz_budget(out)
-    _enforce_mid_density(out)
+    _enforce_mid_density(out, platform=plat)
     return out
 
 
-def _enforce_mid_density(slides: list[dict[str, Any]]) -> None:
+def _enforce_mid_density(slides: list[dict[str, Any]], *, platform: str = "") -> None:
     """禁止连续 2 个内容镜缺少 summary_lines。"""
     empty_run = 0
-    layouts = ("keywords", "steps", "compare")
+    plat = (platform or str((slides[0] or {}).get("platform") or "")).strip().lower()
+    layouts = ("framed", "steps", "compare")
     li = 0
     for s in slides:
         if not (s.get("scene_focus") or str(s.get("type")) == "content_card"):

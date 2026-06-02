@@ -43,16 +43,29 @@ export const ProfileBackground: React.FC<Props> = ({
     mood !== 'warm' &&
     (mood === 'xhs-soft' ||
       ['#f5f5f0', '#ececec', '#f0f0f0', '#f3efe8'].includes(String(bg).toLowerCase()));
-  const isCool = colorMood === 'cool' || colorMood === 'xhs' || colorMood === 'xhs-soft';
-  let isWarm = (colorMood === 'warm' || particleType === 'warm') && !isCool;
-  let useWarmParticles = (isWarm || isCool) && !isLight;
-  const particleAccent = isCool ? '#3b82f6' : theme.accent;
+  const isXhsEditorial =
+    colorMood === 'xhs-editorial' || colorMood === 'xhs';
+  const isCool =
+    colorMood === 'cool' || colorMood === 'xhs-soft';
+  let isWarm =
+    (colorMood === 'warm' || particleType === 'warm' || isXhsEditorial) && !isCool;
+  let useWarmParticles = (isWarm || isCool || isXhsEditorial) && !isLight;
+  const particleAccent = isXhsEditorial
+    ? '#FF6B8A'
+    : isCool
+      ? '#3b82f6'
+      : theme.accent;
   if (isWarm && isLight) {
     bg = '#120908';
     isLight = false;
     useWarmParticles = true;
   }
-  if (isCool) {
+  if (isXhsEditorial) {
+    bg = backgroundColor || '#1a1028';
+    isLight = false;
+    isWarm = true;
+    useWarmParticles = true;
+  } else if (isCool) {
     bg = backgroundColor || bg;
     isLight = false;
     useWarmParticles = true;

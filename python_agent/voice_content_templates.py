@@ -159,19 +159,18 @@ def expand_script_tts_to_minimum(
         return {"slides": slides}
 
     fillers = [
-        "真的值得你现在就试。",
-        "上手门槛不高，跟着 README 就能跑起来。",
-        "适合想提效、又不想折腾环境的人。",
-        "评论区我会放链接和部署要点。",
-        "点个收藏，下次找得到。",
-        "部署步骤我也整理在评论区了。",
-        "想要同款工作流的可以直接照抄。",
+        "改几句描述就能迭代出不同版本的小工具。",
+        "适合把重复性办公流程交给它自动跑。",
+        "不用搭复杂界面，生成完就能直接用。",
+        "对非程序员也更友好，省掉大量试错时间。",
     ]
     fi = 0
     guard = 0
     while actual < target and guard < 24:
         guard += 1
         slide = slides[guard % len(slides)]
+        if str(slide.get("type") or "") == "title_card" and slide.get("opening_burst"):
+            continue
         tts = str(slide.get("tts_text") or "").strip()
         if not tts:
             continue
@@ -181,6 +180,14 @@ def expand_script_tts_to_minimum(
             continue
         slide["tts_text"] = tts.rstrip("，,。 ") + "，" + extra
         actual = script_tts_char_total(slides)
+
+    from python_agent.tts_copy_rules import sanitize_tts_text, tts_has_banned_phrase
+
+    for slide in slides:
+        tts = sanitize_tts_text(str(slide.get("tts_text") or ""))
+        if tts_has_banned_phrase(tts):
+            tts = sanitize_tts_text(tts) or tts
+        slide["tts_text"] = tts
 
     return {"slides": slides}
 

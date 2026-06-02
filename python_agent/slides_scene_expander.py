@@ -16,31 +16,31 @@ PLATFORM_CFG: dict[str, dict[str, Any]] = {
             "glass_card_stack",
         ),
         "css": (
-            ["daily-video-tag", "github-badge", "stat-pill-row"],
-            ["rank-number", "stat-pill-row", "odometer-stars"],
+            ["daily-video-tag", "github-badge", "grid-tunnel-bg"],
+            ["github-badge", "rank-number", "grid-tunnel-bg"],
             ["github-badge", "accent-orange-word", "float-icon"],
-            ["text-stroke-yellow", "float-icon"],
-            ["stat-pill-row", "odometer-stars"],
+            ["text-stroke-yellow", "float-icon", "grid-tunnel-bg"],
+            ["github-badge", "odometer-stars", "grid-tunnel-bg"],
         ),
-        "transitions": ("circleopen", "wipeleft", "slideup", "wipeleft", "slideright", "fade"),
+        "transitions": ("dissolve", "dissolve", "fade", "dissolve", "fade", "dissolve"),
     },
     "xhs": {
-        "bgs": ("#0f1419", "#151c28", "#1a2332", "#121a24", "#182030"),
+        "bgs": ("#f5f5f0", "#f0ebe3", "#f8f4ee", "#ece8e0", "#f5f2ea"),
         "profiles": (
-            "split_mask_reveal",
+            "tiktok_phrase_pages",
+            "kinetic_slam_tight",
             "bullet_rail_right",
-            "minimal_headline",
             "shake_emphasis",
             "glass_card_stack",
         ),
         "css": (
-            ["repo-header", "pill-badge"],
-            ["stat-pill-row", "rank-number"],
-            ["accent-orange-word", "pill-badge"],
-            ["rank-number", "float-icon"],
-            ["stat-pill-row", "odometer-stars"],
+            ["daily-video-tag", "glass-card", "pill-badge"],
+            ["glass-card", "rank-number", "accent-orange-word"],
+            ["github-badge", "glass-card", "stat-pill-row"],
+            ["glass-card", "text-stroke-yellow", "float-icon"],
+            ["stat-pill-row", "glass-card", "pill-badge"],
         ),
-        "transitions": ("dissolve", "slideup", "wipeleft", "circleopen", "slideright", "fade"),
+        "transitions": ("fade", "dissolve", "wipeleft", "fade", "dissolve", "fade"),
     },
 }
 
@@ -136,7 +136,9 @@ def expand_platform_scenes(
             for b in (bullets if isinstance(bullets, list) else [])
         ]
         bullet_dicts = [b for b in bullet_dicts if _plain(str(b.get("text", "")))]
-        n = max(3, min(5, len(bullet_dicts) or 3))
+        from python_agent.pace_config import MAX_SCENES_PER_CONTENT_CARD
+
+        n = min(MAX_SCENES_PER_CONTENT_CARD, max(1, len(bullet_dicts) or 1))
 
         if len(bullet_dicts) < 2:
             ns = copy.deepcopy(slide)

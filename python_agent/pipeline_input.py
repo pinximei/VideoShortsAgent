@@ -149,6 +149,8 @@ def brief_to_clips(brief: dict[str, Any], preset: PlatformPreset) -> list[dict[s
         title=title,
         hook=str(brief.get("hook") or ""),
         feed_kind=str(brief.get("feed_kind") or "news"),
+        repo_name=str(brief.get("repo_name") or title),
+        stars=str(brief.get("stars") or ""),
     )
     if hook:
         clips.append(

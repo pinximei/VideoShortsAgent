@@ -1,0 +1,32 @@
+{
+  "id": "douyin_github_daily_v1",
+  "label": "抖音·每天一个GitHub项目（固定基线）",
+  "pinned_at": "2026-05-24",
+  "platform": "douyin",
+  "feed_kind": "github_daily",
+  "gv": {
+    "motion_id": "G01_cyber_hook_yellow",
+    "voice_id": "V01_burst_hook_fast"
+  },
+  "brief_flags": {
+    "use_platform_gv_default": true
+  },
+  "caption": {
+    "mode": "tiktok",
+    "max_chars_per_page": 24,
+    "caption_bottom_px": 300,
+    "mid_safe_bottom_ratio": 0.42
+  },
+  "opening": {
+    "max_hook_beats": 2,
+    "max_burst_frames": 84
+  },
+  "content": {
+    "subtitle_min": 3,
+    "subtitle_max": 4,
+    "mid_layouts": ["steps", "framed", "keywords", "compare"],
+    "forbid_generic_hero": ["核心亮点", "核心能力"]
+  },
+  "verify_task": "reports/platform_verify/20260602T035454Z/task",
+  "notes": "片头 OpenHands + 三内容镜口播分镜 + CTA；全片 Star 以 brief.stars 为准统一格式化"
+}

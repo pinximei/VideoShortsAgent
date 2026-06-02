@@ -14,7 +14,7 @@ from pathlib import Path
 
 VOICE_MALE = "zh-CN-YunxiNeural"
 VOICE_FEMALE = "zh-CN-XiaoxiaoNeural"
-DEFAULT_VOICE = "zh-CN-YunyangNeural"  # 男声默认用云扬（比 Yunxi 更利落）；女声请显式传 Xiaoxiao
+DEFAULT_VOICE = "zh-CN-YunjianNeural"  # 男声默认云健（解说感）；女声请显式传 Xiaoxiao
 
 # 句间停顿（秒）
 SENTENCE_PAUSE = 0.2
@@ -22,8 +22,8 @@ SENTENCE_PAUSE = 0.2
 MIN_LEAD_SILENCE = 0.3
 # 前置留白上限（秒）,切换场景后应尽快出声
 MAX_LEAD_SILENCE = 0.5
-# 第 1 镜：几乎零留白，钩子口播立刻进
-OPENING_LEAD_SILENCE = 0.06
+# 第 1 镜：略留白再开口，避免一进来就赶
+OPENING_LEAD_SILENCE = 0.28
 
 
 def _safe_remove(path: str, *, retries: int = 6) -> None:
@@ -114,7 +114,12 @@ class DubbingSkill:
             tts_text = clip["tts_text"]
             print(f"  [片段 {i+1}/{len(clips_with_tts)}] {tts_text[:60]}...")
             sentences = self._split_sentences(tts_text)
-            sentence_audios = self._generate_tts_batch(sentences, tts_dir, i)
+            clip_rate = str(clip.get("tts_rate") or self.tts_rate)
+            clip_pitch = str(clip.get("tts_pitch") or self.tts_pitch)
+            clip_pause = clip.get("sentence_pause_sec")
+            sentence_audios = self._generate_tts_batch(
+                sentences, tts_dir, i, rate=clip_rate, pitch=clip_pitch
+            )
             if not sentence_audios:
                 return None
             clip_audio_path = os.path.join(tts_dir, f"tts_clip_{i}.mp3")
@@ -126,6 +131,9 @@ class DubbingSkill:
                 i,
                 video_duration,
                 lead_silence_override=OPENING_LEAD_SILENCE if i == 0 else None,
+                sentence_pause=float(clip_pause)
+                if clip_pause is not None
+                else None,
             )
             if total_duration <= 0:
                 total_duration = self._get_audio_duration(clip_audio_path)
@@ -193,6 +201,7 @@ class DubbingSkill:
         video_duration: float = 0,
         *,
         lead_silence_override: float | None = None,
+        sentence_pause: float | None = None,
     ) -> tuple:
         """拼接句子音频，居中对齐于视频画面（前后留白），返回精确时间轴和总时长
 
@@ -204,9 +213,10 @@ class DubbingSkill:
             timeline: [{"text": "...", "start": 0.0, "end": 3.2}, ...]
             total_duration: 包含前后留白的总时长
         """
+        pause = self.sentence_pause if sentence_pause is None else sentence_pause
         # 计算语音内容时长（句子 + 句间停顿）
         content_duration = sum(sa["duration"] for sa in sentence_audios)
-        content_duration += self.sentence_pause * max(0, len(sentence_audios) - 1)
+        content_duration += pause * max(0, len(sentence_audios) - 1)
 
         # 计算前后留白：前留白 ≤ 0.5 秒（快速出声），剩余放尾部
         if video_duration > 0 and video_duration > content_duration:
@@ -294,7 +304,7 @@ class DubbingSkill:
                     if w.get("text")
                 ]
             timeline.append(row)
-            current_time = end + (self.sentence_pause if j < len(sentence_audios) - 1 else 0)
+            current_time = end + (pause if j < len(sentence_audios) - 1 else 0)
 
         # 总时长 = 最后一句结束 + 尾部留白
         total_duration = (timeline[-1]["end"] if timeline else 0) + trail_silence
@@ -326,7 +336,17 @@ class DubbingSkill:
         cache.mkdir(parents=True, exist_ok=True)
         return str(cache)
 
-    def _generate_tts_batch(self, sentences: list, tts_dir: str, clip_index: int) -> list:
+    def _generate_tts_batch(
+        self,
+        sentences: list,
+        tts_dir: str,
+        clip_index: int,
+        *,
+        rate: str | None = None,
+        pitch: str | None = None,
+    ) -> list:
+        use_rate = rate or self.tts_rate
+        use_pitch = pitch or self.tts_pitch
         """顺序生成各句 TTS（限流 + 重试），避免 gather 触发 503。"""
         from python_agent.tts_edge import word_boundaries_enabled
         from python_agent.tts_provider import run_async, synthesize_batch_sequential
@@ -348,8 +368,8 @@ class DubbingSkill:
                             self.voice,
                             path,
                             cache_dir=cache_dir,
-                            rate=self.tts_rate,
-                            pitch=self.tts_pitch,
+                            rate=use_rate,
+                            pitch=use_pitch,
                         )
                     )
                     if os.path.exists(path) and os.path.getsize(path) > 80:
@@ -367,8 +387,8 @@ class DubbingSkill:
                         items,
                         voice=self.voice,
                         cache_dir=cache_dir,
-                        rate=self.tts_rate,
-                        pitch=self.tts_pitch,
+                        rate=use_rate,
+                        pitch=use_pitch,
                     )
                 )
                 results = []

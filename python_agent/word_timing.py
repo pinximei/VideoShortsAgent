@@ -90,7 +90,10 @@ def words_to_caption_tokens(
         from_ms = max(0, int(float(w["start"]) * 1000) - buffer_ms)
         to_ms = int(float(w["end"]) * 1000) + buffer_ms
         piece = str(w["text"])
-        if tokens and not piece.startswith(" ") and _CJK.search(piece):
-            piece = f" {piece}" if not tokens[-1]["text"].endswith(" ") else piece
+        if tokens and not piece.startswith(" "):
+            prev = str(tokens[-1]["text"])
+            # 中文逐字高亮不加空格；仅拉丁/数字词之间保留间隔
+            if not _CJK.search(piece) and not _CJK.search(prev):
+                piece = f" {piece}" if not prev.endswith(" ") else piece
         tokens.append({"text": piece, "fromMs": from_ms, "toMs": max(from_ms + 60, to_ms)})
     return tokens

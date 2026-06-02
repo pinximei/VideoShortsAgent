@@ -83,6 +83,12 @@ def _apply_platform_gv_to_slides(
     voice_style = pick_voice_content_style(b)
     expanded = expand_script_tts_to_minimum({"slides": [dict(s) for s in slides]}, voice_style)
     out_slides = list(expanded.get("slides") or slides)
+    from python_agent.tts_copy_rules import sanitize_tts_text, tts_has_banned_phrase
+
+    for s in out_slides:
+        tts = str(s.get("tts_text") or "").strip()
+        if tts_has_banned_phrase(tts):
+            s["tts_text"] = sanitize_tts_text(tts) or tts
     from python_agent.slides_llm_director import direct_slides_script
 
     out_slides = direct_slides_script(out_slides, b, platform_id)
@@ -136,6 +142,25 @@ def _apply_platform_gv_to_slides(
     from python_agent.platform_caption_presets import apply_platform_presets_to_slides
 
     out_slides = apply_platform_presets_to_slides(out_slides, platform_id)
+    if platform_id == "douyin":
+        from python_agent.douyin_shot_stylist import (
+            DouyinShotDesignError,
+            apply_douyin_shot_styles,
+            export_shot_plan,
+        )
+
+        try:
+            out_slides = apply_douyin_shot_styles(out_slides, b)
+        except DouyinShotDesignError as exc:
+            raise RuntimeError(str(exc)) from exc
+        plan_path = task_dir / "llm" / "douyin_shot_plan.json"
+        plan_path.parent.mkdir(parents=True, exist_ok=True)
+        import json as _json
+
+        plan_path.write_text(
+            _json.dumps(export_shot_plan(out_slides), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
     for s in out_slides:
         s["css_decorations"] = list(
             s.get("css_decorations") or (s.get("visual_design") or {}).get("css_decorations") or []
@@ -387,7 +412,13 @@ def render_slides_video(
         tts_pitch=tts_pitch,
         sentence_pause=float(sent_pause) if sent_pause is not None else None,
     )
-    tts_input = [{"tts_text": s.get("tts_text", "")} for s in slides]
+    tts_input = []
+    for s in slides:
+        row: dict = {"tts_text": s.get("tts_text", "")}
+        for key in ("tts_rate", "tts_pitch", "sentence_pause_sec"):
+            if s.get(key) is not None:
+                row[key] = s[key]
+        tts_input.append(row)
     tts_result = dubbing.execute(tts_input, str(work))
     if isinstance(tts_result, dict):
         tts_clips = tts_result.get("tts_clips", [])
@@ -401,13 +432,16 @@ def render_slides_video(
 
     from python_agent.slides_quality_gates import (
         auto_fix_slides,
+        summarize_quality_gate,
         validate_slides_before_render,
     )
 
-    slides = auto_fix_slides(slides, platform=platform_id)
-    gate = validate_slides_before_render(slides, platform=platform_id)
+    slides = auto_fix_slides(slides, platform=platform_id, brief=brief_dict)
+    gate = validate_slides_before_render(slides, platform=platform_id, brief=brief_dict)
+    gate["summary"] = summarize_quality_gate(gate)
     gate_path = task_dir / "llm" / f"slides_quality_gate_{platform_id}.json"
     gate_path.write_text(json.dumps(gate, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[SlidesRender] {gate['summary'].split(chr(10))[0]}")
     if gate.get("warnings"):
         print(f"[SlidesRender] quality warnings: {gate['warnings'][:5]}")
     if not gate.get("ok"):

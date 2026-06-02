@@ -53,17 +53,18 @@ export const SlideCaptionLayer: React.FC<Props> = ({
     plat === 'douyin' ||
     captionMode === 'tiktok' ||
     String(motionProfile).includes('tiktok');
-  const isXhs = plat === 'xhs' || captionMode === 'semantic';
+  const isXhs = plat === 'xhs';
+  const useEditorialCaption = isXhs && captionMode === 'editorial';
 
   const wordList = sentences.map((s) => ({
-    text: s.text + ' ',
+    text: isDouyin || useEditorialCaption ? s.text.trim() : `${s.text.trim()} `,
     start: s.start,
     end: s.end,
   }));
 
   return (
     <>
-      {isXhs && !isDouyin ? (
+      {useEditorialCaption ? (
         <XhsEditorialCaption
           words={wordList}
           captionPages={captionPages}
@@ -71,15 +72,22 @@ export const SlideCaptionLayer: React.FC<Props> = ({
           textColor={textColor}
           fontScale={motionParams.captionFontScale ?? 0.72}
           bottomPx={motionParams.captionBottomPx ?? 200}
+          letterSpacing={motionParams.captionLetterSpacing ?? 2}
+          lineHeight={motionParams.captionLineHeight ?? 1.42}
         />
-      ) : isDouyin || captionMode === 'semantic' ? (
+      ) : isDouyin || captionMode === 'tiktok' || captionMode === 'semantic' ? (
         <TikTokActiveCaption
           words={wordList}
           captionPages={captionPages}
           profile={motionProfile}
           wordsPerPageMs={motionParams.wordsPerPageMs ?? 2400}
-          maxCharsPerPage={motionParams.maxCharsPerPage ?? 18}
+          maxCharsPerPage={motionParams.maxCharsPerPage ?? 24}
           accentColor={accentColor}
+          letterSpacing={motionParams.captionLetterSpacing ?? 0}
+          lineHeight={motionParams.captionLineHeight ?? 1.06}
+          bottomPx={motionParams.captionBottomPx ?? 300}
+          midSafeBottomRatio={motionParams.midSafeBottomRatio ?? 0.36}
+          captionPlatform={captionPlatform}
         />
       ) : (
         <div style={{position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none'}}>

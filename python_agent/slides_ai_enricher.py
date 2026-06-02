@@ -25,7 +25,7 @@ def _heuristic_summary_lines(tts: str, feature: str, heading: str, *, max_lines:
             break
         lines.append(p[:14])
     while len(lines) < 2:
-        lines.append("一步上手" if len(lines) == 0 else "值得试试")
+        lines.append("一步上手" if len(lines) == 0 else "收藏备用")
     return lines[:max_lines]
 
 
@@ -34,7 +34,10 @@ def enrich_slides_visual_payload(
     brief: dict[str, Any],
     platform: str,
 ) -> list[dict[str, Any]]:
+    from python_agent.slides_quality_gates import _ensure_github_viz
+
     out: list[dict[str, Any]] = []
+    _ensure_github_viz(slides, brief)
     for slide in slides:
         s = dict(slide)
         st = str(s.get("type") or "")

@@ -28,6 +28,10 @@ export interface MotionParams {
   maxCharsPerPage?: number;
   captionFontScale?: number;
   captionBottomPx?: number;
+  captionLetterSpacing?: number;
+  captionLineHeight?: number;
+  midSafeBottomRatio?: number;
+  midSafeTopRatio?: number;
   glitchFrames?: number;
 }
 
@@ -43,8 +47,10 @@ export const THEMES: Record<string, MotionTheme> = {
   tiktok: {bg: '#000000', fg: '#ffffff', accent: '#39E508', accent2: '#39E508'},
   /** 抖音暖色科技播报 */
   warm: {bg: '#1a100c', fg: '#fff8f0', accent: '#FF9F43', accent2: '#FFD93D'},
-  /** 小红书冷色 editorial：深蓝灰底 + 浅字 + 蓝青强调（非暖色） */
-  xhs: {bg: '#151c28', fg: '#e8eef7', accent: '#3b82f6', accent2: '#22d3ee'},
+  /** 小红书：暖紫底 + 珊瑚粉强调（与抖音同量级对比度） */
+  xhs: {bg: '#1a1028', fg: '#fff8f5', accent: '#FF6B8A', accent2: '#FFB347'},
+  /** 小红书 editorial 动效（粒子/播报框用） */
+  'xhs-editorial': {bg: '#1a1028', fg: '#fff8f5', accent: '#FF6B8A', accent2: '#FFB347'},
   cool: {bg: '#0f1419', fg: '#e2e8f0', accent: '#3b82f6', accent2: '#38bdf8'},
   kinetic: {bg: '#0c0c0e', fg: '#fafafa', accent: '#ff3366', accent2: '#ffcc00'},
   terminal: {bg: '#0a0f0a', fg: '#33ff99', accent: '#33ff99', accent2: '#1a1a1a'},
@@ -58,10 +64,12 @@ export function resolveMotionTheme(
 ): MotionTheme {
   const mood = (colorMood || '').trim().toLowerCase();
   if (mood === 'warm') return THEMES.warm;
-  if (mood === 'cool' || mood === 'xhs-soft' || mood === 'xhs') return THEMES.cool;
+  if (mood === 'xhs-editorial' || mood === 'xhs') return THEMES['xhs-editorial'];
+  if (mood === 'cool') return THEMES.cool;
+  if (mood === 'xhs-soft') return THEMES.minimal;
   const bg = (backgroundColor || '').toLowerCase();
   if (bg === '#f5f5f0' || bg === '#ececec' || bg === '#f0f0f0' || bg === '#f3efe8') {
-    return THEMES.xhs;
+    return THEMES.minimal;
   }
   const p = String(profile);
   if (p.includes('github')) return THEMES.github;

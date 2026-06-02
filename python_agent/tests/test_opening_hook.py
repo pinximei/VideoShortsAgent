@@ -65,3 +65,6 @@ def test_enforce_slides_title_opening() -> None:
     assert s0.get("opening_burst") is True
     assert s0.get("hook_text")
     assert not str(s0["tts_text"]).startswith("大家好")
+    assert str(s0["tts_text"]).count("。") <= 1
+    assert not s0.get("suppress_opening_caption")
+    assert len(s0.get("hook_beats") or []) <= 2

@@ -72,12 +72,15 @@ interface ContentCardProps {
   panelRevealFrame?: number;
   midHeroMaxChars?: number;
   midHeroFontScale?: number;
+  starCount?: number;
+  repoUrl?: string;
   captionPages?: Array<{
     text: string;
     startMs: number;
     durationMs: number;
     tokens: Array<{text: string; fromMs: number; toMs: number}>;
   }>;
+  suppressBottomCaption?: boolean;
 }
 
 export const ContentCard: React.FC<ContentCardProps> = ({
@@ -131,12 +134,50 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   panelRevealFrame = 0,
   midHeroMaxChars = 16,
   midHeroFontScale = 1,
+  starCount = 12800,
+  repoUrl = '',
   captionPages = [],
+  suppressBottomCaption = false,
 }) => {
   const hud = overlayMode === 'hud';
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const currentTime = frame / fps;
+
+  const profileId = String(motionProfile || '');
+  const layoutKind = String(midInfoLayout || 'keywords').toLowerCase();
+  const bulletProfiles = new Set([
+    'glass_card_stack',
+    'bullet_rail_right',
+    'bullet_stagger_up',
+    'shake_emphasis',
+    'tiktok_phrase_pages',
+    'kinetic_slam_tight',
+  ]);
+  const stackedTitleCards = new Set([
+    'glass_card_stack',
+    'bullet_stagger_up',
+    'shake_emphasis',
+    'kinetic_slam_tight',
+  ]).has(profileId);
+  const cardBullets =
+    summaryLines.length > 0
+      ? summaryLines
+      : bullets.map((b) => (typeof b === 'string' ? b : '')).filter(Boolean);
+  const cardRevealFrames =
+    summaryRevealFrames.length > 0 ? summaryRevealFrames : bulletStartFrames;
+  const useRichStage =
+    Boolean(sceneFocus) ||
+    layoutKind === 'framed' ||
+    layoutKind === 'compare' ||
+    layoutKind === 'steps' ||
+    Boolean(featureLabel) ||
+    summaryLines.length > 0 ||
+    (!stackedTitleCards &&
+      ((vizType && vizType !== 'none') ||
+        (!bulletProfiles.has(profileId) &&
+          summaryLines.length > 0 &&
+          bullets.length <= 1)));
 
   if (!hud && motionProfile) {
     return (
@@ -151,8 +192,13 @@ export const ContentCard: React.FC<ContentCardProps> = ({
         colorMood={colorMood}
         particleType={particleType}
         broadcastFrame={broadcastFrame}
+        captionPlatform={captionPlatform}
+        captionBottomPx={motionParams.captionBottomPx}
+        midSafeBottomRatio={motionParams.midSafeBottomRatio}
+        starCount={starCount}
+        repoUrl={repoUrl}
       >
-        {sceneFocus || bullets.length <= 1 ? (
+        {useRichStage ? (
           <ContentRichStage
             featureLabel={featureLabel || (typeof bullets[0] === 'string' ? bullets[0] : '')}
             summaryLines={summaryLines}
@@ -178,29 +224,36 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             captionPlatform={captionPlatform}
             midHeroMaxChars={midHeroMaxChars}
             midHeroFontScale={midHeroFontScale}
+            midSafeBottomRatio={motionParams.midSafeBottomRatio}
+            midSafeTopRatio={motionParams.midSafeTopRatio}
+            captionBottomPx={motionParams.captionBottomPx}
+            staggerFrames={motionParams.staggerFrames}
           />
         ) : (
           <AnimatedBullets
-            heading={heading}
-            bullets={bullets}
+            heading={featureLabel || heading}
+            bullets={cardBullets}
             profile={motionProfile}
             params={motionParams}
-            bulletStartFrames={bulletStartFrames}
+            bulletStartFrames={cardRevealFrames}
             colorMood={colorMood}
+            layoutMode={stackedTitleCards ? 'title_cards_vertical' : 'default'}
           />
         )}
-        <SlideCaptionLayer
-          sentences={sentences}
-          captionPages={captionPages}
-          captionMode={captionMode}
-          captionPlatform={captionPlatform}
-          motionProfile={motionProfile}
-          motionParams={motionParams}
-          captionStyle={captionStyle}
-          accentColor={accentColor2 || accentColor}
-          colorMood={colorMood}
-          textColor={textColor}
-        />
+        {!suppressBottomCaption ? (
+          <SlideCaptionLayer
+            sentences={sentences}
+            captionPages={captionPages}
+            captionMode={captionMode}
+            captionPlatform={captionPlatform}
+            motionProfile={motionProfile}
+            motionParams={motionParams}
+            captionStyle={captionStyle}
+            accentColor={accentColor2 || accentColor}
+            colorMood={colorMood}
+            textColor={textColor}
+          />
+        ) : null}
       </MotionSlideShell>
     );
   }

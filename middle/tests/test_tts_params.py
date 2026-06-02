@@ -36,7 +36,7 @@ def test_phash_only_not_slow_five_percent():
 def test_douyin_platform_default_fast_male():
     t = resolve_tts_for_platform({}, "douyin")
     assert t["tts_voice"] == "zh-CN-YunyangNeural"
-    assert t["tts_rate"] in ("+14%", "+12%", "+16%", "+18%", "+20%", "+22%")
+    assert t["tts_rate"] in ("+28%", "+30%", "+32%", "+34%", "+35%")
 
 
 def test_xhs_keeps_female_voice():
@@ -52,7 +52,7 @@ def test_prepare_brief_tts_differs_by_platform():
     assert b["tts_voice"] != x["tts_voice"]
     assert "Yunyang" in b["tts_voice"] or "Yunxi" not in b["tts_voice"]
     assert x["tts_voice"] == "zh-CN-XiaoxiaoNeural"
-    assert b["tts_rate"] == "+22%"
+    assert b["tts_rate"] in ("+30%", "+32%", "+34%", "+35%")
     assert x["tts_rate"] == "+6%"
 
 

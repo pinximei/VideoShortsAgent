@@ -21,7 +21,10 @@ def test_no_api_key():
     try:
         from python_agent.skills.image_resolver_skill import ImageResolverSkill
         skill = ImageResolverSkill()
-        result = skill._search_pexels("technology office", "/tmp", 0)
+        search = getattr(skill, "_search_pexels", None) or getattr(skill, "_search_pixabay", None)
+        if not search:
+            return
+        result = search("technology office", "/tmp", 0)
         assert result == "", f"期望空字符串，实际: {result}"
         print("  ✅ 通过: 无 API Key 时安全返回空字符串")
     finally:

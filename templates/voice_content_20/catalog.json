@@ -8,9 +8,9 @@
       "id": "V01_burst_hook_fast",
       "name": "爆款快钩子",
       "reference_motion": "G01",
-      "edge_tts_rate": "+14%",
-      "sentence_pause_sec": 0.12,
-      "words_per_minute": 280,
+      "edge_tts_rate": "+20%",
+      "sentence_pause_sec": 0.09,
+      "words_per_minute": 300,
       "subtitle_switch_ms": 750,
       "total_chars": [
         200,
@@ -38,7 +38,7 @@
       "measured_ref": "7618932620755291433",
       "phash_only": true,
       "edge_tts_pitch": "+10Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V02_tiktok_follow_punch",
@@ -73,7 +73,7 @@
       "measured_ref": "7641485803578789172",
       "phash_only": true,
       "edge_tts_pitch": "+10Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V03_top10_listing",
@@ -94,7 +94,7 @@
       "measured_ref": "7642198364225948962",
       "phash_only": true,
       "edge_tts_pitch": "+10Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V04_minimal_calm",
@@ -115,7 +115,7 @@
       "measured_ref": "7642633512055475313",
       "phash_only": true,
       "edge_tts_pitch": "+10Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V05_badge_authority",
@@ -137,7 +137,7 @@
       "speech_ratio": 0.995,
       "phash_only": true,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V06_chart_story",
@@ -159,7 +159,7 @@
       "speech_ratio": 0.98,
       "phash_only": true,
       "edge_tts_pitch": "+10Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V07_glitch_tease",
@@ -180,7 +180,7 @@
       "measured_ref": "BV1iF411k7cu",
       "speech_ratio": 0.995,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V08_terminal_dev",
@@ -201,7 +201,7 @@
       "measured_ref": "BV1DFvKzgEDE",
       "speech_ratio": 0.98,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V09_split_demo",
@@ -221,7 +221,7 @@
       "measured_ref": "BV1hS4y1S7wL",
       "speech_ratio": 0.688,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V10_glass_three_points",
@@ -241,7 +241,7 @@
       "measured_ref": "BV1YQ3nztEuL",
       "speech_ratio": 1.0,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V11_word_slam_energy",
@@ -262,7 +262,7 @@
       "measured_ref": "BV1aGVQ6AE3s",
       "speech_ratio": 0.943,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V12_phrase_pages",
@@ -283,7 +283,7 @@
       "measured_ref": "BV1R8Vn6JEWH",
       "speech_ratio": 1.0,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V13_marquee_news",
@@ -303,7 +303,7 @@
       "measured_ref": "BV1aJQGBSEit",
       "speech_ratio": 1.0,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V14_shake_keyword",
@@ -323,7 +323,7 @@
       "measured_ref": "BV1ySLc6QEcB",
       "speech_ratio": 0.991,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V15_star_odometer",
@@ -343,7 +343,7 @@
       "measured_ref": "BV1b9VS64E1s",
       "speech_ratio": 1.0,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V16_soft_purple_story",
@@ -363,7 +363,7 @@
       "measured_ref": "BV1XNVS6FEJG",
       "speech_ratio": 1.0,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V17_code_rain_hook",
@@ -383,7 +383,7 @@
       "measured_ref": "BV14qh8ztEhv",
       "speech_ratio": 0.999,
       "edge_tts_pitch": "+6Hz",
-      "tts_voice": "zh-CN-YunyangNeural"
+      "tts_voice": "zh-CN-YunjianNeural"
     },
     {
       "id": "V18_cta_star_push",

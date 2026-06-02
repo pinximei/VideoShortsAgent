@@ -79,18 +79,6 @@ export const BroadcastChrome: React.FC<{accent?: string}> = ({accent = '#FF9F43'
           zIndex: 130,
         }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          left: 48,
-          right: 48,
-          bottom: 280,
-          height: 3,
-          background: `linear-gradient(90deg, transparent, ${accent}88, transparent)`,
-          opacity: 0.6,
-          zIndex: 85,
-        }}
-      />
     </>
   );
 };

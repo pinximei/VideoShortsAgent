@@ -9,6 +9,7 @@ import {SlideBackground} from './SlideBackground';
 import {MotionSlideShell} from '../motion/decorations/MotionSlideShell';
 import {SlideCaptionLayer} from '../motion/text/SlideCaptionLayer';
 import type {MotionParams} from '../motion/types';
+import {getLayoutZones} from '../motion/layout/safeZones';
 
 /**
  * CTACard - 行动号召卡组件（升级版）
@@ -46,7 +47,9 @@ interface CTACardProps {
   backgroundColor?: string;
   cssDecorations?: string[];
   captionMode?: string;
+  captionPlatform?: string;
   broadcastFrame?: boolean;
+  suppressBottomCaption?: boolean;
 }
 
 export const CTACard: React.FC<CTACardProps> = ({
@@ -74,7 +77,9 @@ export const CTACard: React.FC<CTACardProps> = ({
   backgroundColor,
   cssDecorations = [],
   captionMode = '',
+  captionPlatform = '',
   broadcastFrame = false,
+  suppressBottomCaption = false,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
@@ -86,6 +91,14 @@ export const CTACard: React.FC<CTACardProps> = ({
     const pulseScale = cssDecorations.includes('pulse-button')
       ? 0.95 + pulse * 0.12
       : 0.95 + pulse * 0.08;
+    const zones = getLayoutZones(captionPlatform, height, {
+      captionBottomPx: motionParams.captionBottomPx,
+      midSafeBottomRatio: motionParams.midSafeBottomRatio,
+      midSafeTopRatio: motionParams.midSafeTopRatio,
+    });
+    const midTop = Math.round(height * zones.midSafeTopRatio);
+    const midBottom = Math.round(height * zones.midSafeBottomRatio);
+    const titleTop = midTop + Math.round((height - midTop - midBottom) * 0.2);
     return (
       <MotionSlideShell
         width={width}
@@ -98,12 +111,38 @@ export const CTACard: React.FC<CTACardProps> = ({
         colorMood={colorMood}
         particleType={particleType}
         broadcastFrame={broadcastFrame}
+        captionPlatform={captionPlatform}
+        captionBottomPx={motionParams.captionBottomPx}
+        midSafeBottomRatio={motionParams.midSafeBottomRatio}
       >
-        <div style={{
-          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', zIndex: 10,
-        }}>
-          <div style={{fontSize: 52, fontWeight: 800, color: '#f0f6fc', marginBottom: 40, opacity: pulse}}>{heading}</div>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            paddingTop: titleTop,
+            zIndex: 10,
+            boxSizing: 'border-box',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 80,
+              fontWeight: 900,
+              fontFamily: '"Microsoft YaHei", sans-serif',
+              color: '#f0f6fc',
+              marginBottom: 36,
+              opacity: pulse,
+              textAlign: 'center',
+              lineHeight: 1.12,
+              wordBreak: 'keep-all',
+            }}
+          >
+            {heading}
+          </div>
           <div style={{
             position: 'relative', padding: '22px 56px', borderRadius: 12,
             background: 'linear-gradient(135deg, #238636, #2ea043)',
@@ -114,14 +153,17 @@ export const CTACard: React.FC<CTACardProps> = ({
             {ctaText}
           </div>
         </div>
-        <SlideCaptionLayer
-          sentences={sentences}
-          captionMode={captionMode}
-          motionProfile={motionProfile}
-          motionParams={motionParams}
-          captionStyle={captionStyle}
-          accentColor={accentColor}
-        />
+        {!suppressBottomCaption ? (
+          <SlideCaptionLayer
+            sentences={sentences}
+            captionMode={captionMode}
+            captionPlatform={captionPlatform}
+            motionProfile={motionProfile}
+            motionParams={motionParams}
+            captionStyle={captionStyle}
+            accentColor={accentColor}
+          />
+        ) : null}
       </MotionSlideShell>
     );
   }

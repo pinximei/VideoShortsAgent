@@ -49,6 +49,7 @@ interface TitleCardProps {
   openingBurst?: boolean;
   hookBeats?: string[];
   openingDurationFrames?: number;
+  suppressOpeningCaption?: boolean;
   captionPages?: Array<{
     text: string;
     startMs: number;
@@ -90,6 +91,7 @@ export const TitleCard: React.FC<TitleCardProps> = ({
   openingBurst = false,
   hookBeats = [],
   openingDurationFrames = 0,
+  suppressOpeningCaption = false,
   captionPages = [],
   broadcastFrame = false,
 }) => {
@@ -98,6 +100,11 @@ export const TitleCard: React.FC<TitleCardProps> = ({
   const currentTime = frame / fps;
   const burstText = (hookText || '').trim();
   const showBurst = openingBurst && burstText.length > 0;
+  const burstFrames = showBurst
+    ? Math.min(openingDurationFrames > 0 ? openingDurationFrames : 84, 84)
+    : 0;
+  const heroStartFrame = showBurst ? burstFrames : headingStartFrame;
+  const hideOpeningCaption = Boolean(suppressOpeningCaption);
 
   // 动效档案驱动（v2）：按词弹射 / TikTok 高亮，锐背景
   if (motionProfile) {
@@ -113,13 +120,16 @@ export const TitleCard: React.FC<TitleCardProps> = ({
         colorMood={colorMood}
         particleType={particleType}
         broadcastFrame={broadcastFrame}
+        captionPlatform={captionPlatform}
+        captionBottomPx={motionParams.captionBottomPx}
+        midSafeBottomRatio={motionParams.midSafeBottomRatio}
       >
         {showBurst ? (
           <HookBurst
             text={burstText}
             beats={hookBeats.length ? hookBeats : undefined}
             accentColor={accentColor2 || accentColor}
-            openingDurationFrames={openingDurationFrames}
+            openingDurationFrames={burstFrames}
           />
         ) : null}
         <AnimatedHeading
@@ -127,22 +137,25 @@ export const TitleCard: React.FC<TitleCardProps> = ({
           subtext={subheading}
           profile={motionProfile}
           params={motionParams}
-          layout="center"
+          layout={subheading ? 'top-heavy' : 'center'}
           cssDecorations={cssDecorations}
           colorMood={colorMood}
+          startFrame={heroStartFrame}
         />
-        <SlideCaptionLayer
-          sentences={sentences}
-          captionPages={captionPages}
-          captionMode={captionMode}
-          captionPlatform={captionPlatform}
-          motionProfile={motionProfile}
-          motionParams={motionParams}
-          captionStyle={captionStyle}
-          accentColor={accentColor2 || accentColor}
-          colorMood={colorMood}
-          textColor={textColor}
-        />
+        {!hideOpeningCaption ? (
+          <SlideCaptionLayer
+            sentences={sentences}
+            captionPages={captionPages}
+            captionMode={captionMode}
+            captionPlatform={captionPlatform}
+            motionProfile={motionProfile}
+            motionParams={motionParams}
+            captionStyle={captionStyle}
+            accentColor={accentColor2 || accentColor}
+            colorMood={colorMood}
+            textColor={textColor}
+          />
+        ) : null}
       </MotionSlideShell>
     );
   }

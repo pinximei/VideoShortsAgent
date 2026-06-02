@@ -17,22 +17,26 @@ export const HookBurst: React.FC<Props> = ({
   text,
   beats = [],
   accentColor = '#FFE135',
-  beatFrames = 28,
+  beatFrames = 36,
   openingDurationFrames = 0,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width} = useVideoConfig();
-  const lines = (beats.length ? beats : [text]).map((x) => (x || '').trim()).filter(Boolean);
+  const lines = (beats.length ? beats : [text])
+    .map((x) => (x || '').trim())
+    .filter(Boolean)
+    .slice(0, 2);
   if (!lines.length) {
     return null;
   }
 
+  const burstCap = 84;
   const totalFrames =
     openingDurationFrames > 0
-      ? openingDurationFrames
-      : beatFrames * lines.length + 12;
+      ? Math.min(openingDurationFrames, burstCap)
+      : Math.min(beatFrames * lines.length + 12, burstCap);
   const perBeat = Math.max(
-    20,
+    28,
     openingDurationFrames > 0
       ? Math.floor(openingDurationFrames / lines.length)
       : beatFrames,
@@ -59,18 +63,18 @@ export const HookBurst: React.FC<Props> = ({
     [1, idx < lines.length - 1 ? 0.15 : 0],
     {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'},
   );
-  const fontSize = Math.min(108, Math.floor((width * 0.88) / Math.max(4, t.length * 0.72)));
+  const fontSize = Math.min(88, Math.floor((width * 0.84) / Math.max(4, t.length * 0.62)));
 
   return (
     <div
       style={{
         position: 'absolute',
-        top: '22%',
+        top: '20%',
         left: 0,
         right: 0,
         display: 'flex',
         justifyContent: 'center',
-        padding: '0 40px',
+        padding: '0 56px',
         zIndex: 95,
         pointerEvents: 'none',
         transform: `translateX(${shake}px) scale(${scale})`,
@@ -85,11 +89,11 @@ export const HookBurst: React.FC<Props> = ({
           textAlign: 'center',
           lineHeight: 1.1,
           color: '#fff',
-          WebkitTextStroke: `3px ${accentColor}`,
-          textShadow: `0 0 24px ${accentColor}88, 0 8px 32px rgba(0,0,0,0.9)`,
-          letterSpacing: 2,
+          WebkitTextStroke: `2px ${accentColor}`,
+          textShadow: `0 0 20px ${accentColor}88, 0 6px 28px rgba(0,0,0,0.9)`,
+          letterSpacing: 1,
           wordBreak: 'keep-all',
-          maxWidth: width * 0.92,
+          maxWidth: width * 0.86,
         }}
       >
         {t}

@@ -82,6 +82,7 @@ class RenderSlidesSkill:
         bgm_path: str = None,
         *,
         platform_id: str = "douyin",
+        slide_indices: list[int] | None = None,
     ) -> str:
         """渲染视频（TTS 对齐字幕 / 缓存 / 可选 Remotion Montage）。"""
         os.makedirs(output_dir, exist_ok=True)
@@ -107,10 +108,22 @@ class RenderSlidesSkill:
                 return final_path
 
         segment_paths = self._render_all_segments(
-            slides, tts_clips, visual_style, output_dir, cache_dir, plat
+            slides,
+            tts_clips,
+            visual_style,
+            output_dir,
+            cache_dir,
+            plat,
+            slide_indices=slide_indices,
         )
-        if not segment_paths:
-            raise RuntimeError("没有成功渲染的 slides")
+        if slide_indices is not None:
+            if any(p is None for p in segment_paths):
+                missing = [i for i, p in enumerate(segment_paths) if not p]
+                raise RuntimeError(f"部分 slide 未渲染: {missing}")
+        else:
+            segment_paths = [p for p in segment_paths if p]
+            if not segment_paths:
+                raise RuntimeError("没有成功渲染的 slides")
 
         print(f"[RenderSlidesSkill] 拼接 {len(segment_paths)} 个片段...")
         concat_path = os.path.join(output_dir, "concat_output.mp4")
@@ -143,7 +156,9 @@ class RenderSlidesSkill:
         output_dir: str,
         cache_dir: str,
         platform_id: str,
-    ) -> list[str]:
+        *,
+        slide_indices: list[int] | None = None,
+    ) -> list[str | None]:
         jobs: list[dict] = []
         for i, slide in enumerate(slides):
             tts_clip = tts_clips[i] if i < len(tts_clips) else None
@@ -179,6 +194,15 @@ class RenderSlidesSkill:
             max_w = 3
         workers = min(max(1, max_w), len(jobs)) if parallel else 1
         segment_paths: list[str | None] = [None] * len(slides)
+        rerender_set = set(slide_indices) if slide_indices is not None else None
+        for i in range(len(slides)):
+            if rerender_set is not None and i not in rerender_set:
+                existing = os.path.join(output_dir, f"_parallel_{i}", f"slide_{i}_video.mp4")
+                if os.path.isfile(existing):
+                    segment_paths[i] = existing
+
+        if rerender_set is not None:
+            jobs = [j for j in jobs if j["index"] in rerender_set]
 
         def _run(job: dict) -> tuple[int, str | None]:
             isolated = os.path.join(output_dir, f"_parallel_{job['index']}")
@@ -201,7 +225,7 @@ class RenderSlidesSkill:
                 if path:
                     segment_paths[idx] = path
 
-        return [p for p in segment_paths if p]
+        return segment_paths
 
     def _render_segment_job(
         self,
@@ -212,17 +236,21 @@ class RenderSlidesSkill:
     ) -> str | None:
         i = job["index"]
         slide = job["slide"]
-        duration = job["duration"]
+        tts_duration = float(job["duration"])
+        from python_agent.pace_config import SEGMENT_TAIL_PAD_SEC, visual_duration_seconds
+
+        visual_duration = visual_duration_seconds(tts_duration, slide)
         sentences = job["sentences"]
         caption_pages = job["caption_pages"]
         tts_audio_path = job["tts_audio_path"]
 
         print(
             f"  [Slide {i+1}] {slide.get('type', '?')}: "
-            f"{slide.get('heading', '')[:30]}... ({duration:.1f}s)"
+            f"{slide.get('heading', '')[:30]}... "
+            f"(tts {tts_duration:.1f}s → vis {visual_duration:.1f}s)"
         )
 
-        frames = max(1, int(duration * self.fps))
+        frames = max(1, int(visual_duration * self.fps))
         cache_key = slide_render_cache_key(
             slide, visual_style, frames, sentences, caption_pages
         )
@@ -233,7 +261,7 @@ class RenderSlidesSkill:
             self._render_slide_video(
                 slide,
                 visual_style,
-                duration,
+                visual_duration,
                 sentences,
                 video_path,
                 output_dir,
@@ -247,15 +275,15 @@ class RenderSlidesSkill:
             print(f"  [Slide {i+1}] ⚠️ 画面渲染失败，跳过")
             return None
 
-        self._freeze_extend(video_path, 0.3)
+        self._freeze_extend(video_path, SEGMENT_TAIL_PAD_SEC * 0.5)
         segment_path = os.path.join(output_dir, f"segment_{i}.mp4")
         audio_ok = False
         if tts_audio_path and os.path.exists(tts_audio_path):
-            audio_ok = self._attach_audio_with_pad(
-                video_path, tts_audio_path, segment_path, 0.3
+            audio_ok = self._attach_audio_to_video_length(
+                video_path, tts_audio_path, segment_path
             )
         if not audio_ok:
-            self._add_silent_audio(video_path, duration + 0.3, segment_path)
+            self._add_silent_audio(video_path, visual_duration, segment_path)
 
         if os.path.exists(segment_path) and os.path.getsize(segment_path) > 1024:
             return segment_path
@@ -481,32 +509,68 @@ class RenderSlidesSkill:
                 os.remove(padded_path)
 
     def _attach_audio_with_pad(self, video_path, audio_path, output_path, pad_seconds=0.3):
-        """将 TTS 音频附加到视频，并用 apad 延长音频以匹配冻结帧"""
-        dur = self._get_duration(audio_path)
-        if dur <= 0:
-            print(f"  ⚠️ TTS 音频无效: {audio_path}")
+        """兼容旧调用：将音频 pad 到视频全长（不用 shortest 截断画面）。"""
+        return self._attach_audio_to_video_length(video_path, audio_path, output_path)
+
+    def _attach_audio_to_video_length(self, video_path, audio_path, output_path) -> bool:
+        """口播结束后保留尾帧静音，让 Remotion 动效播完。"""
+        from python_agent.pace_config import SEGMENT_TAIL_PAD_SEC
+
+        video_dur = self._get_duration(video_path)
+        audio_dur = self._get_duration(audio_path)
+        if video_dur <= 0 or audio_dur <= 0:
+            print(f"  ⚠️ TTS/视频时长无效: v={video_dur} a={audio_dur}")
             return False
 
+        pad = max(SEGMENT_TAIL_PAD_SEC, video_dur - audio_dur + 0.05)
         cmd = [
-            "ffmpeg", "-y",
-            "-i", video_path, "-i", audio_path,
-            "-map", "0:v", "-map", "1:a",
-            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-            "-af", f"apad=pad_dur={pad_seconds:.3f}",
-            "-shortest", output_path
+            "ffmpeg",
+            "-y",
+            "-i",
+            video_path,
+            "-i",
+            audio_path,
+            "-map",
+            "0:v",
+            "-map",
+            "1:a",
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-af",
+            f"apad=pad_dur={pad:.3f}",
+            "-t",
+            str(video_dur),
+            output_path,
         ]
         r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         if r.returncode != 0:
-            print(f"  ⚠️ attach_audio_with_pad 失败: {r.stderr[-200:]}")
+            print(f"  ⚠️ attach_audio_to_video_length 失败: {r.stderr[-200:]}")
             return False
         if not os.path.exists(output_path) or os.path.getsize(output_path) < 1024:
             return False
 
-        # 验证输出有音频流
         check = subprocess.run(
-            ["ffprobe", "-v", "quiet", "-select_streams", "a",
-             "-show_entries", "stream=codec_type", "-of", "csv=p=0", output_path],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5
+            [
+                "ffprobe",
+                "-v",
+                "quiet",
+                "-select_streams",
+                "a",
+                "-show_entries",
+                "stream=codec_type",
+                "-of",
+                "csv=p=0",
+                output_path,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
         )
         if "audio" not in check.stdout:
             print(f"  ⚠️ 输出视频无音频流")
@@ -546,7 +610,7 @@ class RenderSlidesSkill:
             duration = float(tts_clip.get("duration", 5.0))
             from python_agent.montage_timing import slide_duration_frames
 
-            frames = slide_duration_frames(duration, self.fps)
+            frames = slide_duration_frames(duration, slide_fit, fps=self.fps)
             props = self._build_remotion_props(
                 slide_fit,
                 visual_style,
@@ -762,10 +826,18 @@ class RenderSlidesSkill:
         """构建单镜 Remotion props（供单镜与 Montage 复用）。"""
         heading_trigger = slide.get("heading_trigger", "")
         heading_start_frame = 0
+        if (
+            slide.get("type") == "title_card"
+            and slide.get("opening_burst")
+            and int(slide.get("opening_duration_frames") or 0) > 0
+        ):
+            heading_start_frame = min(int(slide.get("opening_duration_frames") or 84), 84)
         if heading_trigger and sentences:
             for seq in sentences:
                 if heading_trigger in seq.get("text", ""):
-                    heading_start_frame = int(seq.get("start", 0) * self.fps)
+                    heading_start_frame = max(
+                        heading_start_frame, int(seq.get("start", 0) * self.fps)
+                    )
                     break
 
         raw_bullets = slide.get("bullets", [])
@@ -847,15 +919,20 @@ class RenderSlidesSkill:
             "hookBeats": list(slide.get("hook_beats") or []),
             "midInfoLayout": str(slide.get("mid_info_layout") or "keywords"),
             "openingDurationFrames": int(slide.get("opening_duration_frames") or 0),
+            "suppressOpeningCaption": bool(slide.get("suppress_opening_caption")),
             "midHeroMaxChars": int(slide.get("mid_hero_max_chars") or 16),
             "midHeroFontScale": float(
                 (slide.get("motion_params") or {}).get("midHeroFontScale") or 1.0
             ),
+            "starCount": int(slide.get("star_count") or 0),
+            "repoUrl": str(slide.get("repo_url") or ""),
         }
         if sentences:
             props["sentences"] = sentences
         if caption_pages:
             props["captionPages"] = caption_pages_for_props(caption_pages)
+        if slide.get("suppress_bottom_caption"):
+            props["suppressBottomCaption"] = True
 
         summary_lines = list(slide.get("summary_lines") or [])
         if summary_lines and sentences:
@@ -864,12 +941,19 @@ class RenderSlidesSkill:
                 compute_summary_reveal_frames,
             )
 
-            props["summaryRevealFrames"] = compute_summary_reveal_frames(
+            reveal = compute_summary_reveal_frames(
                 summary_lines, sentences, fps=self.fps
             )
+            props["summaryRevealFrames"] = reveal
             props["panelRevealFrame"] = compute_panel_reveal_frame(
                 sentences, fps=self.fps
             )
+            if str(motion_profile) == "glass_card_stack" and reveal:
+                props["bullets"] = summary_lines
+                props["bulletStartFrames"] = reveal
+                props["heading"] = str(
+                    slide.get("feature_label") or slide.get("heading") or ""
+                )[:14]
 
         if slide.get("image_path"):
             pub_images_dir = os.path.join(REMOTION_DIR, "public", "images")
@@ -891,8 +975,13 @@ class RenderSlidesSkill:
             shutil.copy2(segment_paths[0], output_path)
             return
 
-        transition_duration = 0.45 if len(segment_paths) >= 4 else 0.65
         durations = [self._get_duration(p) for p in segment_paths]
+        from python_agent.pace_config import XFADE_DURATION_SEC
+
+        transition_duration = min(
+            XFADE_DURATION_SEC,
+            max(0.22, min(durations) * 0.1) if durations else XFADE_DURATION_SEC,
+        )
         if any(d <= 0 for d in durations):
             print("[RenderSlidesSkill] ⚠️ 部分片段时长无效，使用简单拼接")
             self._simple_concat(segment_paths, output_path, output_dir)

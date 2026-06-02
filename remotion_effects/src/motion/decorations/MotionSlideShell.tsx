@@ -2,6 +2,7 @@ import React from 'react';
 import {ProfileBackground} from '../backgrounds/ProfileBackground';
 import {GithubDailyDecorations} from './GithubDailyDecorations';
 import {BroadcastChrome} from './BroadcastChrome';
+import {CaptionSafeScrim} from './CaptionSafeScrim';
 import {BODY_FONT} from '../fonts';
 
 interface Props {
@@ -15,6 +16,11 @@ interface Props {
   colorMood?: string;
   particleType?: string;
   broadcastFrame?: boolean;
+  captionPlatform?: string;
+  captionBottomPx?: number;
+  midSafeBottomRatio?: number;
+  starCount?: number;
+  repoUrl?: string;
   children: React.ReactNode;
 }
 
@@ -30,8 +36,22 @@ export const MotionSlideShell: React.FC<Props> = ({
   colorMood = '',
   particleType = '',
   broadcastFrame = false,
+  captionPlatform = '',
+  captionBottomPx,
+  midSafeBottomRatio,
+  starCount = 12800,
+  repoUrl = '',
   children,
-}) => (
+}) => {
+  const plat = (captionPlatform || '').toLowerCase();
+  const chromeAccent =
+    colorMood === 'warm'
+      ? '#FF9F43'
+      : plat === 'xhs' || colorMood === 'xhs-editorial'
+        ? '#FF6B8A'
+        : '#E85D04';
+
+  return (
   <div
     style={{
       position: 'absolute',
@@ -50,8 +70,21 @@ export const MotionSlideShell: React.FC<Props> = ({
       colorMood={colorMood}
       particleType={particleType}
     />
-    <GithubDailyDecorations decorations={cssDecorations} slideRole={slideRole} />
-    {broadcastFrame ? <BroadcastChrome accent={colorMood === 'warm' ? '#FF9F43' : '#E85D04'} /> : null}
+    <GithubDailyDecorations
+      decorations={cssDecorations}
+      slideRole={slideRole}
+      starCount={starCount}
+      repoUrl={repoUrl}
+    />
+    {broadcastFrame ? <BroadcastChrome accent={chromeAccent} /> : null}
+    {plat === 'xhs' || broadcastFrame ? (
+      <CaptionSafeScrim
+        captionPlatform={captionPlatform}
+        captionBottomPx={captionBottomPx}
+        midSafeBottomRatio={midSafeBottomRatio}
+      />
+    ) : null}
     {children}
   </div>
-);
+  );
+};

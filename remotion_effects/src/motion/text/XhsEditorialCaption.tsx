@@ -16,6 +16,8 @@ interface Props {
   textColor?: string;
   fontScale?: number;
   bottomPx?: number;
+  letterSpacing?: number;
+  lineHeight?: number;
 }
 
 /** 小红书：底栏 editorial 字幕条，字号更小、翻页更慢、毛玻璃底 */
@@ -25,7 +27,9 @@ export const XhsEditorialCaption: React.FC<Props> = ({
   accentColor = '#3b82f6',
   textColor = '#e8eef7',
   fontScale = 0.72,
-  bottomPx = 200,
+  bottomPx = 400,
+  letterSpacing = 2,
+  lineHeight = 1.42,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width} = useVideoConfig();
@@ -49,7 +53,7 @@ export const XhsEditorialCaption: React.FC<Props> = ({
     }));
   }, [captionPages, words]);
 
-  let page = pages[0];
+  let page: (typeof pages)[number] | null = null;
   for (const p of pages) {
     const end = p.startMs + p.durationMs;
     if (timeMs >= p.startMs && timeMs < end) {
@@ -85,7 +89,7 @@ export const XhsEditorialCaption: React.FC<Props> = ({
       <div
         style={{
           maxWidth: width * 0.88,
-          padding: '14px 22px',
+          padding: '18px 28px',
           borderRadius: 12,
           background: 'rgba(15, 23, 42, 0.72)',
           border: `1px solid ${accentColor}44`,
@@ -98,10 +102,10 @@ export const XhsEditorialCaption: React.FC<Props> = ({
             fontFamily: BODY_FONT,
             fontSize,
             fontWeight: 600,
-            lineHeight: 1.45,
+            lineHeight,
             textAlign: 'center',
             wordBreak: 'keep-all',
-            letterSpacing: 0.5,
+            letterSpacing,
           }}
         >
           {page.tokens && page.tokens.length > 1 ? (

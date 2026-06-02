@@ -22,7 +22,7 @@ export const HeroTypewriter: React.FC<Props> = ({
   const {fps} = useVideoConfig();
   const chars = Array.from(text);
   const local = Math.max(0, frame - startFrame);
-  const charsToShow = Math.min(chars.length, Math.floor(local / 2.5));
+  const charsToShow = Math.min(chars.length, Math.floor(local / 3.2));
 
   return (
     <div
@@ -31,7 +31,8 @@ export const HeroTypewriter: React.FC<Props> = ({
         fontSize,
         fontWeight: 900,
         textAlign: 'center',
-        lineHeight: 1.15,
+        lineHeight: 1.28,
+        letterSpacing: 3,
         wordBreak: 'keep-all',
       }}
     >

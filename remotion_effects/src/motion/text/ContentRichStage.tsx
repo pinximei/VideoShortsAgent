@@ -6,7 +6,9 @@ import {AnimatedBarChart} from '../charts/AnimatedBarChart';
 import {AnimatedLineChart} from '../charts/AnimatedLineChart';
 import {MidStageEffects} from '../effects/MidStageEffects';
 import {HeroTypewriter} from './HeroTypewriter';
+import {LiquidShakeText} from './LiquidShakeText';
 import {MidInfoPanels} from '../info/MidInfoPanels';
+import {getLayoutZones} from '../layout/safeZones';
 
 interface Props {
   featureLabel?: string;
@@ -33,6 +35,10 @@ interface Props {
   captionPlatform?: string;
   midHeroMaxChars?: number;
   midHeroFontScale?: number;
+  midSafeBottomRatio?: number;
+  midSafeTopRatio?: number;
+  captionBottomPx?: number;
+  staggerFrames?: number;
 }
 
 export const ContentRichStage: React.FC<Props> = ({
@@ -60,17 +66,48 @@ export const ContentRichStage: React.FC<Props> = ({
   captionPlatform = '',
   midHeroMaxChars = 16,
   midHeroFontScale = 1,
+  midSafeBottomRatio,
+  midSafeTopRatio,
+  captionBottomPx,
+  staggerFrames = 18,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
-  const isXhs = captionPlatform === 'xhs' || colorMood === 'cool';
+  const isXhs =
+    captionPlatform === 'xhs' ||
+    colorMood === 'xhs-editorial' ||
+    colorMood === 'xhs';
   const theme = resolveMotionTheme(isXhs ? 'xhs' : 'tiktok', colorMood);
+  const zones = getLayoutZones(captionPlatform, height, {
+    captionBottomPx,
+    midSafeBottomRatio,
+    midSafeTopRatio,
+  });
 
-  const heroMax = midHeroMaxChars || (isXhs ? 20 : 16);
-  const hero = (summaryLines[0] || featureLabel || '核心亮点').slice(0, heroMax);
-  const subLines = summaryLines.length > 1 ? summaryLines.slice(1, 3) : [];
-  const heroFrame = summaryRevealFrames[0] ?? 0;
-  const panelFrame = panelRevealFrame > 0 ? panelRevealFrame : summaryRevealFrames[1] ?? 18;
+  const heroMax = midHeroMaxChars || (isXhs ? 14 : 16);
+  const hero = (featureLabel || summaryLines[0] || '核心亮点').slice(0, heroMax);
+  const layoutKind = (midInfoLayout || '').toLowerCase();
+  const panelMax = isXhs ? 2 : layoutKind === 'steps' || layoutKind === 'framed' ? 4 : 3;
+  const panelLines = featureLabel
+    ? summaryLines.slice(0, panelMax)
+    : summaryLines.length > 1
+      ? summaryLines.slice(1, panelMax + 1)
+      : summaryLines.slice(0, panelMax);
+  const usePanelLayout = ['keywords', 'steps', 'compare', 'framed'].includes(
+    (midInfoLayout || '').toLowerCase(),
+  );
+  const stagger = Math.max(14, staggerFrames ?? 18);
+  const panelFrame =
+    panelRevealFrame > 0
+      ? panelRevealFrame
+      : summaryRevealFrames[0] ?? 18;
+  const heroFrame = Math.max(0, panelFrame - 12);
+  const subtitleRevealFrames: number[] =
+    summaryRevealFrames.length >= panelLines.length
+      ? summaryRevealFrames.map((f, i, arr) =>
+          i === 0 ? f : Math.max(f, (arr[i - 1] ?? 0) + stagger),
+        )
+      : panelLines.map((_, i) => panelFrame + i * stagger);
   const viz = (vizType || 'none').toLowerCase();
   const series = (chartSeries.length ? chartSeries : chartBars).filter((n) => Number(n) > 0);
   const showLine = showChart && viz === 'line' && series.length >= 3;
@@ -78,12 +115,21 @@ export const ContentRichStage: React.FC<Props> = ({
   const showStat = viz === 'stat' && Boolean(statValue);
   const icon = (midIcon || '').trim() || (showLine ? '📈' : showStat ? '⭐' : '');
 
-  const effects = ['glow_ring', 'typewriter', 'particle_dust', 'bracket_slam', 'glow_scan'];
+  const effects = [
+    'glow_ring',
+    'typewriter',
+    'particle_dust',
+    'bracket_slam',
+    'glow_scan',
+    'liquid_shake',
+  ];
   const effect =
     midEffect && midEffect !== 'auto'
       ? midEffect
       : effects[sceneIndex % effects.length];
   const useTypewriter = effect === 'typewriter';
+  const useLiquidShake =
+    effect === 'liquid_shake' || effect === 'shake_emphasis' || effect === 'glow_scan';
 
   const enter = spring({
     frame: Math.max(0, frame - heroFrame),
@@ -92,15 +138,17 @@ export const ContentRichStage: React.FC<Props> = ({
       ? {damping: 22, stiffness: 90}
       : {damping: 16, stiffness: 140},
   });
-  const chips = showKineticWall ? kineticPhrases.slice(0, 4) : [];
-  const heroBase = isXhs ? 58 : 72;
+  const chips = showKineticWall ? kineticPhrases.slice(0, isXhs ? 3 : 4) : [];
+  const heroBase = isXhs ? 50 : 88;
+  const hasBelowHero =
+    panelLines.length > 0 || usePanelLayout || chips.length > 0;
   const heroSize = Math.min(
     heroBase * midHeroFontScale,
     Math.floor(width / Math.max(isXhs ? 6 : 5, hero.length * (isXhs ? 0.46 : 0.52))),
   );
 
-  const safeTop = Math.round(height * 0.14);
-  const safeBottom = Math.round(height * 0.36);
+  const safeTop = Math.round(height * zones.midSafeTopRatio);
+  const safeBottom = Math.round(height * zones.midSafeBottomRatio);
 
   return (
     <>
@@ -143,15 +191,28 @@ export const ContentRichStage: React.FC<Props> = ({
           justifyContent: 'center',
           alignItems: 'center',
           zIndex: 20,
-          gap: 18,
+          maxHeight: height - safeTop - safeBottom,
+          overflow: 'hidden',
         }}
       >
+        {/* 主标题区：始终水平居中，不与子标题列共左缘 */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+            gap: isXhs ? 18 : 14,
+            flexShrink: 0,
+          }}
+        >
         {icon ? (
           <div
             style={{
               fontSize: 52,
               lineHeight: 1,
               opacity: enter,
+              alignSelf: 'center',
               transform: `scale(${interpolate(enter, [0, 1], [1.25, 1])})`,
             }}
           >
@@ -167,6 +228,15 @@ export const ContentRichStage: React.FC<Props> = ({
             accentColor={accentColor2}
             startFrame={heroFrame}
           />
+        ) : useLiquidShake ? (
+          <LiquidShakeText
+            text={hero}
+            fontSize={heroSize}
+            color={theme.fg}
+            accentColor={accentColor2}
+            startFrame={heroFrame}
+            settleFrames={28}
+          />
         ) : (
           <div
             style={{
@@ -175,43 +245,76 @@ export const ContentRichStage: React.FC<Props> = ({
               fontWeight: 900,
               color: theme.fg,
               textAlign: 'center',
-              lineHeight: 1.15,
-              maxWidth: width * 0.88,
+              lineHeight: isXhs ? 1.28 : 1.12,
+              letterSpacing: isXhs ? 2 : 0,
+              maxWidth: width * 0.84,
               opacity: enter,
               transform: `translateY(${(1 - enter) * 20}px) scale(${interpolate(enter, [0, 1], [1.08, 1])})`,
               textShadow: `0 4px 28px rgba(0,0,0,0.55), 0 0 40px ${accentColor}33`,
               wordBreak: 'keep-all',
+              alignSelf: 'center',
             }}
           >
             {hero}
           </div>
         )}
+        </div>
 
-        {subLines.map((line, i) => {
-          const lineFrame = summaryRevealFrames[i + 1] ?? heroFrame + 12 + i * 10;
-          const s = spring({
-            frame: Math.max(0, frame - lineFrame),
-            fps,
-            config: {damping: 18, stiffness: 120},
-          });
-          return (
-            <div
-              key={`${i}-${line}`}
-              style={{
-                fontFamily: BODY_FONT,
-                fontSize: 30,
-                fontWeight: 600,
-                color: theme.fg,
-                opacity: s * 0.9,
-                textAlign: 'center',
-                maxWidth: width * 0.85,
-                wordBreak: 'keep-all',
-              }}
-            >
-              {line}
-            </div>
-          );
-        })}
+        {hasBelowHero && (usePanelLayout || panelLines.length > 0) ? (
+          <div
+            style={{
+              width: Math.min(width * 0.72, 520),
+              height: 2,
+              marginTop: isXhs ? 16 : 20,
+              marginBottom: isXhs ? 4 : 8,
+              alignSelf: 'center',
+              background: `linear-gradient(90deg, transparent, ${accentColor}88, transparent)`,
+              opacity: enter * 0.85,
+              flexShrink: 0,
+            }}
+          />
+        ) : null}
+
+        {!usePanelLayout && panelLines.length > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              alignSelf: 'center',
+              gap: 20,
+              marginTop: isXhs ? 20 : 28,
+            }}
+          >
+            {panelLines.map((line, i) => {
+              const lineFrame = subtitleRevealFrames[i] ?? panelFrame + i * stagger;
+              const s = spring({
+                frame: Math.max(0, frame - lineFrame),
+                fps,
+                config: {damping: 18, stiffness: 120},
+              });
+              return (
+                <div
+                  key={`${i}-${line}`}
+                  style={{
+                    fontFamily: BODY_FONT,
+                    fontSize: isXhs ? 28 : 34,
+                    fontWeight: 600,
+                    color: theme.fg,
+                    opacity: s * 0.9,
+                    textAlign: 'left',
+                    lineHeight: isXhs ? 1.35 : 1.22,
+                    letterSpacing: 0,
+                    maxWidth: width * 0.82,
+                    wordBreak: 'keep-all',
+                  }}
+                >
+                  {line}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
 
         {showStat ? (
           <div
@@ -254,25 +357,37 @@ export const ContentRichStage: React.FC<Props> = ({
           </div>
         ) : null}
 
-        {!showLine && !showBar && !showStat ? (
-          <MidInfoPanels
-            layout={midInfoLayout}
-            summaryLines={summaryLines}
-            kineticPhrases={kineticPhrases}
-            accentColor={accentColor}
-            accentColor2={accentColor2}
-            panelRevealFrame={panelFrame}
-            stepRevealFrames={summaryRevealFrames.slice(1)}
-          />
+        {!showLine && !showBar && !showStat && usePanelLayout ? (
+          <div
+            style={{
+              alignSelf: 'center',
+              marginTop: isXhs ? 20 : 28,
+              width: 'fit-content',
+              maxWidth: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <MidInfoPanels
+              layout={midInfoLayout}
+              summaryLines={panelLines}
+              kineticPhrases={kineticPhrases}
+              accentColor={accentColor}
+              accentColor2={accentColor2}
+              panelRevealFrame={panelFrame}
+              stepRevealFrames={subtitleRevealFrames}
+            />
+          </div>
         ) : null}
 
         {chips.length > 0 && !showLine && !showBar && midInfoLayout === 'none' ? (
           <div
             style={{
               display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: 8,
+              flexDirection: 'column',
+              alignItems: 'center',
+              alignSelf: 'center',
+              gap: 16,
               maxWidth: width * 0.9,
             }}
           >

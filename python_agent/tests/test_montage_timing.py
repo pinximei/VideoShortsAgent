@@ -6,7 +6,12 @@ from python_agent.montage_timing import (
 
 
 def test_slide_duration_includes_pad():
-    assert slide_duration_frames(2.0, 30) == int(2.3 * 30)
+    assert slide_duration_frames(2.0, fps=30) == int(2.65 * 30)
+
+
+def test_slide_duration_with_content_slide():
+    slide = {"type": "content_card"}
+    assert slide_duration_frames(3.0, slide, fps=30) >= int(5.0 * 30)
 
 
 def test_montage_subtracts_transitions():

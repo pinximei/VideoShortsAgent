@@ -20,8 +20,25 @@ _HOOK_PATTERNS = (
 )
 
 
-def scroll_stopping_hook(*, title: str, hook: str, feed_kind: str = "news") -> str:
+def scroll_stopping_hook(
+    *,
+    title: str,
+    hook: str,
+    feed_kind: str = "news",
+    repo_name: str = "",
+    stars: str = "",
+) -> str:
     """生成 ≤28 字、适合前 3 秒口播/屏显的钩子。"""
+    fk = (feed_kind or "").strip().lower()
+    if fk in ("github_daily", "github", "github_trending"):
+        from python_agent.douyin_shot_stylist import github_daily_opening_hook
+
+        return github_daily_opening_hook(
+            repo_name=repo_name or title,
+            title=title,
+            hook=hook,
+            stars=stars,
+        )
     h = re.sub(r"\s+", " ", (hook or "").strip())
     t = re.sub(r"\s+", " ", (title or "").strip())
     if h and len(h) <= 28 and any(p.search(h) for p in _HOOK_PATTERNS):
@@ -275,24 +292,43 @@ def enforce_opening_hook_on_slides_script(
         title=title,
         hook=str(brief.get("hook") or s0.get("hook_text") or ""),
         feed_kind=fk,
+        repo_name=str(brief.get("repo_name") or s0.get("repo_name") or title),
+        stars=str(brief.get("stars") or brief.get("star_count") or ""),
     )
     screen = _screen_hook_text(hook, max_len=18)
     s0["hook_text"] = screen
     beats = s0.get("hook_beats")
     if isinstance(beats, list) and len(beats) >= 2:
-        s0["hook_beats"] = [str(x)[:18] for x in beats if str(x).strip()][:4]
+        s0["hook_beats"] = [str(x)[:18] for x in beats if str(x).strip()][:2]
     else:
         parts = re.split(r"(?<=[。！？?!，,])", hook)
         s0["hook_beats"] = [
             _screen_hook_text(p.strip("，,。！？?! "), max_len=16)
             for p in parts
             if 4 <= len(p.strip()) <= 18
-        ][:4]
+        ][:2]
         if not s0["hook_beats"]:
             s0["hook_beats"] = [screen, hook[:14] if len(hook) > 14 else hook]
     s0["opening_burst"] = True
     plat = (platform or str(brief.get("platform") or "")).strip().lower()
-    s0.setdefault("opening_duration_frames", 100 if plat == "douyin" else 120)
+    s0.setdefault("opening_duration_frames", 84 if plat == "douyin" else 90)
+
+    beats = s0.get("hook_beats") or []
+    if isinstance(beats, list):
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for raw in beats:
+            b = str(raw).strip()[:18]
+            if len(b) < 3:
+                continue
+            key = b[:6]
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(b)
+            if len(deduped) >= 2:
+                break
+        s0["hook_beats"] = deduped or [screen]
 
     tts = str(s0.get("tts_text") or "").strip()
     hook_sent = hook.rstrip("。！？?!") + "！"
@@ -316,15 +352,32 @@ def enforce_opening_hook_on_slides_script(
                 cleaned = re.sub(r"^[^。！？?]+[。！？?]\s*", "", cleaned).strip() or cleaned
         s0["tts_text"] = f"{hook_sent}{cleaned}" if cleaned else hook_sent
 
+    repo = str(brief.get("repo_name") or s0.get("repo_name") or title).strip()[:20]
+    if fk in ("github_daily", "github", "github_trending") and repo:
+        core = hook.rstrip("。！？?!")
+        if repo not in core:
+            core = f"每日一个GitHub项目，{repo}，{core}"
+        s0["tts_text"] = (core + "？") if not core.endswith(("？", "?", "！")) else core + "！"
+        s0["heading"] = repo[:14]
+        s0["repo_name"] = repo
+    else:
+        s0["tts_text"] = hook_sent
+    s0.pop("suppress_opening_caption", None)
+
     if plat == "douyin":
         mp = dict(s0.get("motion_params") or {})
         mp["staggerFrames"] = 2
-        mp["springStiffness"] = 220
-        mp["springDamping"] = 9
-        mp["wordsPerPageMs"] = 2400
-        mp["maxCharsPerPage"] = 18
+        mp["springStiffness"] = 120
+        mp["springDamping"] = 18
+        mp["wordsPerPageMs"] = 2800
+        mp["maxCharsPerPage"] = 20
+        mp["captionLetterSpacing"] = 0
         s0["motion_params"] = mp
         s0["caption_mode"] = s0.get("caption_mode") or "tiktok"
+        s0.pop("tts_rate", None)
+        s0.pop("tts_pitch", None)
+        s0.pop("sentence_pause_sec", None)
+        s0.setdefault("transition_to_next", "dissolve")
 
     slides[0] = s0
     out = dict(script)

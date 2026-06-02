@@ -1,5 +1,6 @@
 import React from 'react';
 import {useCurrentFrame, useVideoConfig, interpolate, spring} from 'remotion';
+import {LaserCornerFrame} from './LaserCornerFrame';
 
 export type CssDecorationId =
   | 'grid-tunnel-bg'
@@ -21,7 +22,10 @@ export type CssDecorationId =
   | 'marquee-top'
   | 'odometer-stars'
   | 'soft-purple-gradient'
-  | 'pulse-button';
+  | 'pulse-button'
+  | 'corner-brackets'
+  | 'scan-lines'
+  | 'sparkle-dots';
 
 interface Props {
   decorations?: string[];
@@ -37,14 +41,15 @@ export const GithubDailyDecorations: React.FC<Props> = ({
   decorations = [],
   slideRole = 'title',
   starCount = 12800,
-  repoUrl = 'github.com/owner/repo',
+  repoUrl = '',
 }) => {
+  const showRepo = Boolean(repoUrl && !repoUrl.includes('owner/repo'));
   const frame = useCurrentFrame();
   const {width, height, fps} = useVideoConfig();
   const has = (id: CssDecorationId) => decorations.includes(id);
   const layers: React.ReactNode[] = [];
 
-  if (has('grid-tunnel-bg')) {
+  if (has('grid-tunnel-bg') && !has('corner-brackets')) {
     const shift = interpolate(frame, [0, 120], [0, 64]);
     layers.push(
       <div
@@ -53,12 +58,12 @@ export const GithubDailyDecorations: React.FC<Props> = ({
           position: 'absolute',
           inset: 0,
           backgroundImage: `
-            linear-gradient(rgba(147,112,219,0.35) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(88,166,255,0.25) 1px, transparent 1px)
+            linear-gradient(rgba(147,112,219,0.22) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(88,166,255,0.16) 1px, transparent 1px)
           `,
           backgroundSize: '48px 48px',
           backgroundPosition: `${shift}px ${shift * 0.6}px`,
-          opacity: 0.85,
+          opacity: 0.42,
           transform: 'perspective(800px) rotateX(12deg) scale(1.2)',
           transformOrigin: '50% 30%',
         }}
@@ -140,7 +145,7 @@ export const GithubDailyDecorations: React.FC<Props> = ({
     );
   }
 
-  if (has('repo-header')) {
+  if (has('repo-header') && showRepo) {
     layers.push(
       <div
         key="repo-header"
@@ -206,18 +211,75 @@ export const GithubDailyDecorations: React.FC<Props> = ({
     );
   }
 
+  if (has('glass-card') && !has('corner-brackets')) {
+    const barW = Math.min(820, width * 0.86);
+    const barLeft = (width - barW) / 2;
+    const bars = [
+      {top: '14%', h: 6},
+      {top: '86%', h: 6},
+    ];
+    for (const b of bars) {
+      const s = spring({frame, fps, config: {damping: 16, stiffness: 120}});
+      layers.push(
+        <div
+          key={`glass-bar-${b.top}`}
+          style={{
+            position: 'absolute',
+            left: barLeft,
+            top: b.top,
+            width: barW * s,
+            height: b.h,
+            marginLeft: (barW * (1 - s)) / 2,
+            borderRadius: 4,
+            background:
+              'linear-gradient(90deg, transparent, rgba(255,180,90,0.85), rgba(255,217,61,0.9), rgba(255,180,90,0.85), transparent)',
+            boxShadow: '0 0 18px rgba(255,159,67,0.45)',
+            zIndex: 4,
+            pointerEvents: 'none',
+          }}
+        />,
+      );
+    }
+    const sideH = height * 0.42;
+    const sideTop = height * 0.22;
+    for (const side of ['left', 'right'] as const) {
+      const s = spring({frame: frame - 6, fps, config: {damping: 14, stiffness: 140}});
+      layers.push(
+        <div
+          key={`glass-side-${side}`}
+          style={{
+            position: 'absolute',
+            top: sideTop,
+            [side]: 40,
+            width: 4,
+            height: sideH * Math.max(0, s),
+            borderRadius: 3,
+            background: 'linear-gradient(180deg, rgba(255,217,61,0.1), rgba(255,159,67,0.9), rgba(255,217,61,0.1))',
+            opacity: 0.85,
+            zIndex: 4,
+          }}
+        />,
+      );
+    }
+  }
+
   if (has('stat-pill-row') && slideRole !== 'title') {
-    const pills = ['⭐ 1.7万 Star', 'MIT', 'TypeScript'];
+    const pills = ['⭐ Star', 'MIT', 'TypeScript'];
     layers.push(
       <div
         key="pills-stat"
         style={{
           position: 'absolute',
-          bottom: 200,
-          left: 48,
+          left: 0,
+          right: 0,
+          bottom: 240,
           display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'center',
           gap: 12,
           flexWrap: 'wrap',
+          pointerEvents: 'none',
+          zIndex: 5,
         }}
       >
         {pills.map((label, i) => {
@@ -323,24 +385,42 @@ export const GithubDailyDecorations: React.FC<Props> = ({
     );
   }
 
-  if (has('odometer-stars')) {
+  if (has('odometer-stars') && starCount > 0) {
     const display = Math.floor(
-      interpolate(frame, [0, 45], [starCount * 0.7, starCount], {extrapolateRight: 'clamp'}),
+      interpolate(frame, [0, 50], [starCount * 0.65, starCount], {extrapolateRight: 'clamp'}),
     );
+    const wan = display / 10000;
+    const label =
+      display >= 10000
+        ? `${wan.toFixed(1).replace(/\.0$/, '')}万`
+        : display >= 1000
+          ? `${(display / 1000).toFixed(1).replace(/\.0$/, '')}k`
+          : String(display);
     layers.push(
       <div
         key="odometer"
         style={{
           position: 'absolute',
-          top: 200,
-          left: 48,
-          fontSize: 48,
+          top: slideRole === 'content' ? 168 : 200,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '10px 22px',
+          borderRadius: 10,
+          border: '1.5px solid #ffd70088',
+          background: 'rgba(0,0,0,0.55)',
+          fontSize: 46,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1.1,
           fontWeight: 900,
           color: '#ffd700',
           fontFamily: 'Consolas, monospace',
+          textShadow: '0 0 18px rgba(255,215,0,0.65)',
+          zIndex: 12,
         }}
       >
-        ⭐ {(display / 1000).toFixed(1)}k
+        ⭐ {label} Star
       </div>,
     );
   }
@@ -371,24 +451,98 @@ export const GithubDailyDecorations: React.FC<Props> = ({
     );
   }
 
-  if (has('github-badge') && slideRole === 'title') {
+  if (has('corner-brackets')) {
+    layers.push(<LaserCornerFrame key="laser-corner-frame" />);
+  }
+
+  if (has('scan-lines')) {
+    const y1 = interpolate(frame % 120, [0, 120], [height * 0.15, height * 0.75]);
+    const y2 = interpolate((frame + 60) % 120, [0, 120], [height * 0.2, height * 0.8]);
+    for (const [key, y] of [
+      ['scan-a', y1],
+      ['scan-b', y2],
+    ] as const) {
+      layers.push(
+        <div
+          key={key}
+          style={{
+            position: 'absolute',
+            left: 32,
+            right: 32,
+            top: y,
+            height: 2,
+            background:
+              'linear-gradient(90deg, transparent, rgba(88,166,255,0.55), rgba(255,159,67,0.7), transparent)',
+            opacity: 0.55,
+            pointerEvents: 'none',
+          }}
+        />,
+      );
+    }
+  }
+
+  if (has('sparkle-dots')) {
+    const dots = [
+      {x: 0.12, y: 0.22, s: 8},
+      {x: 0.88, y: 0.28, s: 6},
+      {x: 0.18, y: 0.62, s: 5},
+      {x: 0.82, y: 0.58, s: 7},
+      {x: 0.5, y: 0.18, s: 4},
+      {x: 0.72, y: 0.78, s: 5},
+    ];
+    dots.forEach((d, i) => {
+      const pulse = 0.4 + 0.6 * Math.sin(frame / 12 + i);
+      layers.push(
+        <div
+          key={`spark-${i}`}
+          style={{
+            position: 'absolute',
+            left: width * d.x,
+            top: height * d.y,
+            width: d.s,
+            height: d.s,
+            borderRadius: '50%',
+            background: `rgba(255,217,61,${0.35 + pulse * 0.45})`,
+            boxShadow: `0 0 ${12 + pulse * 8}px rgba(255,159,67,0.6)`,
+          }}
+        />,
+      );
+    });
+  }
+
+  if (has('github-badge')) {
+    const repoLabel = showRepo
+      ? repoUrl.replace('https://', '').replace('http://', '').slice(0, 36)
+      : 'GITHUB · 每日一项目';
     layers.push(
       <div
         key="gh-badge"
         style={{
           position: 'absolute',
-          top: 100,
-          padding: '10px 20px',
+          top: slideRole === 'content' ? 88 : 100,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '10px 18px',
           borderRadius: 8,
           border: '1px solid #58a6ff88',
           color: '#58a6ff',
-          fontSize: 22,
+          fontSize: slideRole === 'content' ? 20 : 24,
           fontWeight: 700,
-          letterSpacing: 2,
+          letterSpacing: 0.5,
+          lineHeight: 1.2,
           fontFamily: 'Consolas, monospace',
+          maxWidth: width * 0.82,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          boxSizing: 'border-box',
         }}
       >
-        GITHUB · 今日开源
+        {repoLabel}
       </div>,
     );
   }

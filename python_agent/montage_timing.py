@@ -1,12 +1,23 @@
 """Remotion SlidesMontage 与 TTS 时长对齐（与 SlidesMontage.tsx TRANSITION_FRAMES 一致）。"""
 from __future__ import annotations
 
-MONTAGE_TRANSITION_FRAMES = 14
-FREEZE_PAD_SEC = 0.3
+from python_agent.pace_config import (
+    MONTAGE_TRANSITION_FRAMES,
+    slide_duration_frames as pace_slide_frames,
+    visual_duration_seconds,
+)
+
+FREEZE_PAD_SEC = 0.65
 
 
-def slide_duration_frames(tts_duration_sec: float, fps: int = 30) -> int:
-    """单镜帧数（含末帧冻结延长）。"""
+def slide_duration_frames(
+    tts_duration_sec: float,
+    slide: dict | None = None,
+    *,
+    fps: int = 30,
+) -> int:
+    if slide:
+        return pace_slide_frames(tts_duration_sec, slide, fps=fps)
     return max(1, int((float(tts_duration_sec) + FREEZE_PAD_SEC) * fps))
 
 

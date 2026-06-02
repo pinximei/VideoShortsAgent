@@ -436,6 +436,10 @@ def pick_github_daily_style(brief: dict[str, Any]) -> dict[str, Any]:
     )
     platform = str(brief.get("platform") or "").strip().lower()
     pool = list(styles)
+    if platform == "xhs":
+        preferred = [s for s in pool if str(s.get("id") or "") in _XHS_G_IDS]
+        kinetic = [s for s in pool if "kinetic" in str(s.get("id") or "").lower()]
+        pool = kinetic or preferred or pool
     idx = _seed_int(f"github_daily:{seed}:{platform or 'all'}") % len(pool)
     style = dict(pool[idx])
     return {

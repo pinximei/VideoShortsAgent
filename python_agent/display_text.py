@@ -6,8 +6,8 @@ from typing import Any
 
 # 底栏单行：抖音略短但仍要完整语义单位（≥6 字优先）
 CAPTION_LINE_MAX_CHARS = 22
-CAPTION_LINE_MAX_CHARS_DOUYIN = 18
-TIKTOK_PHRASE_MAX_CHARS = 18
+CAPTION_LINE_MAX_CHARS_DOUYIN = 24
+TIKTOK_PHRASE_MAX_CHARS = 24
 TIKTOK_PHRASE_MIN_CHARS = 6
 HEADING_MAX_CHARS = 28
 HEADING_MAX_CHARS_LEGACY = 14
@@ -17,6 +17,8 @@ HOOK_MAX_CHARS = 22
 
 _CLAUSE_END = re.compile(r"[。！？；\n]")
 _SOFT_BREAK = re.compile(r"[，,、]")
+_BAD_SUFFIX = re.compile(r"(在|的|和|与|为|将|把|向|从|到|用|是|了|过|着|得|本|改|文)$")
+_BAD_PREFIX = re.compile(r"^(成|行|件|名|完|的|了|吗|什|么|工|具)")
 # 不可从中间切断：英文词、GitHub、数字+% 等
 _PROTECTED_SPAN = re.compile(
     r"(?:GitHub|Open\s*Source|API|AI|LLM|Star|Stars|"
@@ -38,6 +40,9 @@ def _merge_orphan_fragments(phrases: list[str], *, min_len: int = 4) -> list[str
     for p in phrases:
         p = _plain(p)
         if not p:
+            continue
+        if out and (_BAD_SUFFIX.search(out[-1]) or _BAD_PREFIX.match(p)):
+            out[-1] = _plain(out[-1] + p)
             continue
         if out and len(p) < min_len:
             out[-1] = _plain(out[-1] + p)

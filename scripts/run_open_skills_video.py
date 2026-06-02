@@ -35,7 +35,7 @@ def main() -> int:
             "voice_content_style_id": "V01_burst_hook_fast",
         },
         "xhs": {
-            "github_daily_style_id": "G02_chart_card_stat",
+            "github_daily_style_id": "G11_kinetic_word_slam",
             "voice_content_style_id": "V04_minimal_calm",
         },
     }

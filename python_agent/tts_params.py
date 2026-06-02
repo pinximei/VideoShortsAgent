@@ -20,9 +20,9 @@ GITHUB_DAILY_TTS_BASELINE: dict[str, Any] = {
 PLATFORM_TTS_DEFAULTS: dict[str, dict[str, Any]] = {
     "douyin": {
         "tts_voice": "zh-CN-YunyangNeural",
-        "tts_rate": "+22%",
+        "tts_rate": "+32%",
         "tts_pitch": "+10Hz",
-        "sentence_pause_sec": 0.08,
+        "sentence_pause_sec": 0.05,
     },
     "xhs": {
         "tts_voice": "zh-CN-XiaoxiaoNeural",
@@ -120,11 +120,10 @@ def prepare_brief_tts(
         tts["sentence_pause_sec"] = float(plat.get("sentence_pause_sec", tts.get("sentence_pause_sec", 0.18)))
     elif platform_id == "douyin":
         tts["tts_voice"] = plat["tts_voice"]
+        # 平台语速优先：抖音口播要利落，V 模板偏慢时不拖后腿
         tts["tts_rate"] = plat["tts_rate"]
-        tts["sentence_pause_sec"] = min(
-            float(tts.get("sentence_pause_sec") or 0.16),
-            float(plat.get("sentence_pause_sec", 0.12)),
-        )
+        tts["tts_pitch"] = plat.get("tts_pitch", tts.get("tts_pitch"))
+        tts["sentence_pause_sec"] = float(plat.get("sentence_pause_sec", 0.09))
     out["tts_voice"] = tts["tts_voice"]
     out["tts_rate"] = tts["tts_rate"]
     out["tts_pitch"] = tts["tts_pitch"]

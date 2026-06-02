@@ -16,6 +16,8 @@ interface Props {
   layout?: 'center' | 'top-heavy';
   cssDecorations?: string[];
   colorMood?: string;
+  /** 片头 HookBurst 结束后再入场 */
+  startFrame?: number;
 }
 
 function splitWords(s: string): string[] {
@@ -35,14 +37,17 @@ export const AnimatedHeading: React.FC<Props> = ({
   layout = 'center',
   cssDecorations = [],
   colorMood = '',
+  startFrame = 0,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = Math.max(0, useCurrentFrame() - startFrame);
   const {fps, width, height} = useVideoConfig();
   const p = String(profile);
   const theme = resolveMotionTheme(p, colorMood);
   const stagger = params.staggerFrames ?? (p.includes('tight') ? 3 : 6);
   const damp = params.springDamping ?? 14;
   const stiff = params.springStiffness ?? 120;
+  const hasSub = Boolean((subtext || '').trim());
+  const effectiveLayout = hasSub ? 'top-heavy' : layout;
 
   const wrapper: React.CSSProperties = {
     position: 'absolute',
@@ -53,8 +58,8 @@ export const AnimatedHeading: React.FC<Props> = ({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: layout === 'top-heavy' ? 'flex-start' : 'center',
-    paddingTop: layout === 'top-heavy' ? 200 : 0,
+    justifyContent: effectiveLayout === 'top-heavy' ? 'flex-start' : 'center',
+    paddingTop: effectiveLayout === 'top-heavy' ? (hasSub ? 168 : 200) : 0,
     paddingLeft: 56,
     paddingRight: 56,
     textAlign: 'center',
@@ -104,7 +109,7 @@ export const AnimatedHeading: React.FC<Props> = ({
           {accentOrangeLastWord(text, cssDecorations)}
         </div>
         {subtext && (
-          <div style={{marginTop: 32, fontSize: 28, color: theme.accent, opacity: fade * 0.9}}>
+          <div style={{marginTop: 40, fontSize: 32, color: theme.accent, opacity: fade * 0.9}}>
             {subtext}
           </div>
         )}
@@ -270,7 +275,7 @@ export const AnimatedHeading: React.FC<Props> = ({
           {text}
         </div>
         {subtext && (
-          <div style={{marginTop: 24, fontSize: 30, color: theme.accent, opacity: frame > glitchFrames ? 1 : 0}}>
+          <div style={{marginTop: 36, fontSize: 32, color: theme.accent, opacity: frame > glitchFrames ? 1 : 0}}>
             {subtext}
           </div>
         )}
@@ -367,9 +372,10 @@ export const AnimatedHeading: React.FC<Props> = ({
       {subtext && (
         <div
           style={{
-            marginTop: 36,
-            fontSize: 32,
+            marginTop: 44,
+            fontSize: 34,
             color: theme.accent,
+            lineHeight: 1.25,
             opacity: spring({
               frame: Math.max(0, frame - units.length * unitStagger - 8),
               fps,

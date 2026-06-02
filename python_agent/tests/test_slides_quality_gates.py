@@ -1,7 +1,11 @@
 """slides_quality_gates 单元测试。"""
 from __future__ import annotations
 
-from python_agent.slides_quality_gates import auto_fix_slides, validate_slides_before_render
+from python_agent.slides_quality_gates import (
+    auto_fix_slides,
+    summarize_quality_gate,
+    validate_slides_before_render,
+)
 
 
 def test_auto_fix_empty_summary():
@@ -37,3 +41,16 @@ def test_validate_gate_ok():
     ]
     gate = validate_slides_before_render(slides, platform="douyin")
     assert gate["ok"] is True
+
+
+def test_title_card_hook_cap():
+    slides = [{"type": "title_card", "hook_beats": ["a", "b", "c", "d"], "opening_duration_frames": 200}]
+    fixed = auto_fix_slides(slides, platform="douyin")
+    assert len(fixed[0]["hook_beats"]) <= 2
+    assert fixed[0]["opening_duration_frames"] <= 84
+
+
+def test_summarize_quality_gate():
+    text = summarize_quality_gate({"ok": False, "errors": ["e1"], "warnings": ["w1"], "platform": "douyin", "slide_count": 3})
+    assert "未通过" in text
+    assert "e1" in text
