@@ -22,10 +22,12 @@ def _run(cmd: list[str], *, timeout: int = 3600) -> int:
         timeout=timeout,
     )
     def _safe_print(text: str) -> None:
+        enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+        safe = text.encode(enc, errors="replace").decode(enc, errors="replace")
         try:
-            print(text)
+            print(safe)
         except UnicodeEncodeError:
-            print(text.encode("utf-8", errors="replace").decode("utf-8", errors="replace"))
+            sys.stdout.buffer.write(safe.encode("utf-8", errors="replace") + b"\n")
 
     if r.stdout:
         _safe_print(r.stdout[-4000:])

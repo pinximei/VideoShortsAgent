@@ -203,7 +203,7 @@ def reconcile_platform_slides(
             if not s.get("shot_design_source"):
                 s["mid_info_layout"] = layouts_rot[ci % len(layouts_rot)]
             mp = dict(s.get("motion_params") or {})
-            mp["staggerFrames"] = max(18, int(pack.get("stagger_frames") or 18))
+            mp["staggerFrames"] = min(16, max(14, int(pack.get("stagger_frames") or 14)))
             s["motion_params"] = mp
             vd = dict(s.get("visual_design") or {})
             vd["broadcast_frame"] = False

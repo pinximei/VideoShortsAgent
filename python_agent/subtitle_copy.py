@@ -326,7 +326,11 @@ def normalize_slide_mid_copy(slide: dict[str, Any], brief: dict[str, Any] | None
     s["summary_lines"] = subs
 
     mp = dict(s.get("motion_params") or {})
-    mp["staggerFrames"] = max(18, int(mp.get("staggerFrames") or 18))
+    plat = str(s.get("platform") or s.get("caption_platform") or "").lower()
+    if plat == "douyin":
+        mp["staggerFrames"] = min(16, max(14, int(mp.get("staggerFrames") or 14)))
+    else:
+        mp["staggerFrames"] = max(18, int(mp.get("staggerFrames") or 18))
     if len(subs) >= 3:
         mp["midSafeBottomRatio"] = max(float(mp.get("midSafeBottomRatio") or 0.36), 0.42)
     else:

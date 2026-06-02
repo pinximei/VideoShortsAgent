@@ -41,7 +41,8 @@ def test_reconcile_uses_ten_layouts():
     assert len(content) >= 2
     profiles = {s.get("motion_profile") for s in content}
     assert len(profiles) >= 2
-    assert int((content[0].get("motion_params") or {}).get("staggerFrames") or 0) >= 18
+    sf = int((content[0].get("motion_params") or {}).get("staggerFrames") or 0)
+    assert 14 <= sf <= 16
 
 
 def test_layout_index_cycles():

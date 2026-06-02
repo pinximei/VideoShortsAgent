@@ -47,8 +47,9 @@ def apply_registry_layout_tiers(slides: list[dict[str, Any]]) -> list[dict[str, 
                 "steps" if ci == 0 else "framed" if ci == 1 else "keywords"
             )
             mp = dict(slide.get("motion_params") or {})
-            mp["staggerFrames"] = max(14, int(pack.get("stagger_frames") or 14))
+            mp["staggerFrames"] = min(16, max(14, int(pack.get("stagger_frames") or 14)))
             slide["motion_params"] = mp
+            slide.pop("opening_duration_frames", None)
             dec = [d for d in (slide.get("css_decorations") or []) if d != "corner-brackets"]
             slide["css_decorations"] = dec
             vd = dict(slide.get("visual_design") or {})
@@ -84,4 +85,10 @@ def finalize_douyin_slides(
     from python_agent.douyin_effect_policy import apply_douyin_effect_policy
 
     out = apply_douyin_effect_policy(out, platform="douyin")
+    for slide in out:
+        if str(slide.get("type")) in ("content_card",) or slide.get("scene_focus"):
+            mp = dict(slide.get("motion_params") or {})
+            mp["staggerFrames"] = min(16, max(14, int(mp.get("staggerFrames") or 14)))
+            slide["motion_params"] = mp
+            slide.pop("opening_duration_frames", None)
     return out

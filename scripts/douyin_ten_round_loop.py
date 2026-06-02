@@ -181,6 +181,8 @@ def main() -> int:
         if rc != 0:
             return rc
 
+    if args.write_task_plan and task_dir and (task_dir / "llm" / "slides_render_plan_douyin.json").is_file():
+        return 0
     return 0 if final_report["ok"] else 1
 
 

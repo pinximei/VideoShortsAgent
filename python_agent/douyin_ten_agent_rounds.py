@@ -314,9 +314,10 @@ def _fix_brand(slides: SlideList, issues: IssueList) -> tuple[SlideList, list[st
 
 
 def _fix_qa(slides: SlideList, issues: IssueList) -> tuple[SlideList, list[str]]:
-    out = auto_fix_slides(copy.deepcopy(slides), platform="douyin")
-    out = reconcile_platform_slides(out, "douyin")
-    return out, ["auto_fix_slides", "reconcile_platform_slides"]
+    from python_agent.douyin_plan_finalize import finalize_douyin_slides
+
+    out = finalize_douyin_slides(copy.deepcopy(slides), None, layout_tiers=True)
+    return out, ["douyin_plan_finalize"]
 
 
 AGENT_ROUNDS: tuple[dict[str, Any], ...] = (
