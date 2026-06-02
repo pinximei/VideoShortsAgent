@@ -161,6 +161,10 @@ def _apply_platform_gv_to_slides(
             _json.dumps(export_shot_plan(out_slides), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+        from python_agent.douyin_plan_finalize import finalize_douyin_slides
+
+        out_slides = finalize_douyin_slides(out_slides, b, layout_tiers=True)
+        print("[SlidesRender] douyin_plan_finalize: layout tiers + hook + auto_fix")
     for s in out_slides:
         s["css_decorations"] = list(
             s.get("css_decorations") or (s.get("visual_design") or {}).get("css_decorations") or []
@@ -505,23 +509,31 @@ def render_slides_video(
     shutil.copy2(out_slides, target)
 
     if platform_id == "douyin":
-        from python_agent.render_quality_score import score_douyin_render
+        from python_agent.post_render_artifacts import write_post_render_bundle
 
-        final_score = score_douyin_render(
-            slides,
-            brief=brief_dict,
+        summary_path = write_post_render_bundle(
+            task_dir,
+            platform="douyin",
+            slides=slides,
             gate=gate,
-            video_path=target,
+            brief=brief_dict,
         )
-        score_path = task_dir / "RENDER_QUALITY_SCORE.json"
-        score_path.write_text(
-            json.dumps(final_score, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        summary = json.loads(summary_path.read_text(encoding="utf-8-sig"))
+        sc = summary.get("score") or {}
         print(
-            f"[SlidesRender] quality score (final): {final_score.get('score')} "
-            f"grade={final_score.get('grade')}"
+            f"[SlidesRender] QA bundle: score={sc.get('score')} grade={sc.get('grade')} "
+            f"verify_ok={summary.get('verify', {}).get('ok')}"
         )
+        try:
+            from python_agent.caption_ocr_audit import audit_frames_ocr
+
+            ocr = audit_frames_ocr(task_dir, platform="douyin")
+            (task_dir / "CAPTION_OCR_AUDIT.json").write_text(
+                json.dumps(ocr, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
 
     return target
 

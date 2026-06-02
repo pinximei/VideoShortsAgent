@@ -126,6 +126,17 @@ def verify_post_render(task_dir: Path, *, report: dict | None = None) -> dict:
 
             qs = score_task(task_dir, platform="douyin")
             out["quality_score"] = qs
+            try:
+                from python_agent.caption_ocr_audit import audit_frames_ocr
+
+                ocr = audit_frames_ocr(task_dir, platform="douyin")
+                out["caption_ocr"] = ocr
+                for iss in ocr.get("issues") or []:
+                    issues.append(f"douyin:ocr:{iss}")
+                    out["ok"] = False
+                    out["issues"] = issues
+            except Exception:
+                pass
             if not qs.get("pass") and qs.get("score", 100) < 75:
                 issues.append(f"douyin:quality_score_low:{qs.get('score')}")
                 out["ok"] = False

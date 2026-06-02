@@ -57,8 +57,12 @@ def _hook_issues(slides: SlideList) -> IssueList:
     if str(s0.get("type")) != "title_card":
         issues.append("missing_title_card")
         return issues
+    from python_agent.pinned_template import DOUYIN_OPENING_BURST_FRAMES
+
     frames = int(s0.get("opening_duration_frames") or 0)
-    if frames < 150:
+    if frames > DOUYIN_OPENING_BURST_FRAMES:
+        issues.append(f"opening_too_long:{frames}>{DOUYIN_OPENING_BURST_FRAMES}")
+    if frames < 60:
         issues.append(f"opening_too_fast:{frames}f")
     tts = str(s0.get("tts_text") or "")
     if tts.count("。") + tts.count("！") > 1:
@@ -166,9 +170,17 @@ def _fix_hook(slides: SlideList, issues: IssueList) -> tuple[SlideList, list[str
     out = copy.deepcopy(slides)
     for s in out:
         if str(s.get("type")) == "title_card":
-            if int(s.get("opening_duration_frames") or 0) < 150:
-                s["opening_duration_frames"] = 165
-                applied.append("title_opening_duration=165")
+            from python_agent.douyin_shot_stylist import build_github_daily_hook_beats
+            from python_agent.pinned_template import DOUYIN_OPENING_BURST_FRAMES
+
+            s["opening_duration_frames"] = DOUYIN_OPENING_BURST_FRAMES
+            applied.append(f"title_opening_duration={DOUYIN_OPENING_BURST_FRAMES}")
+            if len(s.get("hook_beats") or []) < 2:
+                s["hook_beats"] = build_github_daily_hook_beats(
+                    repo_name=str(s.get("repo_name") or s.get("heading") or ""),
+                    stars=str(s.get("stars") or s.get("star_count") or ""),
+                )
+                applied.append("title_hook_beats_x2")
             if not s.get("hook_beats"):
                 hook = str(s.get("hook_text") or s.get("heading") or "别划走")[:18]
                 s["hook_beats"] = [hook]
@@ -212,10 +224,10 @@ def _fix_cards(slides: SlideList, issues: IssueList) -> tuple[SlideList, list[st
         brief_guess["repo_name"] = title.get("repo_name") or title.get("heading")
         brief_guess["stars"] = title.get("stars")
         brief_guess["star_count"] = title.get("star_count")
-    from python_agent.douyin_shot_stylist import apply_douyin_shot_styles
+    from python_agent.douyin_plan_finalize import finalize_douyin_slides
 
-    out = apply_douyin_shot_styles(out, brief_guess or None)
-    applied.append("douyin_shot_styles")
+    out = finalize_douyin_slides(out, brief_guess or None, layout_tiers=True)
+    applied.append("douyin_plan_finalize")
     return out, applied
 
 
