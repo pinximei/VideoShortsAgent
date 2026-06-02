@@ -447,10 +447,6 @@ def render_slides_video(
         from python_agent.layout_collision import fix_all_layout_collisions
 
         slides = fix_all_layout_collisions(slides)
-        slides = auto_fix_slides(slides, platform=platform_id, brief=brief_dict)
-        slides = apply_tts_subtitle_bind(
-            slides, tts_clips, platform=platform_id, brief=brief_dict
-        )
     gate = validate_slides_before_render(slides, platform=platform_id, brief=brief_dict)
     if platform_id == "douyin":
         from python_agent.pinned_regression import validate_pinned_douyin_plan
