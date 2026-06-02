@@ -32,6 +32,7 @@ jobs:
             python_agent/tests/test_hero_copy.py \
             python_agent/tests/test_render_quality_score.py \
             python_agent/tests/test_layout_collision.py \
+            python_agent/tests/test_douyin_offline_loop.py \
             -q --tb=short
       - name: Slides eval (mock compose, no API)
         run: |

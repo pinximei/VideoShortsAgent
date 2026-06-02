@@ -106,6 +106,19 @@ def verify_post_render(task_dir: Path, *, report: dict | None = None) -> dict:
         issues.append("caption_modes_identical")
 
     out: dict = {"ok": not issues, "issues": issues}
+    try:
+        from python_agent.caption_region_audit import audit_task_caption_region
+
+        cap = audit_task_caption_region(task_dir, platform="douyin")
+        out["caption_audit"] = cap
+        for r in cap.get("plan_risks") or []:
+            issues.append(f"douyin:caption_plan:{r}")
+        for r in (cap.get("frames") or {}).get("issues") or []:
+            issues.append(f"douyin:caption_frame:{r}")
+        out["ok"] = not issues
+        out["issues"] = issues
+    except Exception as exc:  # noqa: BLE001
+        out["caption_audit_error"] = str(exc)
     douyin_plan = _load_plan(task_dir, "douyin")
     if douyin_plan or (task_dir / "videos" / "douyin.mp4").is_file():
         try:

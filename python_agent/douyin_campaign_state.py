@@ -11,7 +11,7 @@ class CampaignState:
     stagger_frames: int = 14
     max_chars_per_page: int = 20
     caption_bottom_px: int = 340
-    opening_duration_frames: int = 165
+    opening_duration_frames: int = 84
     caption_letter_spacing: int = 0
 
     def to_dict(self) -> dict[str, Any]:

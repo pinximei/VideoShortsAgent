@@ -90,7 +90,12 @@ def score_douyin_render(
         score -= 8
         deductions.append({"points": 8, "reason": "content_profiles_not_diverse"})
 
-    bound = sum(1 for s in content if s.get("_tts_sentences_bound"))
+    bound = sum(
+        1
+        for s in content
+        if s.get("_tts_sentences_bound")
+        or (isinstance(s.get("summary_reveal_frames"), list) and len(s["summary_reveal_frames"]) >= 3)
+    )
     if content and bound < len(content):
         score -= 10
         deductions.append({"points": 10, "reason": "tts_subtitle_not_bound"})
@@ -122,6 +127,20 @@ def score_douyin_render(
                 score -= 5
                 deductions.append({"points": 5, "reason": "low_video_height"})
 
+    frame_audit: dict[str, Any] = {}
+    if video_path and video_path.parent.parent.name:
+        task_dir = video_path.parent.parent
+        if (task_dir / "QUALITY_FRAMES.json").is_file():
+            try:
+                from python_agent.caption_region_audit import audit_quality_frames
+
+                frame_audit = audit_quality_frames(task_dir, platform="douyin")
+                for iss in frame_audit.get("issues") or []:
+                    score -= 4
+                    deductions.append({"points": 4, "reason": iss})
+            except Exception:
+                pass
+
     score = max(0, min(100, score))
     return {
         "platform": "douyin",
@@ -135,6 +154,7 @@ def score_douyin_render(
             "tts_bound_slides": bound,
             "liquid_shake_slides": liquid_n,
             "video": video_meta,
+            "frame_audit": frame_audit,
         },
         "pass": score >= 75 and not reg.get("errors") and not g.get("errors"),
     }
