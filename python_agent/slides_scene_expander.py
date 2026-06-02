@@ -5,6 +5,25 @@ import copy
 import re
 from typing import Any
 
+NEWS_DOUYIN_CFG: dict[str, Any] = {
+    "bgs": ("#0f172a", "#1e293b", "#172033", "#1a2332", "#152238"),
+    "profiles": (
+        "tiktok_word_pop",
+        "bullet_stagger_up",
+        "shake_emphasis",
+        "kinetic_slam_tight",
+        "glass_card_stack",
+    ),
+    "css": (
+        ["sparkle-dots", "soft-purple-gradient", "caption-bottom-safe"],
+        ["glass-card", "sparkle-dots", "float-icon"],
+        ["text-stroke-yellow", "sparkle-dots", "pill-badge"],
+        ["soft-purple-gradient", "float-icon", "glass-card"],
+        ["sparkle-dots", "pulse-button", "caption-bottom-safe"],
+    ),
+    "transitions": ("dissolve", "dissolve", "fade", "dissolve", "fade", "dissolve"),
+}
+
 PLATFORM_CFG: dict[str, dict[str, Any]] = {
     "douyin": {
         "bgs": ("#120908", "#1a100c", "#221510", "#18100a", "#1f120c"),
@@ -109,9 +128,12 @@ def _expand_content_scenes(
 def expand_platform_scenes(
     slides: list[dict[str, Any]],
     platform: str,
+    *,
+    feed_kind: str = "",
 ) -> list[dict[str, Any]]:
     plat = (platform or "").strip().lower()
-    cfg = PLATFORM_CFG.get(plat)
+    fk = (feed_kind or "").strip().lower()
+    cfg = NEWS_DOUYIN_CFG if plat == "douyin" and fk == "news" else PLATFORM_CFG.get(plat)
     if not cfg or any(s.get("scene_focus") for s in slides):
         return slides
 

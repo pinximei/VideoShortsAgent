@@ -1,7 +1,7 @@
 {
   "name": "AI 资讯口播",
   "description": "抖音科技资讯：钩子标题 + 要点口播 + 关注引导，动效由 motion_templates 选型",
-  "default_style": "github_dark",
+  "default_style": "warm_gold",
   "default_voice": "zh-CN-YunxiNeural",
   "default_bgm": "upbeat_tech",
   "slide_structure": ["title_card", "content_card", "content_card", "cta_card"],

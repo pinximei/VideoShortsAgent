@@ -45,6 +45,7 @@ def main() -> int:
     cfg.render_mode = "slides"
     cfg.render_enabled = True
     cfg.render_scene = "ai_news"
+    cfg.render_visual_style = "warm_gold"
     cfg.render_verify_required = False
     if args.platform != "both":
         cfg.render_platforms = [args.platform]

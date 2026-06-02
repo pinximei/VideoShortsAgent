@@ -40,11 +40,15 @@ def auto_fix_slides(
     brief: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """自动修补可安全修复的问题（不调用 LLM）。"""
+    from python_agent.slide_type_normalize import normalize_slide_types
+
+    slides = normalize_slide_types(slides)
     out: list[dict[str, Any]] = []
     content_idx = 0
     for s in slides:
         slide = dict(s)
-        if _is_content_slide(slide):
+        fk = str((brief or {}).get("feed_kind") or "").lower()
+        if _is_content_slide(slide) and str(slide.get("type")) != "title_card":
             vt = str(slide.get("viz_type") or "none").lower()
             series = list(slide.get("chart_series") or slide.get("chart_bars") or [])
             nums = [x for x in series if isinstance(x, (int, float)) and x > 0]
@@ -61,9 +65,18 @@ def auto_fix_slides(
             slide = normalize_slide_mid_copy(slide)
             lines = [str(x).strip() for x in (slide.get("summary_lines") or []) if str(x).strip()]
             if not lines:
-                slide["summary_lines"] = ["核心能力", "一步上手", "值得收藏"]
+                slide["summary_lines"] = (
+                    ["刚刚发生", "划重点", "值得一看"]
+                    if fk == "news"
+                    else ["核心能力", "一步上手", "值得收藏"]
+                )
             elif len(lines) < 3:
-                for fb in ("省时省力", "值得收藏", "立刻见效", "一步上手"):
+                fallbacks = (
+                    ("刚刚更新", "值得一看", "划重点", "很多人不知道")
+                    if fk == "news"
+                    else ("省时省力", "值得收藏", "立刻见效", "一步上手")
+                )
+                for fb in fallbacks:
                     if len(lines) >= 4:
                         break
                     if fb not in lines:
@@ -72,7 +85,9 @@ def auto_fix_slides(
             slide.setdefault("mid_info_layout", "framed")
             kin = [str(x).strip() for x in (slide.get("kinetic_phrases") or []) if str(x).strip()]
             if not kin and str(slide.get("viz_type") or "none") == "none":
-                slide["kinetic_phrases"] = ["开源", "好用", "收藏"]
+                slide["kinetic_phrases"] = (
+                    ["热点", "速览", "收藏"] if fk == "news" else ["开源", "好用", "收藏"]
+                )
                 slide["show_kinetic_wall"] = True
 
             layout = str(slide.get("mid_info_layout") or "none").lower()
@@ -108,6 +123,12 @@ def auto_fix_slides(
             if not beats:
                 hook = str(slide.get("hook_text") or slide.get("heading") or "别划走")
                 beats = [hook[:18]]
+            if fk == "news":
+                from python_agent.douyin_news_style import _strip_star_beats
+                from python_agent.tts_copy_rules import sanitize_tts_text
+
+                beats = _strip_star_beats(beats) or beats
+                slide["tts_text"] = sanitize_tts_text(str(slide.get("tts_text") or ""))
             slide["hook_beats"] = beats[:_MAX_HOOK_BEATS]
             burst = int(slide.get("opening_duration_frames") or _MAX_OPENING_BURST_FRAMES)
             slide["opening_duration_frames"] = min(burst, _MAX_OPENING_BURST_FRAMES)

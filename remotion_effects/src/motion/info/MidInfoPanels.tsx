@@ -100,7 +100,7 @@ export const MidInfoPanels: React.FC<Props> = ({
   if (mode === 'steps') {
     const pad = ['说清需求', '直接生成', '迭代版本', '马上能用'];
     const merged = lines.length ? [...lines] : [];
-    for (p of pad) {
+    for (const p of pad) {
       if (merged.length >= 4) break;
       if (!merged.includes(p)) merged.push(p);
     }

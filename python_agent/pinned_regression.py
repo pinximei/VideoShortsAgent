@@ -24,9 +24,13 @@ def validate_pinned_douyin_plan(
         return {"ok": False, "errors": ["empty_slides"], "warnings": [], "template_id": PINNED_DOUYIN_TEMPLATE_ID}
 
     s0 = slides[0]
-    if str(s0.get("type")) != "title_card":
-        errors.append("first_slide_not_title")
-    else:
+    s0_type = str(s0.get("type") or "").strip()
+    if s0_type != "title_card":
+        if s0.get("hook_text") or s0.get("hook_beats") or s0.get("opening_burst"):
+            s0_type = "title_card"
+        else:
+            errors.append("first_slide_not_title")
+    if s0_type == "title_card":
         beats = [str(x).strip() for x in (s0.get("hook_beats") or []) if str(x).strip()]
         if len(beats) < 1:
             errors.append("title_missing_hook_beats")

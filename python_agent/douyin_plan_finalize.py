@@ -66,9 +66,15 @@ def finalize_douyin_slides(
     layout_tiers: bool = True,
 ) -> list[dict[str, Any]]:
     """Shot design 之后：排型 + 平台 reconcile + auto_fix + 片头钩子。"""
+    from python_agent.douyin_news_style import apply_douyin_news_style, is_news_brief
+
     out = [dict(s) for s in slides]
+    if is_news_brief(brief):
+        out = apply_douyin_news_style(out, brief)
     if layout_tiers:
         out = apply_registry_layout_tiers(out)
+    if is_news_brief(brief):
+        out = apply_douyin_news_style(out, brief)
 
     from python_agent.capabilities.opening_hook import enforce_opening_hook_on_slides_script
 

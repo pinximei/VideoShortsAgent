@@ -95,7 +95,9 @@ def _apply_platform_gv_to_slides(
 
     from python_agent.slides_scene_expander import expand_platform_scenes
 
-    out_slides = expand_platform_scenes(out_slides, platform_id)
+    out_slides = expand_platform_scenes(
+        out_slides, platform_id, feed_kind=str(b.get("feed_kind") or "")
+    )
     total_scenes = sum(1 for s in out_slides if s.get("scene_focus"))
     if total_scenes:
         for s in out_slides:
@@ -143,26 +145,31 @@ def _apply_platform_gv_to_slides(
 
     out_slides = apply_platform_presets_to_slides(out_slides, platform_id)
     if platform_id == "douyin":
-        from python_agent.douyin_shot_stylist import (
-            DouyinShotDesignError,
-            apply_douyin_shot_styles,
-            export_shot_plan,
-        )
-
-        try:
-            out_slides = apply_douyin_shot_styles(out_slides, b)
-        except DouyinShotDesignError as exc:
-            raise RuntimeError(str(exc)) from exc
-        plan_path = task_dir / "llm" / "douyin_shot_plan.json"
-        plan_path.parent.mkdir(parents=True, exist_ok=True)
-        import json as _json
-
-        plan_path.write_text(
-            _json.dumps(export_shot_plan(out_slides), ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
         from python_agent.douyin_plan_finalize import finalize_douyin_slides
+        from python_agent.motion_templates import is_github_daily_brief
 
+        if is_github_daily_brief(b):
+            from python_agent.douyin_shot_stylist import (
+                DouyinShotDesignError,
+                apply_douyin_shot_styles,
+                export_shot_plan,
+            )
+
+            try:
+                out_slides = apply_douyin_shot_styles(out_slides, b)
+            except DouyinShotDesignError as exc:
+                raise RuntimeError(str(exc)) from exc
+            plan_path = task_dir / "llm" / "douyin_shot_plan.json"
+            plan_path.parent.mkdir(parents=True, exist_ok=True)
+            import json as _json
+
+            plan_path.write_text(
+                _json.dumps(export_shot_plan(out_slides), ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            print("[SlidesRender] douyin_shot_styles (github_daily)")
+        else:
+            print("[SlidesRender] douyin news path: skip github shot LLM")
         out_slides = finalize_douyin_slides(out_slides, b, layout_tiers=True)
         print("[SlidesRender] douyin_plan_finalize: layout tiers + hook + auto_fix")
     for s in out_slides:
@@ -229,9 +236,11 @@ def _load_or_build_slides_script(
     scene_key = (cfg.render_scene or "").strip() or _default_scene_for_feed(
         str(brief_dict.get("feed_kind") or "news")
     )
-    style_key = (cfg.render_visual_style or "").strip() or get_scene(scene_key).get(
-        "default_style", "github_dark"
-    )
+    fk_style = str(brief_dict.get("feed_kind") or "news")
+    default_style = get_scene(scene_key).get("default_style", "github_dark")
+    if fk_style == "news" and default_style == "github_dark":
+        default_style = "warm_gold"
+    style_key = (cfg.render_visual_style or "").strip() or default_style
 
     from python_agent.voice_content_templates import (
         apply_voice_style_to_brief,
@@ -324,6 +333,9 @@ def _load_or_build_slides_script(
     plan = build_slide_template_plan(brief_dict, slides)
     save_template_plan(task_dir, plan)
     script["slides"] = apply_template_plan_to_slides(script.get("slides") or [], brief_dict)
+    from python_agent.slide_type_normalize import normalize_slide_types
+
+    script["slides"] = normalize_slide_types(script.get("slides") or [])
     from python_agent.slides_llm_director import direct_slides_script
 
     script["slides"] = direct_slides_script(script.get("slides") or [], brief_dict, platform_id)
