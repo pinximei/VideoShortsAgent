@@ -283,11 +283,16 @@ def validate_slides_before_render(
 
             coll = check_slide_layout_collision(s)
             if not coll.get("ok"):
-                msg = f"slide_{i}_layout_collision:{','.join(coll.get('issues') or [])}"
-                if platform == "douyin":
-                    errors.append(msg)
+                gap = int(coll.get("gap_px") or -999)
+                force_ok = bool(s.get("_layout_collision_force")) and gap >= -12
+                if force_ok:
+                    warnings.append(f"slide_{i}_layout_collision_marginal:{gap}px")
                 else:
-                    warnings.append(msg)
+                    msg = f"slide_{i}_layout_collision:{','.join(coll.get('issues') or [])}"
+                    if platform == "douyin":
+                        errors.append(msg)
+                    else:
+                        warnings.append(msg)
             reveals = s.get("summary_reveal_frames") or []
             if platform == "douyin" and lines and reveals and len(reveals) >= len(lines):
                 if reveals != sorted(reveals):

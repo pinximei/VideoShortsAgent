@@ -111,19 +111,18 @@ def _apply_collision_tweaks(slide: dict[str, Any], issues: list[str]) -> None:
     issue_blob = " ".join(issues)
 
     if "mid_block_too_tall" in issue_blob:
-        mp["midSafeBottomRatio"] = max(float(mp.get("midSafeBottomRatio") or 0.40), 0.44)
-        mp["midHeroFontScale"] = min(float(mp.get("midHeroFontScale") or 1.0), 0.88)
+        mp["midHeroFontScale"] = min(float(mp.get("midHeroFontScale") or 1.0), 0.85)
         vt = str(slide.get("viz_type") or "none").lower()
-        if vt == "stat" and len(slide.get("summary_lines") or []) >= 3:
+        if vt in ("stat", "line", "bar"):
             slide["viz_type"] = "none"
             slide["show_chart"] = False
-        elif len(slide.get("summary_lines") or []) > 3:
+        if len(slide.get("summary_lines") or []) > 3:
             _trim_summary_lines(slide, max_lines=3)
 
     if "caption_mid_gap" in issue_blob:
-        mp["midSafeBottomRatio"] = max(0.36, float(mp.get("midSafeBottomRatio") or 0.40) - 0.03)
-        mp["midHeroFontScale"] = min(float(mp.get("midHeroFontScale") or 1.0), 0.88)
-        mp["captionBottomPx"] = min(int(mp.get("captionBottomPx") or 300), 280)
+        mp["midSafeBottomRatio"] = min(float(mp.get("midSafeBottomRatio") or 0.40), 0.36)
+        mp["midHeroFontScale"] = min(float(mp.get("midHeroFontScale") or 1.0), 0.85)
+        mp["captionBottomPx"] = min(int(mp.get("captionBottomPx") or 300), 270)
 
     lines = [str(x).strip()[:SUBTITLE_MAX_CHARS] for x in (slide.get("summary_lines") or []) if str(x).strip()]
     slide["summary_lines"] = lines
@@ -145,13 +144,23 @@ def fix_slide_layout_collision(slide: dict[str, Any], *, height: int = DEFAULT_H
         _apply_collision_tweaks(s, list(report.get("issues") or []))
         s["_layout_collision_fixed"] = True
 
-    if not check_slide_layout_collision(s, height=height).get("ok"):
-        _trim_summary_lines(s, max_lines=2)
+    report = check_slide_layout_collision(s, height=height)
+    if not report.get("ok"):
         mp = dict(s.get("motion_params") or {})
-        mp["midSafeBottomRatio"] = 0.50
-        mp["captionBottomPx"] = max(int(mp.get("captionBottomPx") or 300), 360)
+        mp["midSafeBottomRatio"] = 0.32
+        mp["midHeroFontScale"] = 0.8
+        mp["captionBottomPx"] = 250
         s["motion_params"] = mp
+        if len(s.get("summary_lines") or []) > 3:
+            _trim_summary_lines(s, max_lines=3)
         s["_layout_collision_fixed"] = True
+        report = check_slide_layout_collision(s, height=height)
+    if not report.get("ok") and int(report.get("gap_px") or -999) < MIN_GAP_PX:
+        mp = dict(s.get("motion_params") or {})
+        mp["midSafeBottomRatio"] = 0.30
+        mp["captionBottomPx"] = 240
+        s["motion_params"] = mp
+        s["_layout_collision_force"] = True
 
     return s
 

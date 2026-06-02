@@ -113,6 +113,15 @@ def bind_slide_tts_timing(
     s["summary_lines"] = lines
     s = normalize_slide_mid_copy(s, brief)
     lines = list(s.get("summary_lines") or [])
+    if len(lines) < 3:
+        from python_agent.subtitle_copy import normalize_subtitle_cards
+
+        h = str(s.get("feature_label") or s.get("heading") or hero)
+        _, filled = normalize_subtitle_cards(
+            h, lines, tts="", min_cards=3, max_cards=4
+        )
+        s["summary_lines"] = filled
+        lines = filled
 
     stagger = max(14, int((s.get("motion_params") or {}).get("staggerFrames") or 18))
     reveal = compute_summary_reveal_frames(

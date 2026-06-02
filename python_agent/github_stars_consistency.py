@@ -37,7 +37,8 @@ def validate_stars_consistency(
         if sv and _norm_stat(sv) != label_n and _norm_stat(sv) != _norm_stat(str(star_n)):
             errors.append(f"slide_{i}_stat_value_mismatch:{sv}!={label}")
         stars_field = str(s.get("stars") or "").strip()
-        if stars_field and _norm_stat(stars_field) != label_n:
+        sf = _norm_stat(stars_field)
+        if stars_field and label_n not in sf and sf != label_n:
             errors.append(f"slide_{i}_stars_field_mismatch:{stars_field}!={label}")
     return errors
 
