@@ -461,6 +461,22 @@ def render_slides_video(
     if not gate.get("ok"):
         raise RuntimeError(f"slides_quality_gate_failed: {gate.get('errors')}")
 
+    if platform_id == "douyin":
+        from python_agent.render_quality_score import score_douyin_render
+
+        pre_score = score_douyin_render(slides, brief=brief_dict, gate=gate)
+        score_path = task_dir / "RENDER_QUALITY_SCORE.json"
+        score_path.write_text(
+            json.dumps(pre_score, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        print(
+            f"[SlidesRender] quality score (pre-render): {pre_score.get('score')} "
+            f"grade={pre_score.get('grade')}"
+        )
+        if not pre_score.get("pass"):
+            raise RuntimeError(f"render_quality_score_failed: {pre_score.get('deductions')}")
+
     renderer = RenderSlidesSkill(width=preset.width, height=preset.height)
     out_slides = renderer.execute(
         slides,
@@ -475,6 +491,26 @@ def render_slides_video(
     videos_dir.mkdir(parents=True, exist_ok=True)
     target = videos_dir / f"{platform_id}.mp4"
     shutil.copy2(out_slides, target)
+
+    if platform_id == "douyin":
+        from python_agent.render_quality_score import score_douyin_render
+
+        final_score = score_douyin_render(
+            slides,
+            brief=brief_dict,
+            gate=gate,
+            video_path=target,
+        )
+        score_path = task_dir / "RENDER_QUALITY_SCORE.json"
+        score_path.write_text(
+            json.dumps(final_score, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        print(
+            f"[SlidesRender] quality score (final): {final_score.get('score')} "
+            f"grade={final_score.get('grade')}"
+        )
+
     return target
 
 

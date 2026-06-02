@@ -104,7 +104,22 @@ def verify_post_render(task_dir: Path, *, report: dict | None = None) -> dict:
     modes_x = set(_load_plan(task_dir, "xhs") and [str(s.get("caption_mode")) for s in _load_plan(task_dir, "xhs")] or [])
     if modes_d and modes_x and modes_d == modes_x:
         issues.append("caption_modes_identical")
-    return {"ok": not issues, "issues": issues}
+
+    out: dict = {"ok": not issues, "issues": issues}
+    douyin_plan = _load_plan(task_dir, "douyin")
+    if douyin_plan or (task_dir / "videos" / "douyin.mp4").is_file():
+        try:
+            from python_agent.render_quality_score import score_task
+
+            qs = score_task(task_dir, platform="douyin")
+            out["quality_score"] = qs
+            if not qs.get("pass") and qs.get("score", 100) < 75:
+                issues.append(f"douyin:quality_score_low:{qs.get('score')}")
+                out["ok"] = False
+                out["issues"] = issues
+        except Exception as exc:  # noqa: BLE001
+            out["quality_score_error"] = str(exc)
+    return out
 
 
 def main() -> int:

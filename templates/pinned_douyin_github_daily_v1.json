@@ -29,6 +29,10 @@
     "mid_layouts": ["steps", "framed", "keywords", "compare"],
     "forbid_generic_hero": ["核心亮点", "核心能力"]
   },
+  "quality_score": {
+    "min_pass": 75,
+    "grade_a": 90
+  },
   "verify_task": "reports/platform_verify/20260602T035454Z/task",
   "notes": "片头 OpenHands + 三内容镜口播分镜 + CTA；全片 Star 以 brief.stars 为准统一格式化"
 }
