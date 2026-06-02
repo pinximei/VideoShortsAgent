@@ -437,6 +437,12 @@ def render_slides_video(
     )
 
     slides = auto_fix_slides(slides, platform=platform_id, brief=brief_dict)
+
+    from python_agent.tts_subtitle_bind import apply_tts_subtitle_bind
+
+    slides = apply_tts_subtitle_bind(
+        slides, tts_clips, platform=platform_id, brief=brief_dict
+    )
     gate = validate_slides_before_render(slides, platform=platform_id, brief=brief_dict)
     gate["summary"] = summarize_quality_gate(gate)
     gate_path = task_dir / "llm" / f"slides_quality_gate_{platform_id}.json"

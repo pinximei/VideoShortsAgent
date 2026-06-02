@@ -39,7 +39,8 @@ def test_validate_gate_ok():
             "viz_type": "none",
         },
     ]
-    gate = validate_slides_before_render(slides, platform="douyin")
+    fixed = auto_fix_slides(slides, platform="douyin")
+    gate = validate_slides_before_render(fixed, platform="douyin")
     assert gate["ok"] is True
 
 

@@ -51,7 +51,7 @@ def cycle_context(cycle: int) -> CycleReviewContext:
         target_stagger=max(10, 16 - (c - 1)),
         target_max_chars=24,
         target_caption_bottom=min(380, 300 + (c - 1) * 4),
-        target_opening_frames=165,
+        target_opening_frames=84,
     )
 
 

@@ -70,8 +70,6 @@ def auto_fix_slides(
                         lines.append(fb)
                 slide["summary_lines"] = lines[:4]
             slide.setdefault("mid_info_layout", "framed")
-            if str(slide.get("tts_text") or "").find("自然语言") >= 0:
-                slide["mid_effect"] = "liquid_shake"
             kin = [str(x).strip() for x in (slide.get("kinetic_phrases") or []) if str(x).strip()]
             if not kin and str(slide.get("viz_type") or "none") == "none":
                 slide["kinetic_phrases"] = ["开源", "好用", "收藏"]
@@ -138,6 +136,9 @@ def auto_fix_slides(
         out = dedupe_subtitles_across_slides(out, brief=brief)
     out = fix_all_layout_collisions(out)
     if platform == "douyin":
+        from python_agent.douyin_effect_policy import apply_douyin_effect_policy
+
+        out = apply_douyin_effect_policy(out, platform=platform)
         out = ensure_douyin_content_diversity(out)
     return out
 
@@ -267,7 +268,17 @@ def validate_slides_before_render(
 
             coll = check_slide_layout_collision(s)
             if not coll.get("ok"):
-                warnings.append(f"slide_{i}_layout_collision:{','.join(coll.get('issues') or [])}")
+                msg = f"slide_{i}_layout_collision:{','.join(coll.get('issues') or [])}"
+                if platform == "douyin":
+                    errors.append(msg)
+                else:
+                    warnings.append(msg)
+            reveals = s.get("summary_reveal_frames") or []
+            if platform == "douyin" and lines and reveals and len(reveals) >= len(lines):
+                if reveals != sorted(reveals):
+                    errors.append(f"slide_{i}_reveal_frames_not_monotonic")
+            elif platform == "douyin" and lines and s.get("_tts_sentences_bound") and not reveals:
+                errors.append(f"slide_{i}_missing_reveal_frames")
 
         raw_pages = s.get("_caption_pages_preview")
         if isinstance(raw_pages, list) and raw_pages:

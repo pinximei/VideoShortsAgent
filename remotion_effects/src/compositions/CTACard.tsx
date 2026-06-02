@@ -86,7 +86,11 @@ export const CTACard: React.FC<CTACardProps> = ({
   const currentTime = frame / fps;
 
   if (motionProfile) {
-    const pulse = spring({frame, fps, config: {damping: 10, stiffness: 120}});
+    const pulse = spring({
+      frame: Math.max(0, frame - headingStartFrame),
+      fps,
+      config: {damping: 10, stiffness: 120},
+    });
     const ring = interpolate(frame % 45, [0, 45], [1, 1.25]);
     const pulseScale = cssDecorations.includes('pulse-button')
       ? 0.95 + pulse * 0.12

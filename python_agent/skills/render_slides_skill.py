@@ -832,6 +832,10 @@ class RenderSlidesSkill:
             and int(slide.get("opening_duration_frames") or 0) > 0
         ):
             heading_start_frame = min(int(slide.get("opening_duration_frames") or 84), 84)
+        if slide.get("type") == "cta_card" and slide.get("heading_start_frame") is not None:
+            heading_start_frame = max(
+                heading_start_frame, int(slide.get("heading_start_frame") or 0)
+            )
         if heading_trigger and sentences:
             for seq in sentences:
                 if heading_trigger in seq.get("text", ""):
@@ -926,6 +930,7 @@ class RenderSlidesSkill:
             ),
             "starCount": int(slide.get("star_count") or 0),
             "repoUrl": str(slide.get("repo_url") or ""),
+            "liquidShakeHeroOnly": bool(slide.get("liquid_shake_hero_only", True)),
         }
         if sentences:
             props["sentences"] = sentences
@@ -941,12 +946,19 @@ class RenderSlidesSkill:
                 compute_summary_reveal_frames,
             )
 
-            reveal = compute_summary_reveal_frames(
-                summary_lines, sentences, fps=self.fps
+            stagger = max(
+                14, int((slide.get("motion_params") or {}).get("staggerFrames") or 18)
+            )
+            reveal = list(slide.get("summary_reveal_frames") or []) or compute_summary_reveal_frames(
+                summary_lines, sentences, fps=self.fps, default_stagger=stagger
             )
             props["summaryRevealFrames"] = reveal
-            props["panelRevealFrame"] = compute_panel_reveal_frame(
-                sentences, fps=self.fps
+            props["panelRevealFrame"] = int(
+                slide.get("panel_reveal_frame")
+                or compute_panel_reveal_frame(sentences, fps=self.fps)
+            )
+            props["liquidShakeHeroOnly"] = bool(
+                slide.get("liquid_shake_hero_only", True)
             )
             if str(motion_profile) == "glass_card_stack" and reveal:
                 props["bullets"] = summary_lines

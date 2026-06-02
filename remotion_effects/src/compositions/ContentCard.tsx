@@ -81,6 +81,7 @@ interface ContentCardProps {
     tokens: Array<{text: string; fromMs: number; toMs: number}>;
   }>;
   suppressBottomCaption?: boolean;
+  liquidShakeHeroOnly?: boolean;
 }
 
 export const ContentCard: React.FC<ContentCardProps> = ({
@@ -138,6 +139,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
   repoUrl = '',
   captionPages = [],
   suppressBottomCaption = false,
+  liquidShakeHeroOnly = true,
 }) => {
   const hud = overlayMode === 'hud';
   const frame = useCurrentFrame();
@@ -228,6 +230,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
             midSafeTopRatio={motionParams.midSafeTopRatio}
             captionBottomPx={motionParams.captionBottomPx}
             staggerFrames={motionParams.staggerFrames}
+            liquidShakeHeroOnly={liquidShakeHeroOnly}
           />
         ) : (
           <AnimatedBullets

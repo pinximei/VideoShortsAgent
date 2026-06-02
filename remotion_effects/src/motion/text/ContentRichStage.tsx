@@ -39,6 +39,7 @@ interface Props {
   midSafeTopRatio?: number;
   captionBottomPx?: number;
   staggerFrames?: number;
+  liquidShakeHeroOnly?: boolean;
 }
 
 export const ContentRichStage: React.FC<Props> = ({
@@ -70,6 +71,7 @@ export const ContentRichStage: React.FC<Props> = ({
   midSafeTopRatio,
   captionBottomPx,
   staggerFrames = 18,
+  liquidShakeHeroOnly = true,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
@@ -128,8 +130,8 @@ export const ContentRichStage: React.FC<Props> = ({
       ? midEffect
       : effects[sceneIndex % effects.length];
   const useTypewriter = effect === 'typewriter';
-  const useLiquidShake =
-    effect === 'liquid_shake' || effect === 'shake_emphasis' || effect === 'glow_scan';
+  const useLiquidShakeHero =
+    effect === 'liquid_shake' || effect === 'shake_emphasis';
 
   const enter = spring({
     frame: Math.max(0, frame - heroFrame),
@@ -228,7 +230,7 @@ export const ContentRichStage: React.FC<Props> = ({
             accentColor={accentColor2}
             startFrame={heroFrame}
           />
-        ) : useLiquidShake ? (
+        ) : useLiquidShakeHero ? (
           <LiquidShakeText
             text={hero}
             fontSize={heroSize}
@@ -376,6 +378,7 @@ export const ContentRichStage: React.FC<Props> = ({
               accentColor2={accentColor2}
               panelRevealFrame={panelFrame}
               stepRevealFrames={subtitleRevealFrames}
+              liquidShakeOnCards={!liquidShakeHeroOnly && useLiquidShakeHero}
             />
           </div>
         ) : null}

@@ -9,6 +9,25 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", "", (s or "").strip())
 
 
+def _overlap_ratio(a: str, b: str) -> float:
+    ka, kb = _norm(a), _norm(b)
+    if not ka or not kb:
+        return 0.0
+    if ka == kb or ka in kb or kb in ka:
+        return 1.0
+    common = sum(1 for ch in ka if ch in kb)
+    return common / max(len(ka), 1)
+
+
+def _best_sentence_index(line: str, sents: list[dict[str, Any]]) -> int:
+    best_i, best_score = 0, 0.0
+    for i, s in enumerate(sents):
+        score = _overlap_ratio(line, str(s.get("text") or ""))
+        if score > best_score:
+            best_score, best_i = score, i
+    return best_i
+
+
 def compute_summary_reveal_frames(
     summary_lines: list[str],
     sentences: list[dict[str, Any]],
@@ -33,11 +52,13 @@ def compute_summary_reveal_frames(
     stagger = max(14, default_stagger // 2)
 
     frames: list[int] = []
-    for i, _line in enumerate(lines):
-        if i < len(sents):
-            t = int(sents[i]["start"] * fps)
-        else:
-            t = panel + i * stagger
+    used_sent: set[int] = set()
+    for i, line in enumerate(lines):
+        j = _best_sentence_index(line, sents)
+        if j in used_sent and len(sents) > 1:
+            j = min(i, len(sents) - 1)
+        used_sent.add(j)
+        t = int(sents[j]["start"] * fps) if sents else panel + i * stagger
         if i == 0:
             frames.append(max(0, t))
         else:

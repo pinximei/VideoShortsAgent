@@ -14,6 +14,7 @@ SUBTITLE_ROW_PX = 88
 SUBTITLE_GAP_PX = 38
 ICON_PX = 56
 VIZ_BLOCK_PX = 220
+CAPTION_BLOCK_PX = 130
 _MAX_FIX_ROUNDS = 8
 
 
@@ -57,10 +58,20 @@ def caption_zone_top_px(
     *,
     height: int = DEFAULT_HEIGHT,
 ) -> int:
+    """口播字幕区域顶边（px，自顶向下）。"""
     mp = slide.get("motion_params") or {}
     caption_bottom = int(mp.get("captionBottomPx") or 300)
     bottom_ratio = float(mp.get("midSafeBottomRatio") or 0.40)
-    return int(height - height * bottom_ratio - caption_bottom)
+    return int(height - height * bottom_ratio - caption_bottom - CAPTION_BLOCK_PX)
+
+
+def mid_content_bottom_px(
+    slide: dict[str, Any],
+    *,
+    height: int = DEFAULT_HEIGHT,
+) -> int:
+    mid_top = int(height * float((slide.get("motion_params") or {}).get("midSafeTopRatio") or 0.14))
+    return mid_top + estimate_mid_block_height(slide)
 
 
 def check_slide_layout_collision(
@@ -73,8 +84,7 @@ def check_slide_layout_collision(
     zone_h, _ = mid_zone_bounds(slide, height=height)
     block_h = estimate_mid_block_height(slide)
     cap_top = caption_zone_top_px(slide, height=height)
-    mid_top = int(height * float((slide.get("motion_params") or {}).get("midSafeTopRatio") or 0.14))
-    mid_bottom_y = mid_top + zone_h
+    mid_bottom_y = mid_content_bottom_px(slide, height=height)
     gap = cap_top - mid_bottom_y
     issues: list[str] = []
     if block_h > zone_h - 40:
@@ -111,8 +121,9 @@ def _apply_collision_tweaks(slide: dict[str, Any], issues: list[str]) -> None:
             _trim_summary_lines(slide, max_lines=3)
 
     if "caption_mid_gap" in issue_blob:
-        mp["midSafeBottomRatio"] = min(0.50, float(mp.get("midSafeBottomRatio") or 0.40) + 0.05)
-        mp["captionBottomPx"] = max(int(mp.get("captionBottomPx") or 300), 340)
+        mp["midSafeBottomRatio"] = max(0.36, float(mp.get("midSafeBottomRatio") or 0.40) - 0.03)
+        mp["midHeroFontScale"] = min(float(mp.get("midHeroFontScale") or 1.0), 0.88)
+        mp["captionBottomPx"] = min(int(mp.get("captionBottomPx") or 300), 280)
 
     lines = [str(x).strip()[:SUBTITLE_MAX_CHARS] for x in (slide.get("summary_lines") or []) if str(x).strip()]
     slide["summary_lines"] = lines

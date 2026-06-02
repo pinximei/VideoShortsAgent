@@ -11,6 +11,7 @@ interface Props {
   accentColor2?: string;
   panelRevealFrame?: number;
   stepRevealFrames?: number[];
+  liquidShakeOnCards?: boolean;
 }
 
 /** 单条子标题：宽度随文案，组内居中 */
@@ -80,6 +81,7 @@ export const MidInfoPanels: React.FC<Props> = ({
   accentColor2 = '#22d3ee',
   panelRevealFrame = 0,
   stepRevealFrames = [],
+  liquidShakeOnCards = false,
 }) => {
   const frame = useCurrentFrame();
   const {fps, width} = useVideoConfig();
@@ -182,18 +184,22 @@ export const MidInfoPanels: React.FC<Props> = ({
                 transform: `translateY(${(1 - s) * 18}px) scale(${0.96 + s * 0.04})`,
               }}
             >
-              <LiquidShakeText
-                text={line}
-                fontSize={36}
-                fontWeight={800}
-                color="#f8fafc"
-                accentColor={accentColor2}
-                startFrame={delay}
-                settleFrames={18}
-                fontFamily={BODY_FONT}
-                textAlign="left"
-                lineHeight={1.32}
-              />
+              {liquidShakeOnCards ? (
+                <LiquidShakeText
+                  text={line}
+                  fontSize={36}
+                  fontWeight={800}
+                  color="#f8fafc"
+                  accentColor={accentColor2}
+                  startFrame={delay}
+                  settleFrames={18}
+                  fontFamily={BODY_FONT}
+                  textAlign="left"
+                  lineHeight={1.32}
+                />
+              ) : (
+                <span style={subtitleTextStyle(line)}>{line}</span>
+              )}
             </SubtitleCard>
           );
         })}

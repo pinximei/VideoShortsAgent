@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "strong_effects": ["liquid_shake", "shake_emphasis"],
+  "hero_only_strong": ["liquid_shake"],
+  "subtitle_effects": ["glow_scan", "typewriter", "glow_ring"],
+  "default_mid_effect": "glow_ring",
+  "max_liquid_slides": 1,
+  "max_strong_per_video": 2,
+  "liquid_triggers": ["自然语言", "震撼", "炸裂", "颠覆"],
+  "stat_slide_effect": "glow_scan",
+  "cta_mid_effect": "glow_ring"
+}
