@@ -26,6 +26,10 @@ jobs:
             python_agent/tests/test_summary_timing.py \
             python_agent/tests/test_platform_caption_presets.py \
             python_agent/tests/test_word_timing.py \
+            python_agent/tests/test_github_stars_consistency.py \
+            python_agent/tests/test_opening_hook_beats.py \
+            python_agent/tests/test_tts_subtitle_bind.py \
+            python_agent/tests/test_hero_copy.py \
             -q --tb=short
       - name: Slides eval (mock compose, no API)
         run: |

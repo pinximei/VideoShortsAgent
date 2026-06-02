@@ -297,18 +297,28 @@ def enforce_opening_hook_on_slides_script(
     )
     screen = _screen_hook_text(hook, max_len=18)
     s0["hook_text"] = screen
-    beats = s0.get("hook_beats")
-    if isinstance(beats, list) and len(beats) >= 2:
-        s0["hook_beats"] = [str(x)[:18] for x in beats if str(x).strip()][:2]
+    if fk in ("github_daily", "github", "github_trending"):
+        from python_agent.douyin_shot_stylist import build_github_daily_hook_beats
+
+        s0["hook_beats"] = build_github_daily_hook_beats(
+            repo_name=str(brief.get("repo_name") or s0.get("repo_name") or title),
+            title=title,
+            hook=str(brief.get("hook") or s0.get("hook_text") or ""),
+            stars=str(brief.get("stars") or brief.get("star_count") or ""),
+        )
     else:
-        parts = re.split(r"(?<=[。！？?!，,])", hook)
-        s0["hook_beats"] = [
-            _screen_hook_text(p.strip("，,。！？?! "), max_len=16)
-            for p in parts
-            if 4 <= len(p.strip()) <= 18
-        ][:2]
-        if not s0["hook_beats"]:
-            s0["hook_beats"] = [screen, hook[:14] if len(hook) > 14 else hook]
+        beats = s0.get("hook_beats")
+        if isinstance(beats, list) and len(beats) >= 2:
+            s0["hook_beats"] = [str(x)[:18] for x in beats if str(x).strip()][:2]
+        else:
+            parts = re.split(r"(?<=[。！？?!，,])", hook)
+            s0["hook_beats"] = [
+                _screen_hook_text(p.strip("，,。！？?! "), max_len=16)
+                for p in parts
+                if 4 <= len(p.strip()) <= 18
+            ][:2]
+            if not s0["hook_beats"]:
+                s0["hook_beats"] = [screen, hook[:14] if len(hook) > 14 else hook]
     s0["opening_burst"] = True
     plat = (platform or str(brief.get("platform") or "")).strip().lower()
     s0.setdefault("opening_duration_frames", 84 if plat == "douyin" else 90)

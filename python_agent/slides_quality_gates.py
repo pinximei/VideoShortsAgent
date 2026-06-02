@@ -85,6 +85,21 @@ def auto_fix_slides(
             content_idx += 1
 
         if str(slide.get("type")) == "title_card":
+            fk = str((brief or {}).get("feed_kind") or "").lower()
+            if platform == "douyin" and fk in (
+                "github",
+                "github_daily",
+                "daily_github",
+                "github_trending",
+            ):
+                from python_agent.douyin_shot_stylist import build_github_daily_hook_beats
+
+                slide["hook_beats"] = build_github_daily_hook_beats(
+                    repo_name=str((brief or {}).get("repo_name") or slide.get("repo_name") or ""),
+                    title=str((brief or {}).get("title") or slide.get("heading") or ""),
+                    hook=str((brief or {}).get("hook") or slide.get("hook_text") or ""),
+                    stars=str((brief or {}).get("stars") or (brief or {}).get("star_count") or ""),
+                )
             beats = [
                 str(x).strip()[:18]
                 for x in (slide.get("hook_beats") or [])
@@ -295,6 +310,19 @@ def validate_slides_before_render(
     banned = validate_slides_tts_copy(slides)
     if banned:
         errors.extend(banned)
+
+    if platform == "douyin":
+        fk = str((brief or {}).get("feed_kind") or "").lower()
+        if fk in ("github", "github_daily", "daily_github", "github_trending"):
+            from python_agent.github_stars_consistency import validate_stars_consistency
+
+            errors.extend(validate_stars_consistency(slides, brief))
+        if slides and str(slides[0].get("type")) == "title_card":
+            beats = [str(x).strip() for x in (slides[0].get("hook_beats") or []) if str(x).strip()]
+            if not beats:
+                errors.append("title_missing_hook_beats")
+            elif fk in ("github", "github_daily", "daily_github") and len(beats) < 2:
+                warnings.append("title_hook_beats_under_2")
 
     viz_non_none = sum(
         1 for s in slides if _is_content_slide(s) and str(s.get("viz_type") or "none") != "none"

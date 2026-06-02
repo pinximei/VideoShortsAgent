@@ -444,6 +444,14 @@ def render_slides_video(
         slides, tts_clips, platform=platform_id, brief=brief_dict
     )
     gate = validate_slides_before_render(slides, platform=platform_id, brief=brief_dict)
+    if platform_id == "douyin":
+        from python_agent.pinned_regression import validate_pinned_douyin_plan
+
+        reg = validate_pinned_douyin_plan(slides, brief=brief_dict)
+        gate.setdefault("pinned_regression", reg)
+        if not reg.get("ok"):
+            gate["ok"] = False
+            gate.setdefault("errors", []).extend(reg.get("errors") or [])
     gate["summary"] = summarize_quality_gate(gate)
     gate_path = task_dir / "llm" / f"slides_quality_gate_{platform_id}.json"
     gate_path.write_text(json.dumps(gate, ensure_ascii=False, indent=2), encoding="utf-8")

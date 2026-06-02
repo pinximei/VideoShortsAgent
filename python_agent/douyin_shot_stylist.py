@@ -15,6 +15,7 @@ from python_agent.douyin_shot_designer import (
 __all__ = [
     "DouyinShotDesignError",
     "apply_douyin_shot_styles",
+    "build_github_daily_hook_beats",
     "export_shot_plan",
     "github_daily_opening_hook",
     "parse_star_count",
@@ -104,15 +105,15 @@ def sync_github_stars_on_slides(
     if not star_n:
         return
     label = format_stars_display(star_n)
-    stat_text = f"{label} Star" if label else ""
+    title_stars = f"{label} Star" if label else ""
 
     for s in slides:
         s["star_count"] = star_n
-        if stat_text and str(s.get("type")) == "title_card":
-            s["stars"] = stat_text
+        if label and str(s.get("type")) == "title_card":
+            s["stars"] = title_stars or label
         vt = str(s.get("viz_type") or "none").lower()
-        if vt == "stat" and stat_text:
-            s["stat_value"] = stat_text
+        if vt == "stat" and label:
+            s["stat_value"] = label[:12]
         lines = [str(x).strip() for x in (s.get("summary_lines") or []) if str(x).strip()]
         cleaned: list[str] = []
         for line in lines:
@@ -136,17 +137,56 @@ def github_daily_opening_hook(
     h = re.sub(r"\s+", " ", (hook or "").strip())
     if h and repo in h and 10 <= len(h) <= 28:
         return h[:28]
-    star_hint = re.sub(r"\s+", "", str(stars))[:8] if stars else ""
+    star_n = parse_star_count(stars)
+    star_label = format_stars_display(star_n) if star_n else re.sub(r"\s+", "", str(stars))[:8]
     templates = (
+        f"别划走！{repo}火了？",
+        f"{repo} Star{star_label}还在涨" if star_label else f"今天讲{repo}，别划走",
         f"每日一个GitHub项目：{repo}",
-        f"GitHub项目推荐，今天讲{repo}",
-        f"今天介绍{repo}，Star还在涨",
-        f"开源神器{repo}，{star_hint}你试过吗" if star_hint else f"开源神器{repo}，值得现在就看",
+        f"开源神器{repo}，{star_label}你试过吗" if star_label else f"开源神器{repo}，值得现在就看",
     )
     for t in templates:
         if len(t) <= 28:
             return t
     return f"每日一个GitHub项目：{repo}"[:28]
+
+
+def build_github_daily_hook_beats(
+    *,
+    repo_name: str,
+    title: str = "",
+    hook: str = "",
+    stars: str = "",
+) -> list[str]:
+    """片头双 beat：悬念 + 项目名/Star（各 ≤18 字）。"""
+    repo = short_repo_name(repo_name or title)[:12]
+    star_n = parse_star_count(stars)
+    star_label = format_stars_display(star_n) if star_n else ""
+    h = re.sub(r"\s+", " ", (hook or "").strip())
+
+    suspense_candidates = (
+        f"别划走！{repo}火了？",
+        f"{repo}你还没试过？",
+        f"还在找同类工具？",
+    )
+    if h and 4 <= len(h) <= 18 and ("？" in h or "?" in h or "别" in h):
+        beat1 = h[:18]
+    else:
+        beat1 = next((t for t in suspense_candidates if len(t) <= 18), suspense_candidates[0][:18])
+
+    if star_label:
+        beat2 = f"Star {star_label}"[:18]
+    else:
+        beat2 = f"每日GitHub·{repo}"[:18]
+
+    beats: list[str] = []
+    seen: set[str] = set()
+    for b in (beat1, beat2):
+        key = re.sub(r"\s+", "", b)[:8]
+        if key and key not in seen:
+            seen.add(key)
+            beats.append(b)
+    return beats[:2] or [beat1[:18]]
 
 
 def export_shot_plan(slides: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -20,7 +20,8 @@
   "opening": {
     "max_hook_beats": 2,
     "max_burst_frames": 84,
-    "opening_duration_frames": 84
+    "opening_duration_frames": 84,
+    "hook_beat_template": ["悬念句≤18字", "Star或项目名≤18字"]
   },
   "content": {
     "subtitle_min": 3,
