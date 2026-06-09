@@ -58,7 +58,7 @@ class PlatformLLMTests(unittest.TestCase):
             out = Path(tmp)
             write_publish_pack(BRIEF, out, cfg=cfg)
             self.assertTrue((out / "publish" / "douyin_title.txt").is_file())
-            self.assertIn("LLM抖音标题", (out / "publish" / "douyin_title.txt").read_text(encoding="utf-8"))
+            self.assertIn("LLM口播稿内容", (out / "script.txt").read_text(encoding="utf-8"))
             meta = json.loads((out / "publish_meta.json").read_text(encoding="utf-8"))
             self.assertEqual(meta["source"], "pipeline_llm")
             self.assertTrue((out / "llm" / "video_clips_douyin.json").is_file())

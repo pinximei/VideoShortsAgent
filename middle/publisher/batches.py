@@ -43,6 +43,8 @@ class PublisherBatch:
     site_code: str
     theme_id: str
     label: str = ""
+    # 非空时：该 batch 下所有渠道账号共用同一 Chrome Profile（同一浏览器登录四站）
+    shared_profile_id: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -50,16 +52,22 @@ class PublisherBatch:
             "site_code": self.site_code,
             "theme_id": self.theme_id,
             "label": self.label,
+            "shared_profile_id": self.shared_profile_id,
         }
 
 
 @dataclass
 class PublisherConfig:
     headless: bool = True
+    # 为 true 时：禁止「未跳转/无 toast」的弱通过；验收 fallback 仅认 toast/发布成功页
+    strict_publish: bool = True
+    headed_channels: list[str] = None  # type: ignore[assignment]
     slots: list[PublisherSlot] = None  # type: ignore[assignment]
     batches: list[PublisherBatch] = None  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
+        if self.headed_channels is None:
+            self.headed_channels = []
         if self.slots is None:
             self.slots = []
         if self.batches is None:
@@ -130,14 +138,22 @@ def parse_publisher_config(raw: dict[str, Any] | None) -> PublisherConfig:
                 site_code=str(item.get("site_code") or ""),
                 theme_id=str(item.get("theme_id") or ""),
                 label=str(item.get("label") or bid),
+                shared_profile_id=str(item.get("shared_profile_id") or "").strip(),
             )
         )
 
     if not slots or not batches:
         return parse_publisher_config(DEFAULT_PUBLISHER)
 
+    headed = raw.get("headed_channels") or []
+    if isinstance(headed, str):
+        headed = [c.strip() for c in headed.split(",") if c.strip()]
+    headed_channels = [str(c).strip() for c in headed if str(c).strip()]
+
     return PublisherConfig(
         headless=bool(raw.get("headless", True)),
+        strict_publish=bool(raw.get("strict_publish", True)),
+        headed_channels=headed_channels,
         slots=slots,
         batches=batches,
     )

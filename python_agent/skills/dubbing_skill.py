@@ -113,24 +113,42 @@ class DubbingSkill:
             i, clip = job
             tts_text = clip["tts_text"]
             print(f"  [片段 {i+1}/{len(clips_with_tts)}] {tts_text[:60]}...")
-            sentences = self._split_sentences(tts_text)
+            max_phrase = clip.get("tts_max_phrase_chars")
+            sentences = self._split_sentences(
+                tts_text,
+                max_chars=int(max_phrase) if max_phrase else None,
+            )
             clip_rate = str(clip.get("tts_rate") or self.tts_rate)
             clip_pitch = str(clip.get("tts_pitch") or self.tts_pitch)
             clip_pause = clip.get("sentence_pause_sec")
             sentence_audios = self._generate_tts_batch(
                 sentences, tts_dir, i, rate=clip_rate, pitch=clip_pitch
             )
+            if not sentence_audios and clip_rate != "+12%":
+                sentence_audios = self._generate_tts_batch(
+                    sentences, tts_dir, i, rate="+12%", pitch=clip_pitch
+                )
             if not sentence_audios:
                 return None
             clip_audio_path = os.path.join(tts_dir, f"tts_clip_{i}.mp3")
             video_duration = float(clip.get("end", 0)) - float(clip.get("start", 0))
+            if clip.get("lead_silence_sec") is not None:
+                lead_override = float(clip["lead_silence_sec"])
+            elif i == 0:
+                lead_override = OPENING_LEAD_SILENCE
+            else:
+                lead_override = None
+            trail_override = clip.get("trail_silence_sec")
             sentence_timeline, total_duration = self._concat_sentence_audios(
                 sentence_audios,
                 clip_audio_path,
                 tts_dir,
                 i,
                 video_duration,
-                lead_silence_override=OPENING_LEAD_SILENCE if i == 0 else None,
+                lead_silence_override=lead_override,
+                trail_silence_override=float(trail_override)
+                if trail_override is not None
+                else None,
                 sentence_pause=float(clip_pause)
                 if clip_pause is not None
                 else None,
@@ -185,11 +203,12 @@ class DubbingSkill:
         print(f"\n[DubbingSkill] OK: {len(tts_clips)} TTS clips (sentence timing)")
         return {"tts_clips": tts_clips}
 
-    def _split_sentences(self, text: str) -> list:
+    def _split_sentences(self, text: str, *, max_chars: int | None = None) -> list:
         """按口播单行字幕粒度拆分（与底栏逐句显示对齐）。"""
-        from python_agent.display_text import split_spoken_phrases
+        from python_agent.display_text import CAPTION_LINE_MAX_CHARS, split_spoken_phrases
 
-        phrases = split_spoken_phrases(text)
+        cap = max_chars if max_chars and max_chars > 0 else CAPTION_LINE_MAX_CHARS
+        phrases = split_spoken_phrases(text, max_chars=cap)
         return phrases if phrases else [text.strip() or text]
 
     def _concat_sentence_audios(
@@ -201,6 +220,7 @@ class DubbingSkill:
         video_duration: float = 0,
         *,
         lead_silence_override: float | None = None,
+        trail_silence_override: float | None = None,
         sentence_pause: float | None = None,
     ) -> tuple:
         """拼接句子音频，居中对齐于视频画面（前后留白），返回精确时间轴和总时长
@@ -230,16 +250,23 @@ class DubbingSkill:
                 if lead_silence_override is not None
                 else (OPENING_LEAD_SILENCE if clip_index == 0 else MIN_LEAD_SILENCE)
             )
-            trail_silence = 0.0
+            trail_silence = (
+                float(trail_silence_override)
+                if trail_silence_override is not None
+                else 0.0
+            )
 
         # 生成静音文件
         silence_path = os.path.join(tts_dir, f"silence_{clip_index}.mp3")
         self._generate_silence(silence_path, self.sentence_pause)
 
         lead_silence_path = os.path.join(tts_dir, f"lead_{clip_index}.mp3")
-        self._generate_silence(lead_silence_path, lead_silence)
+        if lead_silence > 0.01:
+            self._generate_silence(lead_silence_path, lead_silence)
 
-        temp_files = [silence_path, lead_silence_path]
+        temp_files = [silence_path]
+        if lead_silence > 0.01:
+            temp_files.append(lead_silence_path)
 
         # 构建拼接列表：前留白 + 句子（句间停顿） + 后留白
         def _to_ffmpeg_path(p):
@@ -248,7 +275,8 @@ class DubbingSkill:
 
         concat_list_path = os.path.join(tts_dir, f"concat_{clip_index}.txt")
         with open(concat_list_path, "w", encoding="utf-8") as f:
-            f.write("file '" + _to_ffmpeg_path(lead_silence_path) + "'\n")
+            if lead_silence > 0.01:
+                f.write("file '" + _to_ffmpeg_path(lead_silence_path) + "'\n")
             for j, sa in enumerate(sentence_audios):
                 f.write("file '" + _to_ffmpeg_path(sa["path"]) + "'\n")
                 if j < len(sentence_audios) - 1:

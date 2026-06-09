@@ -144,9 +144,16 @@ def auto_fix_slides(
                 slide["motion_params"] = mp
 
         slide.setdefault("caption_use_tts_timeline", True)
-        from python_agent.tts_copy_rules import sanitize_tts_text
+        fk_slide = str((brief or {}).get("feed_kind") or "").lower()
+        theme_slide = str((brief or {}).get("theme_id") or "").lower()
+        if fk_slide == "news" or theme_slide == "ai_news":
+            from python_agent.douyin_news_style import sanitize_ai_news_tts
 
-        tts_clean = sanitize_tts_text(str(slide.get("tts_text") or ""))
+            tts_clean = sanitize_ai_news_tts(str(slide.get("tts_text") or ""))
+        else:
+            from python_agent.tts_copy_rules import sanitize_tts_text
+
+            tts_clean = sanitize_tts_text(str(slide.get("tts_text") or ""))
         if tts_clean:
             slide["tts_text"] = tts_clean
         out.append(slide)
@@ -167,10 +174,24 @@ def auto_fix_slides(
         from python_agent.pinned_ai_news_template import apply_pinned_ai_news_plan, pick_ai_news_template
 
         if is_news_brief(brief):
+            from python_agent.douyin_news_style import (
+                enforce_ai_news_cta_slide,
+                enforce_ai_news_product_clarity,
+            )
+
             tmpl = pick_ai_news_template(brief or {})
             out = apply_pinned_ai_news_plan(out, brief or {}, tmpl)
+            out = enforce_ai_news_product_clarity(out, brief)
+            out = enforce_ai_news_cta_slide(out, brief)
             out = apply_douyin_news_style(out, brief)
-    else:
+    elif platform == "douyin":
+        from python_agent.motion_templates import is_github_daily_brief
+        from python_agent.pinned_github_template import apply_pinned_github_plan, pick_github_pinned_variant
+
+        if is_github_daily_brief(brief):
+            tmpl = pick_github_pinned_variant(brief or {})
+            out = apply_pinned_github_plan(out, brief or {}, tmpl)
+    if fk_end != "news":
         _ensure_github_viz(out, brief)
         from python_agent.douyin_shot_stylist import sync_github_stars_on_slides
 

@@ -70,10 +70,24 @@ def validate_pinned_douyin_plan(
 
         errors.extend(validate_stars_consistency(slides, brief))
 
+    template_id = PINNED_DOUYIN_TEMPLATE_ID
+    template_label = ""
+    if fk in ("github", "github_daily", "daily_github"):
+        from python_agent.pinned_github_template import pick_github_pinned_variant
+
+        pv = pick_github_pinned_variant(brief or {})
+        template_id = str(pv.get("id") or template_id)
+        template_label = str(pv.get("label") or "")
+        pinned_ids = {str(s.get("pinned_github_variant_id") or "") for s in slides}
+        pinned_ids.discard("")
+        if len(pinned_ids) > 1:
+            warnings.append("mixed_github_pinned_variant_ids")
+
     return {
         "ok": not errors,
         "errors": errors,
         "warnings": warnings,
-        "template_id": PINNED_DOUYIN_TEMPLATE_ID,
+        "template_id": template_id,
+        "template_label": template_label,
         "slide_count": len(slides),
     }

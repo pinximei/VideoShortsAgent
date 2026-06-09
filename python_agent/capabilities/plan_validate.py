@@ -63,6 +63,11 @@ def validate_platform_video_block(
         hook = str(c.get("hook_text") or "").strip()
         if len(hook) > 28:
             return False, f"clip_{i}_hook_text_too_long={len(hook)}"
+        from python_agent.platform_traffic_rules import contains_traffic_risk
+
+        for field in ("hook_text", "tts_text"):
+            if contains_traffic_risk(str(c.get(field) or "")):
+                return False, f"clip_{i}_{field}_traffic_risk"
         bullets = c.get("bullets")
         if bullets is not None:
             if not isinstance(bullets, list) or len(bullets) > 4:

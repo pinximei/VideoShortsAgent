@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""同一篇爱资讯文章，强制用三套钉死模板各渲一条 douyin 成片对比。"""
+"""同一篇爱资讯文章，强制用钉死模板各渲一条 douyin 成片对比。
+
+默认 --pool base：9 款风格迥异的基款。
+--pool all：27 款（含每基款的 _snap / _rush 衍体）。
+"""
 from __future__ import annotations
 
 import json
@@ -33,6 +37,12 @@ def main() -> int:
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--article-id", type=int, default=1206)
+    ap.add_argument(
+        "--pool",
+        choices=("base", "all"),
+        default="base",
+        help="base=仅9款基款；all=含27款衍体",
+    )
     args = ap.parse_args()
     _load_dotenv()
 
@@ -40,7 +50,7 @@ def main() -> int:
     from pipeline.config import load_config
     from pipeline.slides_render import render_slides_video
     from pipeline.soul_client import SoulClient
-    from python_agent.pinned_ai_news_template import list_ai_news_variants
+    from python_agent.pinned_ai_news_template import list_ai_news_bases, list_ai_news_variants
     from python_agent.pipeline_media import prefetch_task_cover
 
     cfg = load_config(MIDDLE / "config.yaml")
@@ -61,7 +71,10 @@ def main() -> int:
     base_brief["feed_kind"] = "news"
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    out_root = ROOT / "reports" / "ai_news_three_variants" / f"{args.article_id}_{stamp}"
+    pool_tag = args.pool
+    out_root = (
+        ROOT / "reports" / f"ai_news_{pool_tag}_variants" / f"{args.article_id}_{stamp}"
+    )
     out_root.mkdir(parents=True, exist_ok=True)
 
     manifest: dict = {
@@ -76,7 +89,7 @@ def main() -> int:
         ),
     }
 
-    variants = list_ai_news_variants()
+    variants = list_ai_news_variants() if args.pool == "all" else list_ai_news_bases()
     if not variants:
         print("no variants in catalog", file=sys.stderr)
         return 1
@@ -91,6 +104,8 @@ def main() -> int:
 
         brief_dict = dict(base_brief)
         brief_dict["pinned_ai_news_template_id"] = vid
+        if args.pool == "all":
+            brief_dict["ai_news_rotation_pool"] = "all"
         (task_dir / "brief.json").write_text(
             json.dumps(brief_dict, ensure_ascii=False, indent=2),
             encoding="utf-8",

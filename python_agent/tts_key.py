@@ -135,16 +135,45 @@ def synthesize_dashscope(text: str, edge_voice: str, output_path: Path) -> Path:
     return output_path
 
 
-def synthesize_azure(text: str, edge_voice: str, output_path: Path) -> Path:
+def _edge_rate_to_prosody(rate: str) -> str:
+    r = (rate or "+0%").strip()
+    if r.endswith("%"):
+        return r if r.startswith(("+", "-")) else f"+{r}"
+    return "+0%"
+
+
+def _edge_pitch_to_prosody(pitch: str) -> str:
+    p = (pitch or "+0Hz").strip().lower()
+    if p.endswith("hz"):
+        num = p.replace("hz", "").strip()
+        if num.startswith(("+", "-")):
+            return f"{num}Hz"
+        return f"+{num}Hz"
+    return "+0Hz"
+
+
+def synthesize_azure(
+    text: str,
+    edge_voice: str,
+    output_path: Path,
+    *,
+    rate: str = "+0%",
+    pitch: str = "+0Hz",
+) -> Path:
     key = azure_speech_key()
     if not key:
         raise RuntimeError("未配置 AZURE_SPEECH_KEY")
     region = azure_speech_region()
     voice = resolve_azure_voice(edge_voice)
     url = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
+    prosody_rate = _edge_rate_to_prosody(rate)
+    prosody_pitch = _edge_pitch_to_prosody(pitch)
+    inner = _xml_escape(text)
     ssml = (
         f"<speak version='1.0' xml:lang='zh-CN'>"
-        f"<voice name='{voice}'>{_xml_escape(text)}</voice></speak>"
+        f"<voice name='{voice}'>"
+        f"<prosody rate='{prosody_rate}' pitch='{prosody_pitch}'>{inner}</prosody>"
+        f"</voice></speak>"
     )
     headers = {
         "Ocp-Apim-Subscription-Key": key,

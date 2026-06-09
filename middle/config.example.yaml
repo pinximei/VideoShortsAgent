@@ -68,6 +68,10 @@ publisher:
       site_code: ai-trends-news
       theme_id: ai_news
       label: AI 资讯主体
+      shared_profile_id: acc_ai_news_shared
+
+# render.platforms 含发布目标；video_template_platform 只渲抖音模板；
+# mirror_video_to 将 douyin.mp4 复制为 xhs.mp4（文案仍用 xhs_title/body）
 
 paths:
   data_dir: "./data"
@@ -95,6 +99,8 @@ render:
   bgm: upbeat_tech
   slides_image_mode: search
   platforms: ["douyin", "xhs"]
+  video_template_platform: douyin
+  mirror_video_to: ["xhs"]
   # 默认 Remotion 句级字幕 + 渐变（需 cd remotion_effects && npm install）
   use_remotion: true
   skip_tts: false
@@ -113,11 +119,39 @@ render:
 
 llm:
   enabled: true
+  require_polish: true
   plan_retries: 2
   # 推荐：仓库根目录 .env → DEEPSEEK_API_KEY=sk-xxx（勿提交 git）
   api_key_env: DEEPSEEK_API_KEY
   base_url: "https://api.deepseek.com/v1"
   model: "deepseek-chat"
+
+# 每日定时发布（scripts/run_daily_scheduled.py + register_windows_daily_task.ps1）
+schedule:
+  enabled: true
+  # false = 只跑 pipeline（拉稿/成片），不自动调浏览器发布；手动见 publish_channel.py
+  auto_publish: false
+  service:
+    enabled: true
+    pipeline_interval_min: 30
+    publish_hour_local: 10
+    timezone: Asia/Shanghai
+  pick_mode: random
+  daily_publish_count: 3
+  daily_publish_count_min: 2
+  daily_publish_count_max: 3
+  max_pipeline_jobs: 5
+  theme_id: ai_news
+  primary_channel: douyin
+  channels: [douyin, toutiao, douban]
+  skip_channels: [xhs]
+  run_pipeline: true
+  publish_verify: true
+  login_check: true
+  verify_wait_sec: 25
+  gap_between_articles_sec: [180, 900]
+  random_start_delay_sec: [0, 3600]
+  log_dir: ./data/logs/schedule
 
 server:
   host: "127.0.0.1"

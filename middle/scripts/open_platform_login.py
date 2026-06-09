@@ -22,8 +22,10 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 CREATOR_URLS = {
-    "douyin": "https://creator.douyin.com/creator-micro/home",
-    "xhs": "https://creator.xiaohongshu.com/",
+    "douyin": "https://creator.douyin.com/creator-micro/content/upload",
+    "xhs": "https://creator.xiaohongshu.com/publish/publish",
+    "toutiao": "https://mp.toutiao.com/profile_v4/weitoutiao/publish",
+    "douban": "https://www.douban.com/note/create",
 }
 
 
@@ -66,17 +68,32 @@ def main() -> int:
         return 2
 
     if acc.channel_id not in CREATOR_URLS:
-        print(f"ERROR: 渠道 {acc.channel_id} 无自动登录页（头条/豆瓣请手动复制文案）", file=sys.stderr)
+        print(f"ERROR: 渠道 {acc.channel_id} 无自动登录页", file=sys.stderr)
         return 2
 
-    profile_dir = ensure_profile_dir(cfg.data_dir, batch_id, acc)
+    from publisher.profiles import profile_storage_id, resolve_profile_dir
+
+    storage_id = profile_storage_id(batch_id, acc, cfg.publisher)
+    profile_dir = resolve_profile_dir(cfg.data_dir, batch_id, acc, cfg.publisher)
     url = CREATOR_URLS[acc.channel_id]
+    batch = cfg.publisher.batch_by_id(batch_id)
+    shared = bool(batch and batch.shared_profile_id)
     print("=" * 60)
     print(f"account_id = {acc.id}")
     print(f"渠道       = {acc.channel_id}")
     print(f"批次       = {batch_id}")
     print(f"Profile    = {profile_dir}")
+    if shared:
+        print(f"共享浏览器 = {batch.shared_profile_id}（四渠道同一 Profile）")
     print(f"URL        = {url}")
+    print("-" * 60)
+    if shared:
+        print(
+            "说明：本 batch 已启用【共享浏览器】。在此窗口登录的四个平台 Cookie 都会写入同一目录。\n"
+            "      推荐: py -3.12 scripts/open_shared_publish_login.py --wait-seconds 180"
+        )
+    else:
+        print("说明：当前为每账号独立 Profile。")
     print("=" * 60)
     if args.wait_seconds > 0:
         print(f"在此窗口扫码/登录；浏览器将保持约 {args.wait_seconds} 秒后自动保存 Cookie。")

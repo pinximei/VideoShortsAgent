@@ -12,6 +12,9 @@ FREEZE_PAD_SEC = 0.65
 SEGMENT_TAIL_PAD_SEC = 0.5
 MIN_CONTENT_SLIDE_SEC = 4.2
 MIN_TITLE_SLIDE_SEC = 4.2
+# 资讯播报：降低最短镜长，减少「口播已结束、画面仍空转」造成的忽快忽慢感
+NEWS_MIN_CONTENT_SLIDE_SEC = 3.0
+NEWS_MIN_TITLE_SLIDE_SEC = 3.2
 
 # 每 content_card 最多拆成几镜（原 3~5 镜过碎）
 MAX_SCENES_PER_CONTENT_CARD = 2
@@ -43,8 +46,15 @@ def visual_duration_seconds(tts_duration_sec: float, slide: dict[str, Any]) -> f
     """Remotion 渲染用时长 ≥ TTS，避免动效被掐断。"""
     tts = max(0.5, float(tts_duration_sec))
     tail = animation_tail_seconds(slide)
-    minimum = MIN_TITLE_SLIDE_SEC if _slide_kind(slide) == "title" else MIN_CONTENT_SLIDE_SEC
-    if _slide_kind(slide) == "content" and not slide.get("scene_focus"):
+    news_pace = bool(slide.get("_news_anchor_pace"))
+    kind = _slide_kind(slide)
+    if kind == "title":
+        minimum = NEWS_MIN_TITLE_SLIDE_SEC if news_pace else MIN_TITLE_SLIDE_SEC
+    elif kind == "cta":
+        minimum = 2.8 if news_pace else 3.2
+    else:
+        minimum = NEWS_MIN_CONTENT_SLIDE_SEC if news_pace else MIN_CONTENT_SLIDE_SEC
+    if kind == "content" and not slide.get("scene_focus") and not news_pace:
         minimum = MIN_CONTENT_SLIDE_SEC * 0.85
     return max(minimum, tts + tail + FREEZE_PAD_SEC)
 

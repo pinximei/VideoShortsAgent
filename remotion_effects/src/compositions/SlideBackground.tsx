@@ -77,6 +77,15 @@ const MOOD_PALETTES: Record<string, string[]> = {
   'warm-sunrise': ['#3a1c22', '#6a2a22', '#b3472b'],
   'deep-ocean': ['#00091a', '#002540'],
   'cyberpunk': ['#1a0b2e', '#2c1b4d', '#00e5ff'],
+  'fire-storm': ['#1a0500', '#5c1400', '#ff4500'],
+  'glacier-wire': ['#000c1a', '#003d6b', '#00d4ff'],
+  'neon-tabloid': ['#12001a', '#ff00ff', '#00ffff'],
+  'paper-light': ['#faf8f5', '#e8e4dc', '#d4cfc4'],
+  'void-signal': ['#000000', '#0a0a12', '#1e293b'],
+  'aurora-fable': ['#1a0a2e', '#7b2ff7', '#00d4aa'],
+  'acid-lime': ['#050505', '#1a3300', '#39ff14'],
+  'coral-bloom': ['#ff6b6b', '#feca57', '#ff9ff3'],
+  'prism-scan': ['#0f172a', '#7b2ff7', '#00fff0'],
 };
 
 const WEB3_VARIANTS = new Set([

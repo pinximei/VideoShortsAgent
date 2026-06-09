@@ -224,10 +224,18 @@ def _fix_cards(slides: SlideList, issues: IssueList) -> tuple[SlideList, list[st
         brief_guess["repo_name"] = title.get("repo_name") or title.get("heading")
         brief_guess["stars"] = title.get("stars")
         brief_guess["star_count"] = title.get("star_count")
-    from python_agent.douyin_plan_finalize import finalize_douyin_slides
+    from python_agent.motion_templates import is_github_daily_brief
 
-    out = finalize_douyin_slides(out, brief_guess or None, layout_tiers=True)
-    applied.append("douyin_plan_finalize")
+    if is_github_daily_brief(brief_guess):
+        from python_agent.douyin_github_finalize import finalize_douyin_github_slides
+
+        out = finalize_douyin_github_slides(out, brief_guess, layout_tiers=False)
+        applied.append("douyin_github_finalize")
+    else:
+        from python_agent.douyin_plan_finalize import finalize_douyin_slides
+
+        out = finalize_douyin_slides(out, brief_guess or None, layout_tiers=True)
+        applied.append("douyin_plan_finalize")
     return out, applied
 
 

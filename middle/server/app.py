@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import mimetypes
 import threading
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +19,7 @@ from pipeline.db import JobStore
 from pipeline.models import RunStats, content_key_for_article
 from pipeline.orchestrator import run_pipeline
 
-from .state import record_run, release_run, run_status, try_acquire_run
+from pipeline.run_lock import record_run, release_run, run_status, try_acquire_run
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_DIST = ROOT / "frontend" / "dist"
@@ -86,7 +88,33 @@ def _safe_output_path(article_id: int, rel: str) -> Path:
     return target
 
 
-app = FastAPI(title="AiSoul Pipeline", version="0.2.0")
+def _schedule_service_enabled() -> bool:
+    import os
+
+    return os.environ.get("PIPELINE_NO_SCHEDULER", "").strip().lower() not in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
+@asynccontextmanager
+async def _app_lifespan(_app: FastAPI):
+    svc = None
+    if _schedule_service_enabled():
+        from pipeline.schedule_service import get_schedule_service
+
+        svc = get_schedule_service()
+        svc.start(get_cfg)
+        logging.getLogger("uvicorn.error").info(
+            "内置调度已启动（7×24，见 config.yaml schedule.service）"
+        )
+    yield
+    if svc is not None:
+        svc.stop()
+
+
+app = FastAPI(title="AiSoul Pipeline", version="0.2.0", lifespan=_app_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -347,8 +375,8 @@ def publisher_open_login_api(body: PublisherLoginCheckBody):
     acc = next((a for a in cfg.channel_accounts if a.id == body.account_id), None)
     if not acc:
         raise HTTPException(404, "account not found")
-    if acc.channel_id not in ("douyin", "xhs"):
-        raise HTTPException(400, "only douyin/xhs support browser login profile")
+    if acc.channel_id not in ("douyin", "xhs", "toutiao", "douban"):
+        raise HTTPException(400, "only douyin/xhs/toutiao/douban support browser login profile")
     root = Path(__file__).resolve().parents[1]
     script = root / "scripts" / "open_platform_login.py"
     if not script.is_file():
@@ -405,11 +433,13 @@ def vsa_capabilities():
 @app.get("/api/v1/health")
 def health():
     from pipeline.llm_settings import llm_settings_public
+    from pipeline.schedule_service import get_schedule_service
     from pipeline.tts_settings import tts_settings_public
 
     cfg = get_cfg()
     llm = llm_settings_public(cfg)
     tts = tts_settings_public()
+    sched = get_schedule_service().status() if _schedule_service_enabled() else {"running": False}
     return _envelope(
         {
             "service": "aisoul-pipeline",
@@ -419,8 +449,16 @@ def health():
             "llm_model": llm.get("model"),
             "tts_dashscope_configured": tts.get("dashscope_api_key_set"),
             "tts_provider": tts.get("tts_provider"),
+            "schedule_service": sched,
         }
     )
+
+
+@app.get("/api/v1/schedule/status")
+def schedule_status():
+    from pipeline.schedule_service import get_schedule_service
+
+    return _envelope(get_schedule_service().status())
 
 
 @app.get("/api/v1/publishing/stats")

@@ -26,12 +26,21 @@ def _get_playwright():
 class BrowserSlotRunner:
     """一个槽位 = 一个 batch_id = 当前最多一个 persistent context。"""
 
-    def __init__(self, slot_id: int, batch_id: str, *, headless: bool = True) -> None:
+    def __init__(
+        self,
+        slot_id: int,
+        batch_id: str,
+        *,
+        headless: bool = True,
+        publisher: PublisherConfig | None = None,
+    ) -> None:
         self.slot_id = slot_id
         self.batch_id = batch_id
         self.headless = headless
+        self._publisher = publisher
+        self._headed_channels: set[str] = set()
         self._context = None
-        self._active_account_id: str | None = None
+        self._active_profile_key: str | None = None
         self._lock = threading.Lock()
 
     def close(self) -> None:
@@ -39,7 +48,7 @@ class BrowserSlotRunner:
             if self._context is not None:
                 self._context.close()
                 self._context = None
-                self._active_account_id = None
+                self._active_profile_key = None
 
     def run_with_account(
         self,
@@ -47,24 +56,30 @@ class BrowserSlotRunner:
         account: ChannelAccount,
         fn: Callable[[Any], dict[str, Any]],
     ) -> dict[str, Any]:
-        """切换账号时关闭旧 context，用同一账号固定 userDataDir 重新打开。"""
-        profile_dir = ensure_profile_dir(data_dir, self.batch_id, account)
+        """仅当 userDataDir 变化时重建 context（共享 Profile 时四渠道不反复重启）。"""
+        profile_dir = ensure_profile_dir(
+            data_dir, self.batch_id, account, self._publisher
+        )
+        profile_key = str(profile_dir.resolve())
         with self._lock:
-            if self._context is not None and self._active_account_id != account.id:
+            if self._context is not None and self._active_profile_key != profile_key:
                 self._context.close()
                 self._context = None
-                self._active_account_id = None
+                self._active_profile_key = None
 
             if self._context is None:
                 pw = _get_playwright()
+                use_headless = self.headless
+                if account.channel_id in self._headed_channels:
+                    use_headless = False
                 self._context = pw.chromium.launch_persistent_context(
                     user_data_dir=str(profile_dir),
-                    headless=self.headless,
+                    headless=use_headless,
                     locale="zh-CN",
                     viewport={"width": 1280, "height": 900},
                     args=["--disable-blink-features=AutomationControlled"],
                 )
-                self._active_account_id = account.id
+                self._active_profile_key = profile_key
 
             page = self._context.pages[0] if self._context.pages else self._context.new_page()
             return fn(page)
@@ -73,7 +88,7 @@ class BrowserSlotRunner:
         return {
             "slot_id": self.slot_id,
             "batch_id": self.batch_id,
-            "active_account_id": self._active_account_id,
+            "active_profile_key": self._active_profile_key,
             "context_open": self._context is not None,
         }
 
@@ -82,13 +97,18 @@ class BrowserPool:
     """固定两个槽位，与 config.publisher.slots 一一对应。"""
 
     def __init__(self, publisher: PublisherConfig) -> None:
+        self._publisher = publisher
+        self._headed_channels = set(publisher.headed_channels or [])
         self._runners: dict[int, BrowserSlotRunner] = {}
         for slot in publisher.slots:
-            self._runners[slot.slot_id] = BrowserSlotRunner(
+            runner = BrowserSlotRunner(
                 slot.slot_id,
                 slot.batch_id,
                 headless=publisher.headless,
+                publisher=publisher,
             )
+            runner._headed_channels = self._headed_channels
+            self._runners[slot.slot_id] = runner
         self._batch_to_slot = {s.batch_id: s.slot_id for s in publisher.slots}
 
     def runner_for_batch(self, batch_id: str) -> BrowserSlotRunner:

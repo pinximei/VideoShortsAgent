@@ -31,25 +31,40 @@ def _default_scene_for_feed(feed_kind: str) -> str:
     return "ai_news" if fk == "news" else "daily_github"
 
 
-def brief_to_compose_text(brief: dict[str, Any]) -> str:
+def brief_to_compose_text(brief: dict[str, Any], *, task_dir: Path | None = None) -> str:
+    """分镜 Compose 输入：优先 LLM 润色口播，Soul brief 仅作背景。"""
+    import json
+
+    from .llm_polish import load_platform_copy
+
     parts: list[str] = []
+    if task_dir is not None:
+        copy = load_platform_copy(task_dir)
+        dy = copy.get("douyin") or {}
+        polished = str(dy.get("script") or "").strip()
+        if polished:
+            parts.append("【LLM 已润色口播稿·分镜须据此改写，禁止照抄 Soul 原文】")
+            parts.append(polished)
+            parts.append("")
     title = str(brief.get("title") or "").strip()
     hook = str(brief.get("hook") or "").strip()
     if title:
-        parts.append(f"标题：{title}")
+        parts.append(f"背景标题：{title}")
     if hook:
-        parts.append(f"钩子：{hook}")
+        parts.append(f"背景钩子：{hook}")
     for p in brief.get("talking_points") or []:
         s = str(p).strip()
         if s:
             parts.append(f"- {s}")
-    cta = str(brief.get("cta") or "").strip()
+    from python_agent.platform_traffic_rules import safe_video_cta
+
+    cta = safe_video_cta(brief)
     if cta:
         parts.append(f"引导：{cta}")
-    url = str(brief.get("detail_url") or "").strip()
-    if url:
-        parts.append(f"链接：{url}")
-    return "\n".join(parts).strip() or title or hook or "（无正文）"
+    text = "\n".join(parts).strip()
+    if task_dir is not None and "【LLM 已润色口播稿" in text:
+        return text
+    return text or title or hook or "（无正文）"
 
 
 def _attach_cover_to_slides(slides: list[dict], cover_path: Path | None) -> None:
@@ -80,6 +95,14 @@ def _apply_platform_gv_to_slides(
 
     b = dict(brief_dict)
     b["platform"] = platform_id
+    if is_github_daily_brief(b):
+        from python_agent.pinned_github_template import inject_github_pinned_brief
+
+        b = inject_github_pinned_brief(b)
+        print(
+            f"[SlidesRender] github pinned variant={b.get('pinned_github_variant_id')} "
+            f"G={b.get('github_daily_style_id')}"
+        )
     voice_style = pick_voice_content_style(b)
     expanded = expand_script_tts_to_minimum({"slides": [dict(s) for s in slides]}, voice_style)
     out_slides = list(expanded.get("slides") or slides)
@@ -165,11 +188,19 @@ def _apply_platform_gv_to_slides(
                 f"({tmpl.get('label')})"
             )
         elif is_github_daily_brief(b):
-            from python_agent.douyin_plan_finalize import finalize_douyin_slides
+            from python_agent.douyin_github_finalize import finalize_douyin_github_slides
             from python_agent.douyin_shot_stylist import (
                 DouyinShotDesignError,
                 apply_douyin_shot_styles,
                 export_shot_plan,
+            )
+            from python_agent.pinned_github_template import pick_github_pinned_variant
+
+            tmpl = pick_github_pinned_variant(b)
+            (task_dir / "llm").mkdir(parents=True, exist_ok=True)
+            (task_dir / "llm" / "pinned_github_variant.json").write_text(
+                json.dumps(tmpl, ensure_ascii=False, indent=2),
+                encoding="utf-8",
             )
 
             try:
@@ -184,8 +215,11 @@ def _apply_platform_gv_to_slides(
                 _json.dumps(export_shot_plan(out_slides), ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
-            out_slides = finalize_douyin_slides(out_slides, b, layout_tiers=True)
-            print("[SlidesRender] douyin github_daily + plan_finalize")
+            out_slides = finalize_douyin_github_slides(out_slides, b, layout_tiers=False)
+            print(
+                f"[SlidesRender] douyin github_daily pinned={tmpl.get('id')} "
+                f"({tmpl.get('label')})"
+            )
         else:
             from python_agent.douyin_plan_finalize import finalize_douyin_slides
 
@@ -227,6 +261,31 @@ def _stub_video_plans(task_dir: Path, slides: list[dict], platforms: list[str]) 
         )
 
 
+def _is_pinned_template_brief(brief_dict: dict[str, Any]) -> bool:
+    """爱资讯 / GitHub Daily 钉死款（不依赖 python_agent 导入顺序）。"""
+    fk = str(brief_dict.get("feed_kind") or "").strip().lower()
+    theme = str(brief_dict.get("theme_id") or "").strip().lower()
+    if fk == "news" or theme == "ai_news":
+        return True
+    if fk == "github_daily":
+        return True
+    if str(brief_dict.get("pinned_ai_news_template_id") or "").strip():
+        return True
+    if str(brief_dict.get("pinned_github_variant_id") or "").strip():
+        return True
+    return False
+
+
+def _resolve_render_style_key(
+    cfg: PipelineConfig, brief_dict: dict[str, Any], default_style: str
+) -> str:
+    """钉死模板（爱资讯 / GitHub Daily）优先；config.visual_style 勿覆盖。"""
+    if _is_pinned_template_brief(brief_dict):
+        return (default_style or "github_dark").strip() or "github_dark"
+    override = (cfg.render_visual_style or "").strip()
+    return override or default_style or "github_dark"
+
+
 def _configure_stdio_utf8() -> None:
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
@@ -251,6 +310,13 @@ def _load_or_build_slides_script(
     from python_agent.tts_params import load_tts_from_task_dir
 
     brief_dict = {**brief_dict, **load_tts_from_task_dir(task_dir)}
+    from .ai_news_defaults import apply_ai_news_production_defaults
+
+    brief_dict = apply_ai_news_production_defaults(
+        brief_dict,
+        template_id=cfg.render_pinned_ai_news_template_id,
+        tts_voice_preset=cfg.render_tts_voice_preset,
+    )
 
     scene_key = (cfg.render_scene or "").strip() or _default_scene_for_feed(
         str(brief_dict.get("feed_kind") or "news")
@@ -259,10 +325,22 @@ def _load_or_build_slides_script(
 
     default_style = get_scene(scene_key).get("default_style", "github_dark")
     if is_news_brief(brief_dict):
+        from python_agent.pinned_ai_news_template import inject_ai_news_pinned_brief
+
+        brief_dict = inject_ai_news_pinned_brief(brief_dict)
         from python_agent.douyin_news_finalize import ai_news_visual_style
 
         default_style = ai_news_visual_style(brief_dict)
-    style_key = (cfg.render_visual_style or "").strip() or default_style
+    from python_agent.motion_templates import is_github_daily_brief
+
+    if is_github_daily_brief(brief_dict):
+        from python_agent.pinned_github_template import inject_github_pinned_brief, pick_github_pinned_variant
+
+        brief_dict = inject_github_pinned_brief(brief_dict)
+        gv_style = str(pick_github_pinned_variant(brief_dict).get("visual_style") or "")
+        if gv_style:
+            default_style = gv_style
+    style_key = _resolve_render_style_key(cfg, brief_dict, default_style)
 
     from python_agent.voice_content_templates import (
         apply_voice_style_to_brief,
@@ -275,8 +353,18 @@ def _load_or_build_slides_script(
     preset = get_platform_preset(platform_id)
     brief_dict["platform"] = platform_id
     voice_style: dict = {}
-    if is_voice_style_brief(brief_dict) or platform_id in ("douyin", "xhs"):
-        vpath = task_dir / "llm" / f"voice_content_style_{platform_id}.json"
+    vpath = task_dir / "llm" / f"voice_content_style_{platform_id}.json"
+    if is_news_brief(brief_dict) and platform_id == "douyin":
+        from python_agent.tts_voice_presets import compose_voice_style_from_preset
+
+        voice_style = compose_voice_style_from_preset(brief_dict)
+        vpath.parent.mkdir(parents=True, exist_ok=True)
+        vpath.write_text(
+            json.dumps({"version": 1, "style": voice_style}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        save_voice_style(task_dir, voice_style)
+    elif is_voice_style_brief(brief_dict) or platform_id in ("douyin", "xhs"):
         if vpath.is_file():
             data = json.loads(vpath.read_text(encoding="utf-8-sig"))
             voice_style = dict(data.get("style") or {})
@@ -300,14 +388,22 @@ def _load_or_build_slides_script(
             _save_slides_artifact(task_dir, script)
         return script, brief_dict, scene_key, style_key, voice_style
 
-    compose_text = brief_to_compose_text(brief_dict)
-    if is_news_brief(brief_dict):
-        from python_agent.pinned_ai_news_template import pick_ai_news_template
+    from .llm_polish import ensure_compose_uses_llm_copy
 
+    ensure_compose_uses_llm_copy(task_dir, cfg)
+    compose_text = brief_to_compose_text(brief_dict, task_dir=task_dir)
+    if is_news_brief(brief_dict):
+        from python_agent.pinned_ai_news_template import inject_ai_news_pinned_brief, pick_ai_news_template
+
+        brief_dict = inject_ai_news_pinned_brief(brief_dict)
         tmpl = pick_ai_news_template(brief_dict)
         hint = str(tmpl.get("compose_hint") or "").strip()
         if hint:
             compose_text += f"\n\n【爱资讯版式·{tmpl.get('label')}】\n{hint}"
+        compose_text += (
+            "\n\n【配图】title_card 与每个 content_card 必须 needs_image:true，"
+            "并填写 image_keywords（2–5 个英文词，如 windows laptop technology）。"
+        )
     if voice_style:
         compose_text += "\n\n" + voice_style_prompt_block(voice_style)
     if brief_dict.get("_remotion_skill_injected"):
@@ -318,6 +414,11 @@ def _load_or_build_slides_script(
         f"[SlidesRender] compose scene={scene_key} style={style_key} "
         f"voice={voice_style.get('id', '-')}"
     )
+    if is_news_brief(brief_dict):
+        print(
+            f"[SlidesRender] ai_news render style={style_key} "
+            f"template={brief_dict.get('pinned_ai_news_template_id', '-')}"
+        )
 
     from python_agent.skills.compose_skill import ComposeSkill
 
@@ -356,6 +457,9 @@ def _load_or_build_slides_script(
 
     slides = script.get("slides") or []
     if is_github_daily_brief(brief_dict):
+        from python_agent.pinned_github_template import inject_github_pinned_brief
+
+        brief_dict = inject_github_pinned_brief(brief_dict)
         picked, plan = build_github_daily_slide_plan(brief_dict, slides)
         save_github_daily_style(task_dir, picked, plan)
         print(f"[SlidesRender] github_daily style={picked.get('id')}")
@@ -390,19 +494,18 @@ def render_slides_video(
 
     task_dir = task_dir.resolve()
     preset = get_platform_preset(platform_id)
-    visual_style = get_style(
-        (cfg.render_visual_style or "").strip()
-        or get_scene(
-            (cfg.render_scene or "").strip()
-            or _default_scene_for_feed(str(load_brief(task_dir).get("feed_kind") or "news"))
-        ).get("default_style", "github_dark")
-    )
+
+    from .llm_polish import assert_llm_polished
+
+    assert_llm_polished(task_dir, cfg)
 
     brief_dict = load_brief(task_dir)
     brief_dict["platform"] = platform_id
     script, brief_dict, scene_key, style_key, voice_style = _load_or_build_slides_script(
         cfg, task_dir, platform_id=platform_id
     )
+    visual_style = get_style(style_key)
+    print(f"[SlidesRender] render platform={platform_id} visual_style={style_key}")
     brief_dict["platform"] = platform_id
     import copy
 
@@ -410,6 +513,10 @@ def render_slides_video(
     slides, voice_style = _apply_platform_gv_to_slides(
         brief_dict, slides, task_dir, platform_id
     )
+    from python_agent.douyin_news_style import is_news_brief
+
+    if is_news_brief(brief_dict) and (cfg.render_tts_voice_preset or "").strip():
+        brief_dict["tts_voice_preset"] = cfg.render_tts_voice_preset.strip()
     brief_dict = prepare_brief_tts(brief_dict, platform_id, voice_style=voice_style or None)
     for slide in slides:
         vd = dict(slide.get("visual_design") or {})
@@ -421,20 +528,43 @@ def render_slides_video(
     shared_work = task_dir / "videos" / "_slides_work"
     shared_work.mkdir(parents=True, exist_ok=True)
     images_dir = shared_work / "images"
-    if not images_dir.is_dir() or not any(images_dir.iterdir()):
-        cover = prefetch_task_cover(task_dir, brief_dict)
-        _attach_cover_to_slides(slides, cover)
-        resolver = ImageResolverSkill()
-        slides = resolver.execute(
-            slides,
-            user_images_dir=None,
-            image_mode=cfg.render_slides_image_mode,
-            output_dir=str(images_dir),
-        )
-        script_for_disk = dict(script)
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    if is_news_brief(brief_dict):
+        from python_agent.ai_news_images import enrich_news_slide_images
+
+        slides = enrich_news_slide_images(slides, brief_dict, task_dir)
+        print("[SlidesRender] ai_news: enrich cover + stock image keywords")
+    cover = prefetch_task_cover(task_dir, brief_dict)
+    _attach_cover_to_slides(slides, cover)
+    resolver = ImageResolverSkill()
+    img_mode = cfg.render_slides_image_mode
+    if is_news_brief(brief_dict) and img_mode == "none":
+        img_mode = "search"
+    slides = resolver.execute(
+        slides,
+        user_images_dir=None,
+        image_mode=img_mode,
+        output_dir=str(images_dir),
+    )
+    script_for_disk = dict(script)
+    script_for_disk["slides"] = slides
+    llm_dir = task_dir / "llm"
+    llm_dir.mkdir(parents=True, exist_ok=True)
+    (llm_dir / f"slides_render_plan_{platform_id}.json").write_text(
+        json.dumps(script_for_disk, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    if is_news_brief(brief_dict):
+        from python_agent.douyin_news_finalize import finalize_douyin_news_slides
+
+        slides = finalize_douyin_news_slides(slides, brief_dict)
+        for s in slides:
+            s.pop("tts_rate", None)
+            s.pop("tts_pitch", None)
+            s.pop("sentence_pause_sec", None)
         script_for_disk["slides"] = slides
-        llm_dir = task_dir / "llm"
-        llm_dir.mkdir(parents=True, exist_ok=True)
         (llm_dir / f"slides_render_plan_{platform_id}.json").write_text(
             json.dumps(script_for_disk, ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -492,6 +622,14 @@ def render_slides_video(
         from python_agent.layout_collision import fix_all_layout_collisions
 
         slides = fix_all_layout_collisions(slides)
+    if is_news_brief(brief_dict):
+        from python_agent.ai_news_full_score import ensure_ai_news_slides_for_100
+
+        slides = ensure_ai_news_slides_for_100(slides, brief_dict)
+        if platform_id == "douyin":
+            from python_agent.layout_collision import fix_all_layout_collisions
+
+            slides = fix_all_layout_collisions(slides)
     gate = validate_slides_before_render(slides, platform=platform_id, brief=brief_dict)
     if platform_id == "douyin":
         from python_agent.pinned_ai_news_regression import validate_pinned_plan
@@ -588,8 +726,11 @@ def render_task_slides_videos(
     """为各平台生成成片（文案共用，分平台 TTS：抖音男声 / 小红书女声）。"""
     task_dir = task_dir.resolve()
     brief_dict = load_brief(task_dir)
-    presets = video_platforms(platforms or cfg.render_platforms)
-    platform_ids = [p.id for p in presets]
+    from .video_mirror import apply_video_mirror, publish_video_platform_ids, render_platform_ids
+
+    render_ids = render_platform_ids(cfg, platforms)
+    presets = video_platforms(render_ids)
+    platform_ids = publish_video_platform_ids(cfg)
 
     from .render_lock import global_render_slot
 
@@ -612,7 +753,24 @@ def render_task_slides_videos(
             all_slides = json.loads(script_path.read_text(encoding="utf-8")).get("slides") or []
             _stub_video_plans(task_dir, all_slides, platform_ids)
 
+        mirrored = apply_video_mirror(cfg, task_dir)
+        if mirrored:
+            print(f"[SlidesRender] mirrored douyin template -> {mirrored}")
+
     articles = article_manifest_entries(task_dir)
+    if cfg.render_mirror_video_to:
+        for tgt in cfg.render_mirror_video_to:
+            p = task_dir / "videos" / f"{tgt}.mp4"
+            if p.is_file():
+                videos.append(
+                    {
+                        "platform": tgt,
+                        "path": str(p),
+                        "content_kind": "video",
+                        "render_engine": "mirrored_from_douyin",
+                    }
+                )
+
     manifest = {
         "content_key": brief_dict.get("content_key"),
         "article_id": brief_dict.get("article_id"),
@@ -622,6 +780,8 @@ def render_task_slides_videos(
         "executor": "pipeline.slides_render.render_task_slides_videos",
         "render_mode": "slides",
         "scene": cfg.render_scene or _default_scene_for_feed(str(brief_dict.get("feed_kind") or "news")),
+        "video_template_platform": cfg.render_video_template_platform or None,
+        "mirror_video_to": cfg.render_mirror_video_to or [],
     }
     manifest_path = task_dir / "videos" / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -35,6 +35,8 @@ def process_jobs(
     cfg: PipelineConfig,
     store: JobStore,
     soul: SoulClient | None = None,
+    *,
+    max_jobs: int | None = None,
 ) -> RunStats:
     stats = RunStats()
     client = soul or SoulClient(cfg)
@@ -42,7 +44,11 @@ def process_jobs(
     cfg.output_root.mkdir(parents=True, exist_ok=True)
 
     jobs = store.list_jobs((STATUS_PROCESSING, "discovered", "queued", "failed"))
+    touched = 0
     for job in jobs:
+        if max_jobs is not None and touched >= max_jobs:
+            break
+        touched += 1
         ck = job["content_key"]
         article_id = int(job["article_id"])
         try:
@@ -92,6 +98,13 @@ def process_jobs(
             out_dir = cfg.output_root / str(article_id)
             out_dir.mkdir(parents=True, exist_ok=True)
             brief_dict = brief.to_dict()
+            from .ai_news_defaults import apply_ai_news_production_defaults
+
+            brief_dict = apply_ai_news_production_defaults(
+                brief_dict,
+                template_id=cfg.render_pinned_ai_news_template_id,
+                tts_voice_preset=cfg.render_tts_voice_preset,
+            )
             if brief.cover_image_url:
                 from python_agent.pipeline_media import prefetch_task_cover
 
@@ -204,13 +217,18 @@ def process_jobs(
     return stats
 
 
-def run_pipeline(cfg: PipelineConfig, soul: SoulClient | None = None) -> RunStats:
+def run_pipeline(
+    cfg: PipelineConfig,
+    soul: SoulClient | None = None,
+    *,
+    max_jobs: int | None = None,
+) -> RunStats:
     store = JobStore(cfg.db_path)
     total = RunStats()
     d = discover_from_soul(cfg, store, soul=soul)
     total.discovered = d.discovered
     total.deduped = d.deduped
-    p = process_jobs(cfg, store, soul=soul)
+    p = process_jobs(cfg, store, soul=soul, max_jobs=max_jobs)
     total.skipped = p.skipped
     total.queued = p.queued
     total.rendered = p.rendered

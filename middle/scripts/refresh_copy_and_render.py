@@ -49,6 +49,13 @@ def main() -> int:
         return 1
 
     brief = build_brief(article, public_base_url=cfg.public_base_url, theme_id="ai_news")
+    from pipeline.ai_news_defaults import apply_ai_news_production_defaults
+
+    brief_dict = apply_ai_news_production_defaults(
+        brief.to_dict(),
+        template_id=cfg.render_pinned_ai_news_template_id,
+        tts_voice_preset=cfg.render_tts_voice_preset,
+    )
     out_dir = cfg.output_root / str(args.article_id)
     out_dir.mkdir(parents=True, exist_ok=True)
     from scripts.ensure_broll import ensure_broll
@@ -57,9 +64,9 @@ def main() -> int:
         ensure_broll(Path(cfg.broll_template), force=True)
     from python_agent.pipeline_media import prefetch_task_cover
 
-    prefetch_task_cover(out_dir, brief.to_dict())
+    prefetch_task_cover(out_dir, brief_dict)
     (out_dir / "brief.json").write_text(
-        json.dumps(brief.to_dict(), ensure_ascii=False, indent=2),
+        json.dumps(brief_dict, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     print(f"hook: {brief.hook}")

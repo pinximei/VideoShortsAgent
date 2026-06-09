@@ -1,6 +1,7 @@
 """抖音 GitHub Daily 固定模板常量（与 templates/pinned_douyin_github_daily_v1.json 对齐）。
 
-爱资讯多款式见 templates/pinned_douyin_ai_news/catalog.json（python_agent.pinned_ai_news_template）。
+GitHub 三款式衍生：templates/pinned_douyin_github_daily/catalog.json（python_agent.pinned_github_template）。
+爱资讯 9 基款 + 18 衍体：templates/pinned_douyin_ai_news/catalog.json。
 """
 from __future__ import annotations
 

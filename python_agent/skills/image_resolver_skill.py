@@ -33,6 +33,11 @@ class ImageResolverSkill:
             更新了 image_path 字段的 slides 数组
         """
         for i, slide in enumerate(slides):
+            existing = slide.get("image_path")
+            if existing and os.path.isfile(str(existing)):
+                print(f"  [Slide {i+1}] 已有配图: {os.path.basename(str(existing))}")
+                continue
+
             # 模式 1: 已指定用户图片
             if slide.get("image") and user_images_dir:
                 img_path = os.path.join(user_images_dir, slide["image"])

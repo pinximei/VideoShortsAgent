@@ -26,7 +26,9 @@ from python_agent.voice_content_templates import (
 )
 
 SYSTEM_PROMPT = """你是多平台内容运营与短视频剪辑策划专家。
-根据站内文章生成各平台可发布终稿，并为抖音/小红书规划视频分镜与特效参数。
+根据 Soul 站内文章**润色改写**为各平台可发布终稿，并为抖音/小红书规划视频分镜与特效参数。
+硬性要求：须用自己的话重组信息，禁止大段照抄原文/摘要/标签页文案；标题、口播、微头条、豆瓣笔记均须为改写后的终稿。
+抖音/小红书视频：口播 script、clips.hook_text、屏上字幕**禁止**出现 http(s) 链接、站外域名、Product Hunt、ai-trends 等；禁止「点击链接」「评论区有完整拆解」「去官网/其它平台」等导流表述；片尾仅可写「关注，每天一条 AI 资讯」类站内留存引导。
 特效与样式必须从文末「VSA 能力目录」中选择合法值，不得自造字段。
 开篇前 3～8 秒必须抓住注意力（悬念/反差/数字/利益），禁止「大家好」「今天介绍」式开场。
 只返回 JSON。"""
@@ -75,9 +77,17 @@ feed：{feed_kind}
     "effects": {{ "preset": "情感", "gradient": false, "intro_card": true, "outro_card": true }},
     "clips": [{{"start": 0, "end": 10, "hook_text": "...", "tts_text": "...", "caption_style": "fade", "transition_to_next": "dissolve"}}]
   }},
-  "toutiao": {{ "title": "...", "body": "微头条短文" }},
-  "douban": {{ "title": "...", "body": "豆瓣笔记" }}
+  "toutiao": {{
+    "title": "18字内吸睛标题",
+    "body": "微头条正文（Markdown）：首段钩子；空行；## 小标题；分段正文； - 要点列表；**重点词**；末行单独放链接 URL"
+  }},
+  "douban": {{
+    "title": "笔记标题",
+    "body": "豆瓣正文（Markdown）：## 小节；分段； - 要点；**重点**；文末链接单独一行"
+  }}
 }}
+
+toutiao.body / douban.body 排版要求：必须用空行分段（\\n\\n），每段不超过 4 行；至少 1 个 ## 小标题、1 组 - 要点列表；核心句用 **加粗**；禁止整段不换行的大块文字。
 
 视频 clips：feed_kind=news 时**必须 3~4 段**、apps 时 2~4 段；口播总字数 180~260；段间转场 0.2~0.3 秒；start/end 在 B-roll 时长内且各段 start 应错开。
 每段 `hook_text` 为屏上短字幕（≤24 字）；正文段可用要点式 hook_text。
@@ -116,7 +126,13 @@ def generate_platform_copy(
     brief_dict = brief.to_dict() if hasattr(brief, "to_dict") else {}
     voice_rules = ""
     if is_voice_style_brief(brief_dict):
-        voice_rules = voice_style_prompt_block(pick_voice_content_style(brief_dict))
+        from python_agent.douyin_news_style import is_news_brief
+        from python_agent.tts_voice_presets import compose_voice_style_from_preset
+
+        if is_news_brief(brief_dict):
+            voice_rules = voice_style_prompt_block(compose_voice_style_from_preset(brief_dict))
+        else:
+            voice_rules = voice_style_prompt_block(pick_voice_content_style(brief_dict))
 
     user = USER_TEMPLATE.format(
         title=brief.title,
@@ -151,7 +167,7 @@ def generate_platform_copy(
             user += (
                 "\n\n## 注意\n"
                 "站内正文过短，可能仅为外链卡片；请基于已有字段保守生成，"
-                "勿编造具体产品细节；引导用户点击详情链接。"
+                "勿编造具体产品细节；视频口播勿引导点击外链或站外平台。"
             )
 
     from python_agent.capabilities.plan_validate import repair_prompt_note, validate_platform_copy
@@ -172,6 +188,21 @@ def generate_platform_copy(
             feed_kind=brief.feed_kind,
             talking_points=brief.talking_points,
         )
+        from python_agent.platform_traffic_rules import (
+            sanitize_video_platform_block,
+            validate_video_copy_no_traffic,
+        )
+
+        for pid in ("douyin", "xhs"):
+            block = copy.get(pid)
+            if isinstance(block, dict):
+                copy[pid] = sanitize_video_platform_block(block)
+        traffic_issues = validate_video_copy_no_traffic(copy, "douyin") + validate_video_copy_no_traffic(
+            copy, "xhs"
+        )
+        if traffic_issues:
+            last_err = ",".join(traffic_issues)
+            continue
         ok, msg = validate_platform_copy(
             copy, broll_seconds=broll_seconds, feed_kind=brief.feed_kind
         )
@@ -285,10 +316,18 @@ def write_publish_pack(
     output_dir.mkdir(parents=True, exist_ok=True)
     save_catalog_snapshot(output_dir, feed_kind=brief.feed_kind)
 
+    from .llm_polish import llm_polish_required
+
     meta: dict[str, Any] = {"source": "template", "llm_error": None}
     copy = platform_copy
     if copy is None:
-        if cfg and cfg.llm_enabled:
+        if not cfg or not cfg.llm_enabled:
+            if cfg and llm_polish_required(cfg):
+                from .pipeline_gates import PipelineGateError
+
+                raise PipelineGateError("llm_disabled", "生产环境禁止 llm.enabled=false")
+            copy = {}
+        else:
             try:
                 copy = generate_platform_copy(brief, article, cfg, broll_seconds=broll_seconds)
                 meta["source"] = "pipeline_llm"
@@ -302,14 +341,19 @@ def write_publish_pack(
             except Exception as e:
                 meta["llm_error"] = f"{type(e).__name__}: {str(e)[:200]}"
                 copy = {}
-                if cfg.render_allow_template_fallback:
+                if cfg.render_allow_template_fallback and not llm_polish_required(cfg):
                     write_fallback_video_plans(brief, output_dir, cfg)
                     meta["source"] = "brief_to_clips_fallback"
-        else:
-            copy = {}
 
     if copy:
         _write_from_llm(brief, output_dir, copy)
+    elif cfg and llm_polish_required(cfg):
+        from .pipeline_gates import PipelineGateError
+
+        raise PipelineGateError(
+            "llm_polish_required",
+            meta.get("llm_error") or "LLM 润色失败，禁止模板/Soul 直出",
+        )
     else:
         write_publish_pack_templates(brief, output_dir)
         if cfg and cfg.render_allow_template_fallback:
@@ -359,33 +403,63 @@ def _write_from_llm(brief: VideoBrief, output_dir: Path, copy: dict[str, Any]) -
     tt = copy.get("toutiao") or {}
     db = copy.get("douban") or {}
 
-    script = (dy.get("script") or "").strip() or script_text(brief)
+    script = (dy.get("script") or "").strip()
+    if not script:
+        from .pipeline_gates import PipelineGateError
+
+        raise PipelineGateError("llm_polish_incomplete", "douyin.script 为空，禁止回退 Soul brief")
     _write_text(output_dir / "script.txt", script)
 
     xhs_video_script = (xhs.get("video_script") or "").strip()
     if xhs_video_script:
         _write_text(output_dir / "script_xhs.txt", xhs_video_script)
 
-    _write_text(publish / "douyin_title.txt", str(dy.get("title") or brief.hook)[:55])
+    from publisher.scripts.format_copy import format_douban_note, format_douyin_title_desc, format_toutiao_micro
+
+    dy_title_raw = str(dy.get("title") or "").strip()[:55]
+    if not dy_title_raw:
+        from .pipeline_gates import PipelineGateError
+
+        raise PipelineGateError("llm_polish_incomplete", "douyin.title 为空")
+    tt_raw = str(tt.get("body") or "")
+    db_raw = str(db.get("body") or "")
+    dy_short, dy_desc = format_douyin_title_desc(dy_title_raw, db_raw or tt_raw)
+    _write_text(publish / "douyin_title.txt", dy_short)
+    _write_text(publish / "douyin_desc.txt", dy_desc)
     tags = dy.get("tags") or brief.tags
     tag_line = " ".join(f"#{t}" if not str(t).startswith("#") else str(t) for t in tags[:8])
     _write_text(publish / "douyin_tags.txt", tag_line)
 
-    _write_text(publish / "xhs_title.txt", str(xhs.get("title") or brief.hook)[:60])
-    _write_text(publish / "xhs_body.txt", str(xhs.get("body") or script)[:2000])
+    xhs_title = str(xhs.get("title") or "").strip()[:60]
+    xhs_body = str(xhs.get("body") or "").strip()[:2000]
+    if not xhs_title or not xhs_body:
+        from .pipeline_gates import PipelineGateError
 
-    from python_agent.capabilities.opening_hook import scroll_stopping_hook, _lead_paragraph
+        raise PipelineGateError("llm_polish_incomplete", "xhs.title/body 为空")
+    _write_text(publish / "xhs_title.txt", xhs_title)
+    _write_text(publish / "xhs_body.txt", xhs_body)
 
-    hook_line = scroll_stopping_hook(title=brief.title, hook=brief.hook, feed_kind=brief.feed_kind)
-    tt_body = str(tt.get("body") or "")
+    from python_agent.capabilities.opening_hook import scroll_stopping_hook
+
+    tt_title = str(tt.get("title") or "").strip() or scroll_stopping_hook(
+        title=brief.title, hook=brief.hook, feed_kind=brief.feed_kind
+    )
+    tt_body = str(tt.get("body") or "").strip()
     if not tt_body:
-        tt_body = f"{brief.title}\n\n" + "\n".join(f"· {p}" for p in brief.talking_points) + f"\n\n{brief.cta}"
-    _write_text(publish / "toutiao_micro.txt", _lead_paragraph(hook_line, tt_body)[:2500])
+        from .pipeline_gates import PipelineGateError
 
-    db_body = str(db.get("body") or "")
-    if not db_body:
-        db_body = f"《{brief.title}》\n\n" + "\n".join(brief.talking_points)
-    _write_text(publish / "douban_note.txt", db_body[:2000])
+        raise PipelineGateError("llm_polish_incomplete", "toutiao.body 为空")
+    _write_text(
+        publish / "toutiao_micro.txt",
+        format_toutiao_micro(tt_title, tt_body)[:2500],
+    )
+
+    db_title = str(db.get("title") or brief.title or brief.hook).strip()[:80]
+    if not str(db_raw).strip():
+        from .pipeline_gates import PipelineGateError
+
+        raise PipelineGateError("llm_polish_incomplete", "douban.body 为空")
+    _write_text(publish / "douban_note.txt", format_douban_note(db_title, db_raw)[:2000])
 
     meta = {
         "source": "pipeline_llm",

@@ -109,7 +109,7 @@ def _synthesize_one_provider(
     if provider == "dashscope":
         return synthesize_dashscope(text, voice, out)
     if provider == "azure":
-        return synthesize_azure(text, voice, out)
+        return synthesize_azure(text, voice, out, rate=rate, pitch=pitch)
     if provider == "openai":
         return synthesize_openai(text, voice, out)
     raise ValueError(f"未知 TTS provider: {provider}")

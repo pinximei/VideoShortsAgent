@@ -56,6 +56,22 @@ def test_prepare_brief_tts_differs_by_platform():
     assert x["tts_rate"] == "+6%"
 
 
+def test_prepare_brief_tts_news_uses_explainer_not_fast_yunyang():
+    from python_agent.douyin_news_style import is_news_brief
+    from python_agent.tts_params import prepare_brief_tts
+
+    b = prepare_brief_tts(
+        {"feed_kind": "news", "theme_id": "ai_news", "voice_content_style_id": "V20_clean_badge_friend"},
+        "douyin",
+    )
+    assert is_news_brief(b)
+    assert b["tts_voice"] == "zh-CN-XiaoxiaoNeural"
+    assert b["tts_rate"] == "+0%"
+    assert b["tts_pitch"] == "+0Hz"
+    assert float(b["sentence_pause_sec"]) >= 0.35
+    assert b.get("tts_voice_preset") == "news_anchor_female"
+
+
 def test_slow_subtitle_gets_lower_pitch():
     t = resolve_tts_params(
         {"subtitle_switch_ms": 4000, "validation_note": "phash_bottom_band", "phash_only": True},

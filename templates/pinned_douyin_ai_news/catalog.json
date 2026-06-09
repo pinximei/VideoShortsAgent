@@ -1,153 +1,729 @@
 {
   "family": "douyin_ai_news",
-  "label": "抖音·爱资讯（多款式轮换）",
+  "label": "抖音·爱资讯（9基款 + 衍体）",
   "pinned_at": "2026-06-02",
   "platform": "douyin",
   "feed_kind": "news",
   "rotation": "article_id_hash",
+  "rotation_default": "base",
+  "images": {
+    "enabled": true,
+    "title_use_article_cover": true,
+    "content_stock_search": true,
+    "providers": ["article_cover", "pixabay", "duckduckgo"]
+  },
   "variants": [
     {
-      "id": "ai_news_breaking_v1",
-      "label": "突发快讯·暖橙",
-      "visual_style": "warm_gold",
-      "voice_id": "V13_marquee_news",
-      "title": {
-        "motion_profile": "tiktok_word_pop",
-        "css": ["text-stroke-yellow", "sparkle-dots", "corner-brackets", "caption-bottom-safe"],
-        "background_colors": ["#1a1208", "#221510", "#1f120c"]
-      },
-      "opening": {
-        "duration_frames": 78,
-        "max_hook_beats": 2,
-        "hook_tone": "breaking"
-      },
-      "content_slots": [
-        {
-          "motion_profile": "glass_card_stack",
-          "css": ["glass-card", "sparkle-dots", "pill-badge"],
-          "mid_effect": "glow_ring",
-          "mid_info_layout": "steps"
-        },
-        {
-          "motion_profile": "bullet_stagger_up",
-          "css": ["soft-purple-gradient", "sparkle-dots", "float-icon"],
-          "mid_effect": "typewriter",
-          "mid_info_layout": "framed"
-        },
-        {
-          "motion_profile": "shake_emphasis",
-          "css": ["sparkle-dots", "glass-card"],
-          "mid_effect": "glow_scan",
-          "mid_info_layout": "keywords"
-        }
-      ],
-      "cta": {
-        "motion_profile": "cta_pulse_arrow",
-        "css": ["soft-purple-gradient", "pulse-button", "sparkle-dots", "caption-bottom-safe"]
-      },
-      "caption": {
-        "mode": "tiktok",
-        "max_chars_per_page": 22,
-        "caption_bottom_px": 320,
-        "mid_safe_bottom_ratio": 0.4
-      },
-      "compose_hint": "突发资讯：片头「别划走/刚刚」+ 一句话新闻点；禁止 Star、开源、仓库、GitHub；口语短句。"
-    },
-    {
-      "id": "ai_news_bulletin_v1",
-      "label": "科技简报·冷蓝",
-      "visual_style": "tech_blue",
-      "voice_id": "V13_marquee_news",
-      "title": {
-        "motion_profile": "kinetic_slam_tight",
-        "css": ["glass-card", "sparkle-dots", "caption-bottom-safe"],
-        "background_colors": ["#0f172a", "#1e293b", "#172033"]
-      },
-      "opening": {
-        "duration_frames": 84,
-        "max_hook_beats": 2,
-        "hook_tone": "bulletin"
-      },
-      "content_slots": [
-        {
-          "motion_profile": "tiktok_phrase_pages",
-          "css": ["glass-card", "pill-badge", "sparkle-dots"],
-          "mid_effect": "glow_scan",
-          "mid_info_layout": "framed"
-        },
-        {
-          "motion_profile": "glass_card_stack",
-          "css": ["soft-purple-gradient", "glass-card"],
-          "mid_effect": "glow_ring",
-          "mid_info_layout": "steps"
-        },
-        {
-          "motion_profile": "bullet_stagger_up",
-          "css": ["float-icon", "sparkle-dots"],
-          "mid_effect": "particle_dust",
-          "mid_info_layout": "keywords"
-        }
-      ],
-      "cta": {
-        "motion_profile": "cta_pulse_arrow",
-        "css": ["glass-card", "pulse-button", "caption-bottom-safe"]
-      },
-      "caption": {
-        "mode": "tiktok",
-        "max_chars_per_page": 20,
-        "caption_bottom_px": 300,
-        "mid_safe_bottom_ratio": 0.42
-      },
-      "compose_hint": "科技简报：标题≤14字像新闻标题；客观陈述；禁止 Star/仓库话术；2–3 条要点竖卡。"
-    },
-    {
-      "id": "ai_news_editorial_v1",
-      "label": "深度解读·紫雾",
-      "visual_style": "dark_purple",
-      "voice_id": "V04_minimal_calm",
+      "id": "ai_news_inferno_alert",
+      "tier": "base",
+      "label": "烈焰突发·红橙风暴",
+      "visual_style": "inferno_red",
+      "voice_id": "V01_burst_hook_fast",
+      "gradient_colors": ["#ff2200", "#ff6600", "#1a0500"],
+      "color_mood": "fire-storm",
+      "background_variant": "liquid-orbs",
+      "particle_type": "warm",
+      "use_web3_background": true,
+      "accent_color": "#FF4500",
+      "accent_color2": "#FFD700",
+      "text_color": "#fff5eb",
       "title": {
         "motion_profile": "flash_hook_smash",
-        "css": ["soft-purple-gradient", "sparkle-dots", "text-stroke-yellow", "caption-bottom-safe"],
-        "background_colors": ["#1a0f24", "#241530", "#1e1228"]
+        "css": ["text-stroke-yellow", "corner-brackets", "sparkle-dots", "caption-bottom-safe"]
       },
-      "opening": {
-        "duration_frames": 84,
-        "max_hook_beats": 2,
-        "hook_tone": "editorial"
-      },
+      "opening": { "duration_frames": 78, "max_hook_beats": 2, "hook_tone": "breaking" },
       "content_slots": [
-        {
-          "motion_profile": "shake_emphasis",
-          "css": ["soft-purple-gradient", "sparkle-dots"],
-          "mid_effect": "bracket_slam",
-          "mid_info_layout": "keywords"
-        },
-        {
-          "motion_profile": "kinetic_slam_tight",
-          "css": ["glass-card", "float-icon"],
-          "mid_effect": "glow_ring",
-          "mid_info_layout": "framed"
-        },
-        {
-          "motion_profile": "glass_card_stack",
-          "css": ["pill-badge", "sparkle-dots"],
-          "mid_effect": "typewriter",
-          "mid_info_layout": "compare"
-        }
+        { "motion_profile": "shake_emphasis", "css": ["pill-badge", "sparkle-dots"], "mid_effect": "bracket_slam", "mid_info_layout": "keywords" },
+        { "motion_profile": "glass_card_stack", "css": ["glass-card", "float-icon"], "mid_effect": "glow_ring", "mid_info_layout": "steps" },
+        { "motion_profile": "bullet_stagger_up", "css": ["sparkle-dots"], "mid_effect": "glow_scan", "mid_info_layout": "framed" }
       ],
-      "cta": {
-        "motion_profile": "cta_pulse_arrow",
-        "css": ["soft-purple-gradient", "pulse-button", "sparkle-dots"]
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "text-stroke-yellow", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 300, "mid_safe_bottom_ratio": 0.4 },
+      "compose_hint": "烈焰突发：极短句、紧迫感；needs_image + 英文 keywords（breaking news alert）。"
+    },
+    {
+      "id": "ai_news_inferno_alert_snap",
+      "tier": "derivative",
+      "parent_id": "ai_news_inferno_alert",
+      "label": "烈焰突发·快切版",
+      "visual_style": "inferno_red",
+      "voice_id": "V01_burst_hook_fast",
+      "gradient_colors": ["#ff3300", "#ff7700", "#2a0800"],
+      "color_mood": "fire-storm",
+      "background_variant": "plasma-wave",
+      "particle_type": "warm",
+      "use_web3_background": true,
+      "accent_color": "#FF5722",
+      "accent_color2": "#FFEB3B",
+      "text_color": "#fff8f0",
+      "title": { "motion_profile": "tiktok_word_pop", "css": ["text-stroke-yellow", "sparkle-dots", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 72, "max_hook_beats": 2, "hook_tone": "urgent" },
+      "content_slots": [
+        { "motion_profile": "tiktok_phrase_pages", "css": ["pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "keywords" },
+        { "motion_profile": "shake_emphasis", "css": ["glass-card"], "mid_effect": "bracket_slam", "mid_info_layout": "steps" },
+        { "motion_profile": "bullet_stagger_up", "css": ["sparkle-dots"], "mid_effect": "typewriter", "mid_info_layout": "framed" }
+      ],
+      "cta": { "motion_profile": "shake_emphasis", "css": ["pulse-button", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 20, "caption_bottom_px": 290, "mid_safe_bottom_ratio": 0.41 }
+    },
+    {
+      "id": "ai_news_inferno_alert_rush",
+      "tier": "derivative",
+      "parent_id": "ai_news_inferno_alert",
+      "label": "烈焰突发·砸字版",
+      "visual_style": "inferno_red",
+      "voice_id": "V11_word_slam_energy",
+      "gradient_colors": ["#ff2200", "#ff6600", "#1a0500"],
+      "color_mood": "fire-storm",
+      "background_variant": "liquid-orbs",
+      "particle_type": "dot",
+      "use_web3_background": true,
+      "accent_color": "#FF4500",
+      "accent_color2": "#FFD700",
+      "text_color": "#fff5eb",
+      "title": { "motion_profile": "kinetic_slam_tight", "css": ["corner-brackets", "text-stroke-yellow", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "hype" },
+      "content_slots": [
+        { "motion_profile": "kinetic_slam_tight", "css": ["sparkle-dots"], "mid_effect": "glow_ring", "mid_info_layout": "keywords" },
+        { "motion_profile": "glass_card_stack", "css": ["float-icon"], "mid_effect": "particle_dust", "mid_info_layout": "steps" },
+        { "motion_profile": "shake_emphasis", "css": ["pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "compare" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "sparkle-dots"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 310, "mid_safe_bottom_ratio": 0.39 }
+    },
+
+    {
+      "id": "ai_news_glacier_wire",
+      "tier": "base",
+      "label": "冰川电讯·冰蓝专线",
+      "visual_style": "glacier_blue",
+      "voice_id": "V13_marquee_news",
+      "gradient_colors": ["#001a33", "#0066cc", "#000810"],
+      "color_mood": "glacier-wire",
+      "background_variant": "mesh-aurora",
+      "particle_type": "starfield",
+      "use_web3_background": true,
+      "accent_color": "#00D4FF",
+      "accent_color2": "#38BDF8",
+      "text_color": "#e0f2fe",
+      "title": {
+        "motion_profile": "kinetic_slam_tight",
+        "css": ["glass-card", "caption-bottom-safe", "sparkle-dots"]
       },
-      "caption": {
-        "mode": "tiktok",
-        "max_chars_per_page": 24,
-        "caption_bottom_px": 340,
-        "mid_safe_bottom_ratio": 0.38
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "bulletin" },
+      "content_slots": [
+        { "motion_profile": "tiktok_phrase_pages", "css": ["glass-card", "pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "framed" },
+        { "motion_profile": "bullet_rail_right", "css": ["float-icon"], "mid_effect": "glow_ring", "mid_info_layout": "steps" },
+        { "motion_profile": "glass_card_stack", "css": ["sparkle-dots"], "mid_effect": "typewriter", "mid_info_layout": "keywords" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["glass-card", "pulse-button", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 20, "caption_bottom_px": 300, "mid_safe_bottom_ratio": 0.42 },
+      "compose_hint": "冰川电讯：冷静客观；needs_image + technology news screen。"
+    },
+    {
+      "id": "ai_news_glacier_wire_snap",
+      "tier": "derivative",
+      "parent_id": "ai_news_glacier_wire",
+      "label": "冰川电讯·简讯版",
+      "visual_style": "glacier_blue",
+      "voice_id": "V13_marquee_news",
+      "gradient_colors": ["#b8e6ff", "#0088dd", "#001528"],
+      "color_mood": "glacier-wire",
+      "background_variant": "duotone-flow",
+      "particle_type": "starfield",
+      "use_web3_background": true,
+      "accent_color": "#22D3EE",
+      "accent_color2": "#60A5FA",
+      "text_color": "#f0f9ff",
+      "title": { "motion_profile": "minimal_headline", "css": ["glass-card", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 72, "max_hook_beats": 2, "hook_tone": "bulletin" },
+      "content_slots": [
+        { "motion_profile": "minimal_headline", "css": ["pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "framed" },
+        { "motion_profile": "tiktok_phrase_pages", "css": ["glass-card"], "mid_effect": "glow_ring", "mid_info_layout": "steps" },
+        { "motion_profile": "bullet_stagger_up", "css": ["sparkle-dots"], "mid_effect": "particle_dust", "mid_info_layout": "keywords" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["glass-card", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 18, "caption_bottom_px": 295, "mid_safe_bottom_ratio": 0.43 }
+    },
+    {
+      "id": "ai_news_glacier_wire_rush",
+      "tier": "derivative",
+      "parent_id": "ai_news_glacier_wire",
+      "label": "冰川电讯·滚动版",
+      "visual_style": "glacier_blue",
+      "voice_id": "V12_phrase_pages",
+      "gradient_colors": ["#e0f7ff", "#0066cc", "#001a33"],
+      "color_mood": "deep-ocean",
+      "background_variant": "gradient-mesh",
+      "particle_type": "bokeh",
+      "use_web3_background": true,
+      "accent_color": "#00E5C8",
+      "accent_color2": "#0EA5E9",
+      "text_color": "#e0f2fe",
+      "title": { "motion_profile": "marquee_ticker", "css": ["glass-card", "sparkle-dots", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "analysis" },
+      "content_slots": [
+        { "motion_profile": "marquee_ticker", "css": ["pill-badge"], "mid_effect": "typewriter", "mid_info_layout": "keywords" },
+        { "motion_profile": "bullet_rail_right", "css": ["float-icon"], "mid_effect": "glow_scan", "mid_info_layout": "compare" },
+        { "motion_profile": "glass_card_stack", "css": ["glass-card"], "mid_effect": "glow_ring", "mid_info_layout": "framed" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "glass-card"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 305, "mid_safe_bottom_ratio": 0.41 }
+    },
+
+    {
+      "id": "ai_news_neon_tabloid",
+      "tier": "base",
+      "label": "霓虹小报·赛博粉青",
+      "visual_style": "neon_tabloid",
+      "voice_id": "V07_glitch_tease",
+      "gradient_colors": ["#ff00ff", "#00ffff", "#12001a"],
+      "color_mood": "neon-tabloid",
+      "background_variant": "neon-grid",
+      "particle_type": "matrix",
+      "use_web3_background": true,
+      "accent_color": "#FF00FF",
+      "accent_color2": "#00FFFF",
+      "text_color": "#fdf4ff",
+      "title": {
+        "motion_profile": "glitch_hook_clean",
+        "css": ["soft-purple-gradient", "sparkle-dots", "text-stroke-yellow", "caption-bottom-safe"]
       },
-      "compose_hint": "深度解读：片头悬念 + 影响/怎么办；禁止 Star；副标题卡 3–4 条，偏分析口吻。"
+      "opening": { "duration_frames": 78, "max_hook_beats": 2, "hook_tone": "neon" },
+      "content_slots": [
+        { "motion_profile": "shake_emphasis", "css": ["soft-purple-gradient"], "mid_effect": "bracket_slam", "mid_info_layout": "keywords" },
+        { "motion_profile": "tiktok_word_pop", "css": ["pill-badge", "sparkle-dots"], "mid_effect": "glow_scan", "mid_info_layout": "framed" },
+        { "motion_profile": "bullet_stagger_up", "css": ["float-icon"], "mid_effect": "particle_dust", "mid_info_layout": "steps" }
+      ],
+      "cta": { "motion_profile": "shake_emphasis", "css": ["soft-purple-gradient", "pulse-button"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 320, "mid_safe_bottom_ratio": 0.4 },
+      "compose_hint": "霓虹小报：高能量、抓眼球；needs_image + cyberpunk technology news。"
+    },
+    {
+      "id": "ai_news_neon_tabloid_snap",
+      "tier": "derivative",
+      "parent_id": "ai_news_neon_tabloid",
+      "label": "霓虹小报·闪切版",
+      "visual_style": "neon_tabloid",
+      "voice_id": "V07_glitch_tease",
+      "gradient_colors": ["#cc00cc", "#00dddd", "#0d0014"],
+      "color_mood": "neon-cyber",
+      "background_variant": "hex-tunnel",
+      "particle_type": "matrix",
+      "use_web3_background": true,
+      "accent_color": "#E879F9",
+      "accent_color2": "#22D3EE",
+      "text_color": "#faf5ff",
+      "title": { "motion_profile": "flash_hook_smash", "css": ["sparkle-dots", "text-stroke-yellow", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 72, "max_hook_beats": 2, "hook_tone": "neon" },
+      "content_slots": [
+        { "motion_profile": "flash_hook_smash", "css": ["soft-purple-gradient"], "mid_effect": "glow_scan", "mid_info_layout": "keywords" },
+        { "motion_profile": "shake_emphasis", "css": ["pill-badge"], "mid_effect": "bracket_slam", "mid_info_layout": "framed" },
+        { "motion_profile": "tiktok_word_pop", "css": ["sparkle-dots"], "mid_effect": "glow_ring", "mid_info_layout": "steps" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "sparkle-dots"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 20, "caption_bottom_px": 315, "mid_safe_bottom_ratio": 0.4 }
+    },
+    {
+      "id": "ai_news_neon_tabloid_rush",
+      "tier": "derivative",
+      "parent_id": "ai_news_neon_tabloid",
+      "label": "霓虹小报·故障版",
+      "visual_style": "neon_tabloid",
+      "voice_id": "V14_shake_keyword",
+      "gradient_colors": ["#ff00ff", "#00ffff", "#12001a"],
+      "color_mood": "neon-tabloid",
+      "background_variant": "neon-grid",
+      "particle_type": "ring",
+      "use_web3_background": true,
+      "accent_color": "#FF00FF",
+      "accent_color2": "#00FFFF",
+      "text_color": "#fdf4ff",
+      "title": { "motion_profile": "glitch_hook_clean", "css": ["soft-purple-gradient", "corner-brackets", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "hype" },
+      "content_slots": [
+        { "motion_profile": "glitch_hook_clean", "css": ["sparkle-dots"], "mid_effect": "particle_dust", "mid_info_layout": "keywords" },
+        { "motion_profile": "shake_emphasis", "css": ["float-icon"], "mid_effect": "bracket_slam", "mid_info_layout": "compare" },
+        { "motion_profile": "bullet_rail_right", "css": ["pill-badge"], "mid_effect": "typewriter", "mid_info_layout": "framed" }
+      ],
+      "cta": { "motion_profile": "shake_emphasis", "css": ["soft-purple-gradient", "pulse-button"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 24, "caption_bottom_px": 330, "mid_safe_bottom_ratio": 0.38 }
+    },
+
+    {
+      "id": "ai_news_morning_paper",
+      "tier": "base",
+      "label": "晨报白纸·浅色阅读",
+      "visual_style": "paper_light",
+      "voice_id": "V04_minimal_calm",
+      "gradient_colors": ["#faf8f5", "#e8e4dc", "#d4cfc4"],
+      "color_mood": "paper-light",
+      "background_variant": "duotone-flow",
+      "particle_type": "none",
+      "use_web3_background": false,
+      "accent_color": "#EA580C",
+      "accent_color2": "#2563EB",
+      "text_color": "#0f172a",
+      "title": {
+        "motion_profile": "minimal_headline",
+        "css": ["plain-white-bg", "repo-header", "pill-badge", "caption-bottom-safe"]
+      },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "paper" },
+      "content_slots": [
+        { "motion_profile": "minimal_headline", "css": ["plain-white-bg", "pill-badge"], "mid_effect": "typewriter", "mid_info_layout": "framed" },
+        { "motion_profile": "bullet_rail_right", "css": ["accent-orange-word"], "mid_effect": "glow_ring", "mid_info_layout": "steps" },
+        { "motion_profile": "glass_card_stack", "css": ["glass-card"], "mid_effect": "glow_scan", "mid_info_layout": "compare" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["plain-white-bg", "pulse-button", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 24, "caption_bottom_px": 340, "mid_safe_bottom_ratio": 0.38 },
+      "compose_hint": "晨报白纸：浅色纸感、理性叙述；needs_image + newspaper desk laptop。"
+    },
+    {
+      "id": "ai_news_morning_paper_snap",
+      "tier": "derivative",
+      "parent_id": "ai_news_morning_paper",
+      "label": "晨报白纸·简报版",
+      "visual_style": "paper_light",
+      "voice_id": "V04_minimal_calm",
+      "gradient_colors": ["#ffffff", "#f1f5f9", "#e2e8f0"],
+      "color_mood": "paper-light",
+      "background_variant": "gradient-mesh",
+      "particle_type": "none",
+      "use_web3_background": false,
+      "accent_color": "#DC2626",
+      "accent_color2": "#1D4ED8",
+      "text_color": "#111827",
+      "title": { "motion_profile": "bullet_stagger_up", "css": ["plain-white-bg", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 72, "max_hook_beats": 2, "hook_tone": "minimal" },
+      "content_slots": [
+        { "motion_profile": "bullet_stagger_up", "css": ["pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "steps" },
+        { "motion_profile": "minimal_headline", "css": ["glass-card"], "mid_effect": "glow_ring", "mid_info_layout": "framed" },
+        { "motion_profile": "bullet_rail_right", "css": ["accent-orange-word"], "mid_effect": "typewriter", "mid_info_layout": "keywords" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["plain-white-bg", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 335, "mid_safe_bottom_ratio": 0.39 }
+    },
+    {
+      "id": "ai_news_morning_paper_rush",
+      "tier": "derivative",
+      "parent_id": "ai_news_morning_paper",
+      "label": "晨报白纸·卡片版",
+      "visual_style": "paper_light",
+      "voice_id": "V10_glass_three_points",
+      "gradient_colors": ["#faf8f5", "#e8e4dc", "#d4cfc4"],
+      "color_mood": "paper-light",
+      "background_variant": "duotone-flow",
+      "particle_type": "dot",
+      "use_web3_background": false,
+      "accent_color": "#EA580C",
+      "accent_color2": "#2563EB",
+      "text_color": "#0f172a",
+      "title": { "motion_profile": "glass_card_stack", "css": ["plain-white-bg", "glass-card", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "calm" },
+      "content_slots": [
+        { "motion_profile": "glass_card_stack", "css": ["glass-card", "pill-badge"], "mid_effect": "glow_ring", "mid_info_layout": "framed" },
+        { "motion_profile": "glass_card_stack", "css": ["accent-orange-word"], "mid_effect": "glow_scan", "mid_info_layout": "steps" },
+        { "motion_profile": "minimal_headline", "css": ["plain-white-bg"], "mid_effect": "typewriter", "mid_info_layout": "compare" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["glass-card", "pulse-button"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 26, "caption_bottom_px": 345, "mid_safe_bottom_ratio": 0.37 }
+    },
+
+    {
+      "id": "ai_news_void_signal",
+      "tier": "base",
+      "label": "虚空信号·黑金专线",
+      "visual_style": "obsidian_gold",
+      "voice_id": "V20_clean_badge_friend",
+      "gradient_colors": ["#0d0d0d", "#1a1410", "#2a1f14"],
+      "color_mood": "void-signal",
+      "background_variant": "starfield-warp",
+      "particle_type": "starfield",
+      "use_web3_background": true,
+      "accent_color": "#d4a855",
+      "accent_color2": "#f5f0e8",
+      "text_color": "#f8fafc",
+      "title": {
+        "motion_profile": "tiktok_phrase_pages",
+        "css": ["corner-brackets", "sparkle-dots", "caption-bottom-safe"]
+      },
+      "opening": { "duration_frames": 78, "max_hook_beats": 2, "hook_tone": "urgent" },
+      "content_slots": [
+        { "motion_profile": "shake_emphasis", "css": ["sparkle-dots"], "mid_effect": "bracket_slam", "mid_info_layout": "keywords" },
+        { "motion_profile": "kinetic_slam_tight", "css": ["pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "framed" },
+        { "motion_profile": "tiktok_word_pop", "css": ["float-icon"], "mid_effect": "particle_dust", "mid_info_layout": "steps" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 20, "caption_bottom_px": 300, "mid_safe_bottom_ratio": 0.42 },
+      "compose_hint": "虚空信号：黑底高对比；片头必须说清产品名+一句话定义；needs_image + dark screen breaking news。"
+    },
+    {
+      "id": "ai_news_void_signal_snap",
+      "tier": "derivative",
+      "parent_id": "ai_news_void_signal",
+      "label": "虚空信号·急报版",
+      "visual_style": "void_black",
+      "voice_id": "V01_burst_hook_fast",
+      "gradient_colors": ["#000000", "#111827", "#374151"],
+      "color_mood": "minimal-dark",
+      "background_variant": "starfield-warp",
+      "particle_type": "starfield",
+      "use_web3_background": true,
+      "accent_color": "#d4a855",
+      "accent_color2": "#fbbf24",
+      "text_color": "#f9fafb",
+      "title": { "motion_profile": "flash_hook_smash", "css": ["text-stroke-yellow", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 72, "max_hook_beats": 2, "hook_tone": "urgent" },
+      "content_slots": [
+        { "motion_profile": "flash_hook_smash", "css": ["sparkle-dots"], "mid_effect": "glow_scan", "mid_info_layout": "keywords" },
+        { "motion_profile": "shake_emphasis", "css": ["pill-badge"], "mid_effect": "bracket_slam", "mid_info_layout": "framed" },
+        { "motion_profile": "bullet_stagger_up", "css": [], "mid_effect": "glow_ring", "mid_info_layout": "steps" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "text-stroke-yellow"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 18, "caption_bottom_px": 290, "mid_safe_bottom_ratio": 0.43 }
+    },
+    {
+      "id": "ai_news_void_signal_rush",
+      "tier": "derivative",
+      "parent_id": "ai_news_void_signal",
+      "label": "虚空信号·星野版",
+      "visual_style": "void_black",
+      "voice_id": "V14_shake_keyword",
+      "gradient_colors": ["#000000", "#0a0a12", "#1e293b"],
+      "color_mood": "void-signal",
+      "background_variant": "mesh-aurora",
+      "particle_type": "bokeh",
+      "use_web3_background": true,
+      "accent_color": "#d4a855",
+      "accent_color2": "#f7971e",
+      "text_color": "#f8fafc",
+      "title": { "motion_profile": "kinetic_slam_tight", "css": ["corner-brackets", "sparkle-dots", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "breaking" },
+      "content_slots": [
+        { "motion_profile": "kinetic_slam_tight", "css": ["float-icon"], "mid_effect": "particle_dust", "mid_info_layout": "compare" },
+        { "motion_profile": "shake_emphasis", "css": ["pill-badge"], "mid_effect": "glow_ring", "mid_info_layout": "keywords" },
+        { "motion_profile": "tiktok_phrase_pages", "css": ["sparkle-dots"], "mid_effect": "typewriter", "mid_info_layout": "framed" }
+      ],
+      "cta": { "motion_profile": "shake_emphasis", "css": ["pulse-button", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 305, "mid_safe_bottom_ratio": 0.41 }
+    },
+
+    {
+      "id": "ai_news_aurora_fable",
+      "tier": "base",
+      "label": "极光寓言·紫绿梦幻",
+      "visual_style": "aurora_purple",
+      "voice_id": "V16_soft_purple_story",
+      "gradient_colors": ["#7b2ff7", "#00d4aa", "#1a0a2e"],
+      "color_mood": "aurora-fable",
+      "background_variant": "plasma-wave",
+      "particle_type": "bokeh",
+      "use_web3_background": true,
+      "accent_color": "#C084FC",
+      "accent_color2": "#34D399",
+      "text_color": "#faf5ff",
+      "title": {
+        "motion_profile": "flash_hook_smash",
+        "css": ["soft-purple-gradient", "sparkle-dots", "caption-bottom-safe"]
+      },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "analysis" },
+      "content_slots": [
+        { "motion_profile": "glass_card_stack", "css": ["soft-purple-gradient", "glass-card"], "mid_effect": "glow_ring", "mid_info_layout": "steps" },
+        { "motion_profile": "kinetic_slam_tight", "css": ["float-icon"], "mid_effect": "typewriter", "mid_info_layout": "framed" },
+        { "motion_profile": "bullet_stagger_up", "css": ["pill-badge"], "mid_effect": "particle_dust", "mid_info_layout": "compare" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["soft-purple-gradient", "pulse-button", "sparkle-dots"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 24, "caption_bottom_px": 340, "mid_safe_bottom_ratio": 0.38 },
+      "compose_hint": "极光寓言：偏深度解读；needs_image + aurora abstract technology。"
+    },
+    {
+      "id": "ai_news_aurora_fable_snap",
+      "tier": "derivative",
+      "parent_id": "ai_news_aurora_fable",
+      "label": "极光寓言·柔光版",
+      "visual_style": "aurora_purple",
+      "voice_id": "V16_soft_purple_story",
+      "gradient_colors": ["#a78bfa", "#6ee7b7", "#2e1065"],
+      "color_mood": "aurora-fable",
+      "background_variant": "mesh-aurora",
+      "particle_type": "bokeh",
+      "use_web3_background": true,
+      "accent_color": "#E9D5FF",
+      "accent_color2": "#6EE7B7",
+      "text_color": "#fdf4ff",
+      "title": { "motion_profile": "minimal_headline", "css": ["soft-purple-gradient", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 72, "max_hook_beats": 2, "hook_tone": "editorial" },
+      "content_slots": [
+        { "motion_profile": "minimal_headline", "css": ["glass-card"], "mid_effect": "glow_ring", "mid_info_layout": "framed" },
+        { "motion_profile": "glass_card_stack", "css": ["soft-purple-gradient"], "mid_effect": "typewriter", "mid_info_layout": "steps" },
+        { "motion_profile": "bullet_rail_right", "css": ["pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "keywords" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["soft-purple-gradient", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 26, "caption_bottom_px": 345, "mid_safe_bottom_ratio": 0.37 }
+    },
+    {
+      "id": "ai_news_aurora_fable_rush",
+      "tier": "derivative",
+      "parent_id": "ai_news_aurora_fable",
+      "label": "极光寓言·脉冲版",
+      "visual_style": "aurora_purple",
+      "voice_id": "V04_minimal_calm",
+      "gradient_colors": ["#7b2ff7", "#00d4aa", "#1a0a2e"],
+      "color_mood": "cyberpunk",
+      "background_variant": "plasma-wave",
+      "particle_type": "glow",
+      "use_web3_background": true,
+      "accent_color": "#E879F9",
+      "accent_color2": "#00E5C8",
+      "text_color": "#faf5ff",
+      "title": { "motion_profile": "tiktok_phrase_pages", "css": ["soft-purple-gradient", "sparkle-dots", "text-stroke-yellow"] },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "prism" },
+      "content_slots": [
+        { "motion_profile": "tiktok_phrase_pages", "css": ["sparkle-dots"], "mid_effect": "bracket_slam", "mid_info_layout": "keywords" },
+        { "motion_profile": "shake_emphasis", "css": ["glass-card"], "mid_effect": "glow_scan", "mid_info_layout": "framed" },
+        { "motion_profile": "glass_card_stack", "css": ["pill-badge"], "mid_effect": "glow_ring", "mid_info_layout": "compare" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "soft-purple-gradient"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 330, "mid_safe_bottom_ratio": 0.39 }
+    },
+
+    {
+      "id": "ai_news_acid_radar",
+      "tier": "base",
+      "label": "酸性雷达·荧光绿黑",
+      "visual_style": "acid_lime",
+      "voice_id": "V11_word_slam_energy",
+      "gradient_colors": ["#39ff14", "#0d0d0d", "#1a3300"],
+      "color_mood": "acid-lime",
+      "background_variant": "hex-tunnel",
+      "particle_type": "ring",
+      "use_web3_background": true,
+      "accent_color": "#39FF14",
+      "accent_color2": "#A3E635",
+      "text_color": "#ecfccb",
+      "title": {
+        "motion_profile": "kinetic_slam_tight",
+        "css": ["text-stroke-yellow", "corner-brackets", "caption-bottom-safe"]
+      },
+      "opening": { "duration_frames": 78, "max_hook_beats": 2, "hook_tone": "hype" },
+      "content_slots": [
+        { "motion_profile": "bullet_rail_right", "css": ["pill-badge", "sparkle-dots"], "mid_effect": "glow_scan", "mid_info_layout": "keywords" },
+        { "motion_profile": "shake_emphasis", "css": ["float-icon"], "mid_effect": "bracket_slam", "mid_info_layout": "framed" },
+        { "motion_profile": "tiktok_word_pop", "css": ["glass-card"], "mid_effect": "particle_dust", "mid_info_layout": "steps" }
+      ],
+      "cta": { "motion_profile": "kinetic_slam_tight", "css": ["pulse-button", "text-stroke-yellow"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 20, "caption_bottom_px": 300, "mid_safe_bottom_ratio": 0.42 },
+      "compose_hint": "酸性雷达：高饱和荧光；needs_image + hacker terminal green screen。"
+    },
+    {
+      "id": "ai_news_acid_radar_snap",
+      "tier": "derivative",
+      "parent_id": "ai_news_acid_radar",
+      "label": "酸性雷达·扫描版",
+      "visual_style": "acid_lime",
+      "voice_id": "V11_word_slam_energy",
+      "gradient_colors": ["#84cc16", "#050505", "#14532d"],
+      "color_mood": "acid-lime",
+      "background_variant": "neon-grid",
+      "particle_type": "matrix",
+      "use_web3_background": true,
+      "accent_color": "#BEF264",
+      "accent_color2": "#39FF14",
+      "text_color": "#f7fee7",
+      "title": { "motion_profile": "tiktok_word_pop", "css": ["sparkle-dots", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 72, "max_hook_beats": 2, "hook_tone": "hype" },
+      "content_slots": [
+        { "motion_profile": "tiktok_word_pop", "css": ["pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "keywords" },
+        { "motion_profile": "bullet_rail_right", "css": [], "mid_effect": "typewriter", "mid_info_layout": "steps" },
+        { "motion_profile": "kinetic_slam_tight", "css": ["glass-card"], "mid_effect": "glow_ring", "mid_info_layout": "framed" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 18, "caption_bottom_px": 295, "mid_safe_bottom_ratio": 0.43 }
+    },
+    {
+      "id": "ai_news_acid_radar_rush",
+      "tier": "derivative",
+      "parent_id": "ai_news_acid_radar",
+      "label": "酸性雷达·隧道版",
+      "visual_style": "acid_lime",
+      "voice_id": "V02_tiktok_follow_punch",
+      "gradient_colors": ["#39ff14", "#0d0d0d", "#1a3300"],
+      "color_mood": "acid-lime",
+      "background_variant": "hex-tunnel",
+      "particle_type": "dot",
+      "use_web3_background": true,
+      "accent_color": "#39FF14",
+      "accent_color2": "#FDE047",
+      "text_color": "#ecfccb",
+      "title": { "motion_profile": "shake_emphasis", "css": ["corner-brackets", "text-stroke-yellow", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "neon" },
+      "content_slots": [
+        { "motion_profile": "shake_emphasis", "css": ["sparkle-dots"], "mid_effect": "bracket_slam", "mid_info_layout": "compare" },
+        { "motion_profile": "tiktok_word_pop", "css": ["float-icon"], "mid_effect": "particle_dust", "mid_info_layout": "keywords" },
+        { "motion_profile": "bullet_rail_right", "css": ["pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "framed" }
+      ],
+      "cta": { "motion_profile": "shake_emphasis", "css": ["text-stroke-yellow", "pulse-button"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 310, "mid_safe_bottom_ratio": 0.4 }
+    },
+
+    {
+      "id": "ai_news_coral_bloom",
+      "tier": "base",
+      "label": "珊瑚晚霞·暖粉日落",
+      "visual_style": "coral_sunset",
+      "voice_id": "V02_tiktok_follow_punch",
+      "gradient_colors": ["#ff6b6b", "#feca57", "#ff9ff3"],
+      "color_mood": "coral-bloom",
+      "background_variant": "gradient-mesh",
+      "particle_type": "dot",
+      "use_web3_background": true,
+      "accent_color": "#FB7185",
+      "accent_color2": "#FBBF24",
+      "text_color": "#fff7ed",
+      "title": {
+        "motion_profile": "tiktok_word_pop",
+        "css": ["accent-orange-word", "sparkle-dots", "caption-bottom-safe"]
+      },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "breaking" },
+      "content_slots": [
+        { "motion_profile": "tiktok_phrase_pages", "css": ["pill-badge", "float-icon"], "mid_effect": "glow_ring", "mid_info_layout": "steps" },
+        { "motion_profile": "glass_card_stack", "css": ["glass-card"], "mid_effect": "typewriter", "mid_info_layout": "framed" },
+        { "motion_profile": "bullet_stagger_up", "css": ["accent-orange-word"], "mid_effect": "glow_scan", "mid_info_layout": "keywords" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "accent-orange-word", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 320, "mid_safe_bottom_ratio": 0.4 },
+      "compose_hint": "珊瑚晚霞：生活化、亲和；needs_image + sunset lifestyle technology。"
+    },
+    {
+      "id": "ai_news_coral_bloom_snap",
+      "tier": "derivative",
+      "parent_id": "ai_news_coral_bloom",
+      "label": "珊瑚晚霞·温柔版",
+      "visual_style": "coral_sunset",
+      "voice_id": "V20_clean_badge_friend",
+      "gradient_colors": ["#fda4af", "#fcd34d", "#f9a8d4"],
+      "color_mood": "warm-sunrise",
+      "background_variant": "liquid-orbs",
+      "particle_type": "warm",
+      "use_web3_background": true,
+      "accent_color": "#F472B6",
+      "accent_color2": "#FCD34D",
+      "text_color": "#fffbeb",
+      "title": { "motion_profile": "minimal_headline", "css": ["accent-orange-word", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 72, "max_hook_beats": 2, "hook_tone": "calm" },
+      "content_slots": [
+        { "motion_profile": "minimal_headline", "css": ["pill-badge"], "mid_effect": "glow_ring", "mid_info_layout": "framed" },
+        { "motion_profile": "tiktok_phrase_pages", "css": ["float-icon"], "mid_effect": "typewriter", "mid_info_layout": "steps" },
+        { "motion_profile": "glass_card_stack", "css": ["glass-card"], "mid_effect": "glow_scan", "mid_info_layout": "keywords" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["accent-orange-word", "pulse-button"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 24, "caption_bottom_px": 335, "mid_safe_bottom_ratio": 0.39 }
+    },
+    {
+      "id": "ai_news_coral_bloom_rush",
+      "tier": "derivative",
+      "parent_id": "ai_news_coral_bloom",
+      "label": "珊瑚晚霞·跟拍版",
+      "visual_style": "coral_sunset",
+      "voice_id": "V02_tiktok_follow_punch",
+      "gradient_colors": ["#ff6b6b", "#feca57", "#ff9ff3"],
+      "color_mood": "coral-bloom",
+      "background_variant": "gradient-mesh",
+      "particle_type": "bokeh",
+      "use_web3_background": true,
+      "accent_color": "#FB7185",
+      "accent_color2": "#FBBF24",
+      "text_color": "#fff7ed",
+      "title": { "motion_profile": "tiktok_phrase_pages", "css": ["sparkle-dots", "pill-badge", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "hype" },
+      "content_slots": [
+        { "motion_profile": "tiktok_word_pop", "css": ["accent-orange-word"], "mid_effect": "particle_dust", "mid_info_layout": "keywords" },
+        { "motion_profile": "tiktok_phrase_pages", "css": ["float-icon"], "mid_effect": "glow_ring", "mid_info_layout": "compare" },
+        { "motion_profile": "bullet_stagger_up", "css": ["glass-card"], "mid_effect": "bracket_slam", "mid_info_layout": "framed" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "sparkle-dots", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 20, "caption_bottom_px": 315, "mid_safe_bottom_ratio": 0.41 }
+    },
+
+    {
+      "id": "ai_news_prism_scan",
+      "tier": "base",
+      "label": "棱镜扫描·青紫全息",
+      "visual_style": "prism_holo",
+      "voice_id": "V12_phrase_pages",
+      "gradient_colors": ["#00fff0", "#a855f7", "#0f172a"],
+      "color_mood": "prism-scan",
+      "background_variant": "duotone-flow",
+      "particle_type": "glow",
+      "use_web3_background": true,
+      "accent_color": "#00FFF0",
+      "accent_color2": "#A855F7",
+      "text_color": "#ecfeff",
+      "title": {
+        "motion_profile": "tiktok_phrase_pages",
+        "css": ["glass-card", "sparkle-dots", "caption-bottom-safe"]
+      },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "prism" },
+      "content_slots": [
+        { "motion_profile": "marquee_ticker", "css": ["glass-card", "pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "keywords" },
+        { "motion_profile": "glass_card_stack", "css": ["float-icon"], "mid_effect": "glow_ring", "mid_info_layout": "framed" },
+        { "motion_profile": "bullet_rail_right", "css": ["sparkle-dots"], "mid_effect": "typewriter", "mid_info_layout": "compare" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["glass-card", "pulse-button", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 24, "caption_bottom_px": 330, "mid_safe_bottom_ratio": 0.39 },
+      "compose_hint": "棱镜扫描：信息密度高；needs_image + hologram futuristic display。"
+    },
+    {
+      "id": "ai_news_prism_scan_snap",
+      "tier": "derivative",
+      "parent_id": "ai_news_prism_scan",
+      "label": "棱镜扫描·快翻版",
+      "visual_style": "prism_holo",
+      "voice_id": "V12_phrase_pages",
+      "gradient_colors": ["#5eead4", "#c084fc", "#1e1b4b"],
+      "color_mood": "prism-scan",
+      "background_variant": "liquid-orbs",
+      "particle_type": "glow",
+      "use_web3_background": true,
+      "accent_color": "#2DD4BF",
+      "accent_color2": "#C084FC",
+      "text_color": "#f0fdfa",
+      "title": { "motion_profile": "flash_hook_smash", "css": ["glass-card", "caption-bottom-safe"] },
+      "opening": { "duration_frames": 72, "max_hook_beats": 2, "hook_tone": "prism" },
+      "content_slots": [
+        { "motion_profile": "tiktok_phrase_pages", "css": ["pill-badge"], "mid_effect": "glow_scan", "mid_info_layout": "framed" },
+        { "motion_profile": "marquee_ticker", "css": ["sparkle-dots"], "mid_effect": "typewriter", "mid_info_layout": "keywords" },
+        { "motion_profile": "glass_card_stack", "css": ["glass-card"], "mid_effect": "glow_ring", "mid_info_layout": "steps" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["glass-card", "caption-bottom-safe"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 22, "caption_bottom_px": 325, "mid_safe_bottom_ratio": 0.4 }
+    },
+    {
+      "id": "ai_news_prism_scan_rush",
+      "tier": "derivative",
+      "parent_id": "ai_news_prism_scan",
+      "label": "棱镜扫描·数据版",
+      "visual_style": "prism_holo",
+      "voice_id": "V06_chart_story",
+      "gradient_colors": ["#00fff0", "#a855f7", "#0f172a"],
+      "color_mood": "deep-ocean",
+      "background_variant": "duotone-flow",
+      "particle_type": "starfield",
+      "use_web3_background": true,
+      "accent_color": "#00FFF0",
+      "accent_color2": "#818CF8",
+      "text_color": "#ecfeff",
+      "title": { "motion_profile": "kinetic_slam_tight", "css": ["glass-card", "sparkle-dots", "text-stroke-yellow"] },
+      "opening": { "duration_frames": 84, "max_hook_beats": 2, "hook_tone": "analysis" },
+      "content_slots": [
+        { "motion_profile": "glass_card_stack", "css": ["pill-badge"], "mid_effect": "glow_ring", "mid_info_layout": "compare" },
+        { "motion_profile": "bullet_rail_right", "css": ["float-icon"], "mid_effect": "particle_dust", "mid_info_layout": "keywords" },
+        { "motion_profile": "marquee_ticker", "css": ["sparkle-dots"], "mid_effect": "glow_scan", "mid_info_layout": "framed" }
+      ],
+      "cta": { "motion_profile": "cta_pulse_arrow", "css": ["pulse-button", "glass-card"] },
+      "caption": { "mode": "tiktok", "max_chars_per_page": 26, "caption_bottom_px": 340, "mid_safe_bottom_ratio": 0.38 }
     }
   ],
   "quality_score": { "min_pass": 75, "grade_a": 90 },
-  "notes": "按 article_id 哈希轮换三款式，避免全站同一视觉；与 douyin_github_daily_v1 完全分离。"
+  "notes": "默认轮换 tier=base 共9款；brief.ai_news_rotation_pool=all 可含27款。每基款含 _snap/_rush 两衍体。"
 }

@@ -39,10 +39,15 @@ class PipelineConfig:
     render_mode: str = "pipeline"
     render_scene: str = ""
     render_visual_style: str = ""
+    render_pinned_ai_news_template_id: str = ""
+    render_tts_voice_preset: str = ""
     render_bgm: str = ""
     render_slides_image_mode: str = "search"
     default_segments: str = "0:00-0:45"
     render_platforms: list[str] = field(default_factory=lambda: ["douyin", "xhs"])
+    # 仅渲染该平台的抖音模板视频；其它视频渠道用 mirror_video_to 复制成片
+    render_video_template_platform: str = ""
+    render_mirror_video_to: list[str] = field(default_factory=list)
     render_use_remotion: bool = True
     render_skip_tts: bool = False
     render_allow_template_fallback: bool = False
@@ -59,6 +64,7 @@ class PipelineConfig:
     render_ffmpeg_preset: str = "fast"
     llm_plan_retries: int = 2
     llm_enabled: bool = True
+    llm_require_polish: bool = True
     llm_api_key: str = ""
     llm_api_key_env: str = "DEEPSEEK_API_KEY"
     llm_base_url: str = "https://api.deepseek.com/v1"
@@ -145,10 +151,19 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         render_mode=str(render.get("mode") or "pipeline"),
         render_scene=str(render.get("scene") or ""),
         render_visual_style=str(render.get("visual_style") or ""),
+        render_pinned_ai_news_template_id=str(
+            render.get("pinned_ai_news_template_id")
+            or "ai_news_void_signal"
+        ).strip(),
+        render_tts_voice_preset=str(
+            render.get("tts_voice_preset") or "news_anchor_female"
+        ).strip(),
         render_bgm=str(render.get("bgm") or ""),
         render_slides_image_mode=str(render.get("slides_image_mode") or "search"),
         default_segments=str(render.get("default_segments") or "0:00-0:45"),
         render_platforms=list(render.get("platforms") or ["douyin", "xhs"]),
+        render_video_template_platform=str(render.get("video_template_platform") or "").strip(),
+        render_mirror_video_to=list(render.get("mirror_video_to") or []),
         render_use_remotion=bool(render.get("use_remotion", True)),
         render_skip_tts=bool(render.get("skip_tts", False)),
         render_allow_template_fallback=bool(render.get("allow_template_fallback", False)),
@@ -167,6 +182,7 @@ def load_config(path: str | Path = "config.yaml") -> PipelineConfig:
         render_ffmpeg_preset=str(render.get("ffmpeg_preset") or "fast"),
         llm_plan_retries=max(0, int(llm.get("plan_retries") or 2)),
         llm_enabled=bool(llm.get("enabled", True)),
+        llm_require_polish=bool(llm.get("require_polish", True)),
         llm_api_key=str(
             llm.get("api_key")
             or os.getenv("DEEPSEEK_API_KEY")

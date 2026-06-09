@@ -111,7 +111,8 @@ def build_brief(article: dict[str, Any], *, public_base_url: str, theme_id: str 
         points.append(hypo)
     points = points[:3]
 
-    cta = f"完整变现拆解见 {detail_url}"
+    # 视频口播/字幕禁止带站外 URL；详情链接仅写入 detail_url 供头条/豆瓣图文
+    cta = "关注获取更多 AI 资讯解读"
     cats = article.get("categories") or []
     tags = [str(c) for c in cats[:4] if c]
     if not tags:

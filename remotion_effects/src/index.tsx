@@ -5,6 +5,39 @@ import {TitleCard} from './compositions/TitleCard';
 import {ContentCard} from './compositions/ContentCard';
 import {CTACard} from './compositions/CTACard';
 import {SlidesMontage, montageTotalFrames} from './compositions/SlidesMontage';
+import {VibeCodingIntro} from './vibecoding/VibeCodingIntro';
+import {VibeCodingRankCard} from './vibecoding/VibeCodingRankCard';
+import {VibeCodingOutro} from './vibecoding/VibeCodingOutro';
+import {VibeCodingTop10Montage, vibeCodingMontageTotalFrames} from './vibecoding/VibeCodingTop10Montage';
+import {
+  introDurationFrames,
+  outroDurationFrames,
+  rankDurationFrames,
+} from './vibecoding/duration';
+import montageDefaults from './vibecoding/REF_douyin_001_montage.json';
+import {VIBE_CANVAS} from './vibecoding/layout';
+import type {VibeCodingMontageProps, VibeCodingRankItem} from './vibecoding/types';
+
+const VC = VIBE_CANVAS;
+
+const montageDefaultProps: VibeCodingMontageProps = {
+  intro: montageDefaults.intro,
+  ranks: montageDefaults.ranks,
+  outro: montageDefaults.outro,
+  introDurationFrames: montageDefaults.introDurationFrames,
+  rankDurationFrames: montageDefaults.rankDurationFrames,
+  outroDurationFrames: montageDefaults.outroDurationFrames,
+  transitionFrames: montageDefaults.transitionFrames,
+};
+
+function rankCardProps(rank: VibeCodingRankItem) {
+  return {
+    seriesLabel: montageDefaults.intro.seriesLabel,
+    issueLabel: montageDefaults.intro.issueLabel,
+    dateRange: montageDefaults.intro.dateRange,
+    ...rank,
+  };
+}
 
 /**
  * Remotion Root - 注册所有特效组件
@@ -113,6 +146,85 @@ export const RemotionRoot: React.FC = () => {
           };
         }}
       />
+
+      <Composition
+        id="VibeCodingIntro"
+        component={VibeCodingIntro}
+        durationInFrames={introDurationFrames()}
+        fps={VC.fps}
+        width={VC.width}
+        height={VC.height}
+        defaultProps={montageDefaults.intro}
+        calculateMetadata={({props}) => ({
+          durationInFrames: introDurationFrames(
+            (props as {durationInFrames?: number | null}).durationInFrames,
+          ),
+        })}
+      />
+
+      <Composition
+        id="VibeCodingRankCard"
+        component={VibeCodingRankCard}
+        durationInFrames={rankDurationFrames(montageDefaults.ranks[0].description)}
+        fps={VC.fps}
+        width={VC.width}
+        height={VC.height}
+        defaultProps={rankCardProps(montageDefaults.ranks[0])}
+        calculateMetadata={({props}) => {
+          const p = props as VibeCodingRankItem & {description?: string};
+          return {
+            durationInFrames: rankDurationFrames(p.description ?? '', p.durationInFrames),
+          };
+        }}
+      />
+
+      {montageDefaults.ranks.map((rank) => (
+        <Composition
+          key={`rank-${rank.rank}`}
+          id={`VibeCodingRank${String(rank.rank).padStart(2, '0')}`}
+          component={VibeCodingRankCard}
+          durationInFrames={rankDurationFrames(rank.description, rank.durationInFrames)}
+          fps={VC.fps}
+          width={VC.width}
+          height={VC.height}
+          defaultProps={rankCardProps(rank)}
+          calculateMetadata={({props}) => {
+            const p = props as VibeCodingRankItem;
+            return {
+              durationInFrames: rankDurationFrames(p.description, p.durationInFrames),
+            };
+          }}
+        />
+      ))}
+
+      <Composition
+        id="VibeCodingOutro"
+        component={VibeCodingOutro}
+        durationInFrames={outroDurationFrames()}
+        fps={VC.fps}
+        width={VC.width}
+        height={VC.height}
+        defaultProps={montageDefaults.outro}
+        calculateMetadata={({props}) => ({
+          durationInFrames: outroDurationFrames(
+            (props as {durationInFrames?: number | null}).durationInFrames,
+          ),
+        })}
+      />
+
+      <Composition
+        id="VibeCodingTop10Montage"
+        component={VibeCodingTop10Montage}
+        durationInFrames={vibeCodingMontageTotalFrames(montageDefaultProps)}
+        fps={VC.fps}
+        width={VC.width}
+        height={VC.height}
+        defaultProps={montageDefaultProps}
+        calculateMetadata={({props}) => ({
+          durationInFrames: vibeCodingMontageTotalFrames(props as VibeCodingMontageProps),
+        })}
+      />
+
     </>
   );
 };

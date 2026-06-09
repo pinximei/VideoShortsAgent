@@ -1,18 +1,26 @@
 """按 channel_id 注册固定脚本；扩展新平台时在此注册。"""
 from __future__ import annotations
 
+from .douban import DoubanLoginScript, DoubanPublishScript
 from .douyin import DouyinLoginScript, DouyinPublishScript
+from .toutiao import ToutiaoLoginScript, ToutiaoPublishScript
 from .xhs import XhsLoginScript, XhsPublishScript
 
 PUBLISH_SCRIPTS = {
     "douyin": DouyinPublishScript,
     "xhs": XhsPublishScript,
+    "toutiao": ToutiaoPublishScript,
+    "douban": DoubanPublishScript,
 }
 
 LOGIN_SCRIPTS = {
     "douyin": DouyinLoginScript,
     "xhs": XhsLoginScript,
+    "toutiao": ToutiaoLoginScript,
+    "douban": DoubanLoginScript,
 }
+
+BROWSER_CHANNELS = frozenset(PUBLISH_SCRIPTS.keys())
 
 
 def get_publish_script(channel_id: str):

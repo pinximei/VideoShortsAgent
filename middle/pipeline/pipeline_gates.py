@@ -55,9 +55,15 @@ def assert_publish_pack_meta(task_dir: Path, cfg: PipelineConfig, *, strict: boo
             _fail("llm_fallback_forbidden", f"publish_meta.source={source}")
         if cfg.llm_enabled and source != "pipeline_llm":
             _fail("llm_source_invalid", f"expected pipeline_llm, got {source or 'empty'}")
+    if cfg.llm_require_polish and cfg.llm_enabled and source == "pipeline_llm":
+        from .llm_polish import assert_llm_polished
+
+        assert_llm_polished(task_dir, cfg, strict=strict)
 
 
-def assert_video_plans(task_dir: Path, cfg: PipelineConfig, *, strict: bool | None = None) -> None:
+def assert_video_plans(
+    task_dir: Path, cfg: PipelineConfig, *, strict: bool | None = None, channel_id: str | None = None
+) -> None:
     from .slides_render import is_slides_render_mode
 
     if is_slides_render_mode(cfg):
@@ -65,6 +71,8 @@ def assert_video_plans(task_dir: Path, cfg: PipelineConfig, *, strict: bool | No
         if slides_path.is_file():
             return
     platforms = [p.id for p in video_platforms(cfg.render_platforms)]
+    if channel_id:
+        platforms = [channel_id] if channel_id in platforms else platforms
     for pid in platforms:
         plan_path = task_dir / "llm" / f"video_clips_{pid}.json"
         if not plan_path.is_file():
@@ -100,10 +108,14 @@ def assert_broll_ready(cfg: PipelineConfig) -> None:
         _fail("broll_missing", f"B-roll 不存在: {broll}")
 
 
-def assert_all_platform_videos(task_dir: Path, cfg: PipelineConfig) -> dict[str, Any]:
+def assert_all_platform_videos(
+    task_dir: Path, cfg: PipelineConfig, *, channel_id: str | None = None
+) -> dict[str, Any]:
     from .render_verify import MIN_VIDEO_BYTES, _quick_video_checks
 
     platforms = [p.id for p in video_platforms(cfg.render_platforms)]
+    if channel_id:
+        platforms = [channel_id] if channel_id in platforms else platforms
     quick = _quick_video_checks(task_dir, platforms)
     if not quick.get("ok"):
         bad = [pid for pid, e in (quick.get("platforms") or {}).items() if not e.get("ok")]
@@ -169,11 +181,21 @@ def assert_publish_quality(
     return q
 
 
-def assert_tts_artifacts(task_dir: Path, cfg: PipelineConfig) -> None:
+def assert_tts_artifacts(
+    task_dir: Path, cfg: PipelineConfig, *, channel_id: str | None = None
+) -> None:
     """渲染后检查各平台 plan 的 tts_durations（TTS 失败会缺项）。"""
     if not cfg.render_enabled or cfg.render_skip_tts:
         return
-    for pid in [p.id for p in video_platforms(cfg.render_platforms)]:
+    platforms = [p.id for p in video_platforms(cfg.render_platforms)]
+    if channel_id:
+        platforms = [channel_id] if channel_id in platforms else platforms
+    from .render_verify import MIN_VIDEO_BYTES
+
+    for pid in platforms:
+        rendered = task_dir / "videos" / f"{pid}.mp4"
+        if rendered.is_file() and rendered.stat().st_size >= MIN_VIDEO_BYTES:
+            continue
         plan = _load_json(task_dir / "llm" / f"video_clips_{pid}.json")
         clips = plan.get("clips") or []
         tts_durs = plan.get("tts_durations") or []
@@ -190,23 +212,47 @@ def assert_task_ready_for_publish(
     *,
     brief_dict: dict[str, Any] | None = None,
     strict: bool | None = None,
+    channel_id: str | None = None,
 ) -> dict[str, Any]:
     """
     任务进入 ready_to_publish 前必须通过；发布 API / Playwright 发布前复用。
     返回摘要供写入 job / API。
     """
     task_dir = task_dir.resolve()
-    if cfg.render_enabled:
+    from .platform_presets import is_video_platform
+
+    article_only = bool(channel_id and not is_video_platform(channel_id))
+    if cfg.render_enabled and not article_only:
         assert_broll_ready(cfg)
         assert_publish_pack_meta(task_dir, cfg, strict=strict)
-        assert_video_plans(task_dir, cfg, strict=strict)
+        assert_video_plans(task_dir, cfg, strict=strict, channel_id=channel_id)
     brief = brief_dict or _load_json(task_dir / "brief.json")
     assert_publish_bindings_dict(brief.get("publish_bindings"))
+    if cfg.render_enabled and article_only:
+        return {"bindings": brief.get("publish_bindings"), "article_only": True}
     if cfg.render_enabled:
-        quick = assert_all_platform_videos(task_dir, cfg)
+        quick = assert_all_platform_videos(task_dir, cfg, channel_id=channel_id)
         report = assert_verify_report(task_dir, cfg, strict=strict)
-        assert_tts_artifacts(task_dir, cfg)
-        assert_publish_quality(task_dir, cfg, strict=strict)
+        assert_tts_artifacts(task_dir, cfg, channel_id=channel_id)
+        if channel_id and is_video_platform(channel_id):
+            quick_plat = ((report.get("quick") or {}).get("platforms") or {}).get(channel_id) or {}
+            if quick_plat.get("ok") is not True:
+                from .quality_rules import evaluate_task_quality
+
+                brief = brief_dict or _load_json(task_dir / "brief.json")
+                q = evaluate_task_quality(
+                    task_dir,
+                    platforms=[channel_id],
+                    feed_kind=str(brief.get("feed_kind") or "news"),
+                )
+                if not q.get("ok"):
+                    _fail(
+                        "quality_rules_failed",
+                        "; ".join(q.get("issues") or [])[:400],
+                        quality=q,
+                    )
+        else:
+            assert_publish_quality(task_dir, cfg, strict=strict)
         return {"quick": quick, "verify": report, "bindings": brief.get("publish_bindings")}
     return {"bindings": brief.get("publish_bindings")}
 
@@ -243,7 +289,9 @@ def assert_channel_publishable(
     else:
         brief = _load_json(task_dir / "brief.json")
 
-    assert_task_ready_for_publish(cfg, task_dir, brief_dict=brief, strict=True)
+    assert_task_ready_for_publish(
+        cfg, task_dir, brief_dict=brief, strict=True, channel_id=channel_id
+    )
 
     if not cfg.render_enabled:
         return task_dir

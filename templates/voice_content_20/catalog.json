@@ -423,8 +423,8 @@
       "id": "V20_clean_badge_friend",
       "name": "朋友推荐口吻",
       "reference_motion": "G20",
-      "edge_tts_rate": "+6%",
-      "sentence_pause_sec": 0.25,
+      "edge_tts_rate": "+0%",
+      "sentence_pause_sec": 0.28,
       "words_per_minute": 210,
       "total_chars": [
         170,
@@ -432,6 +432,8 @@
       ],
       "hook_pattern": "安利|自用|真心",
       "tone": "像朋友聊天",
+      "tts_voice": "zh-CN-YunjianNeural",
+      "edge_tts_pitch": "+0Hz",
       "validated": false,
       "validation_note": "no_measurement_yet",
       "measured_ref": null

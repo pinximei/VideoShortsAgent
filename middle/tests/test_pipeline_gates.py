@@ -41,6 +41,19 @@ def _minimal_ready_task(cfg: PipelineConfig, *, with_video: bool = True) -> Path
         json.dumps({"source": "pipeline_llm"}, ensure_ascii=False),
         encoding="utf-8",
     )
+    long_tts = "LLM润色口播内容需要足够长才能通过门禁与校验规则检查要求"
+    (task / "llm" / "platform_copy.json").write_text(
+        json.dumps(
+            {
+                "douyin": {"title": "LLM标题", "script": long_tts},
+                "xhs": {"title": "LLM小红书", "body": "LLM笔记正文"},
+                "toutiao": {"title": "t", "body": "LLM微头条正文"},
+                "douban": {"title": "d", "body": "LLM豆瓣正文"},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     for pid in ("douyin", "xhs"):
         (task / "llm" / f"video_clips_{pid}.json").write_text(
             json.dumps(
@@ -131,7 +144,8 @@ def test_gate_summary_ok(tmp_path: Path) -> None:
     task = _minimal_ready_task(cfg)
     quick_ok = {"ok": True, "platforms": {"douyin": {"ok": True}, "xhs": {"ok": True}}}
     with patch("pipeline.render_verify._quick_video_checks", return_value=quick_ok):
-        summary = gate_summary(task, cfg)
+        with patch("pipeline.quality_rules.evaluate_task_quality", return_value={"ok": True}):
+            summary = gate_summary(task, cfg)
     assert summary["ok"] is True
 
 
@@ -144,7 +158,10 @@ def test_channel_publishable_requires_ready_job(tmp_path: Path) -> None:
     )
     (tmp_path / "broll.mp4").write_bytes(b"fake")
     task = _minimal_ready_task(cfg)
-    job = {"status": "processing", "brief_json": json.loads((task / "brief.json").read_text())}
+    job = {
+        "status": "processing",
+        "brief_json": json.loads((task / "brief.json").read_text(encoding="utf-8")),
+    }
     with pytest.raises(PipelineGateError) as exc:
         assert_channel_publishable(cfg, 100, "douyin", job=job)
     assert exc.value.code == "job_not_ready"

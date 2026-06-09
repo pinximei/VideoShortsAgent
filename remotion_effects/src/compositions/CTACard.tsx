@@ -149,12 +149,13 @@ export const CTACard: React.FC<CTACardProps> = ({
           </div>
           <div style={{
             position: 'relative', padding: '22px 56px', borderRadius: 12,
-            background: 'linear-gradient(135deg, #238636, #2ea043)',
-            fontSize: 36, fontWeight: 800, color: '#fff',
+            background: `linear-gradient(135deg, ${accentColor}, ${accentColor2 || accentColor})`,
+            fontSize: 36, fontWeight: 800, color: textColor,
             transform: `scale(${pulseScale})`,
-            boxShadow: `0 0 0 ${ring * 8}px #3fb95044`,
+            boxShadow: `0 0 0 ${ring * 8}px ${accentColor}44`,
+            minWidth: ctaText ? undefined : 280,
           }}>
-            {ctaText}
+            {ctaText || hookText || '关注我'}
           </div>
         </div>
         {!suppressBottomCaption ? (

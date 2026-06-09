@@ -58,6 +58,8 @@ npm install
 
 安装：`pip install playwright && playwright install chromium`
 
+**多平台固定发布**（抖音 / 小红书 / 头条 / 豆瓣，无需 Agent）：见 [docs/PUBLISH_RUNBOOK.md](docs/PUBLISH_RUNBOOK.md)，入口 `scripts/publish_channel.py`；小红书别名 `scripts/publish_xhs_note.py`。
+
 ## 配置
 
 - `paths.vsa_root` 默认同仓库根，一般无需改

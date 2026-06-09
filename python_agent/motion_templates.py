@@ -402,10 +402,17 @@ _XHS_G_IDS = frozenset(
 
 
 def pick_github_daily_style(brief: dict[str, Any]) -> dict[str, Any]:
-    """「每天一个 GitHub」系列：从 20 套预研模板选一整片风格（按平台收窄池）。"""
+    """「每天一个 GitHub」系列：优先钉死三款式衍生 G，否则从 20 套预研模板哈希选型。"""
     styles = list(load_github_daily_catalog().get("styles") or [])
     if not styles:
         return pick_intro_template(brief)
+    from python_agent.pinned_github_template import inject_github_pinned_brief, pick_github_pinned_variant
+
+    brief = inject_github_pinned_brief(dict(brief))
+    pinned = pick_github_pinned_variant(brief)
+    gv_mid = str((pinned.get("gv") or {}).get("motion_id") or "")
+    if gv_mid and not brief.get("github_daily_style_id"):
+        brief["github_daily_style_id"] = gv_mid
     from python_agent.platform_gv_defaults import resolve_platform_motion_style
 
     chosen = resolve_platform_motion_style(brief, styles)

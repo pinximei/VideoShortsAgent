@@ -102,6 +102,12 @@ def resolve_tts_for_platform(
     }
 
 
+def _ai_news_tts_style(brief: dict[str, Any] | None = None) -> dict[str, Any]:
+    from python_agent.tts_voice_presets import load_voice_preset
+
+    return load_voice_preset(brief=brief)
+
+
 def prepare_brief_tts(
     brief: dict[str, Any],
     platform_id: str,
@@ -110,6 +116,31 @@ def prepare_brief_tts(
 ) -> dict[str, Any]:
     """合并 task brief、V 模板与平台默认 TTS 参数（slides / vsa 共用）。"""
     out = dict(brief)
+    try:
+        from python_agent.douyin_news_style import is_news_brief
+
+        news_lane = is_news_brief(out)
+    except Exception:
+        news_lane = False
+    if news_lane and platform_id == "douyin":
+        from python_agent.platform_presets import get_platform_preset
+
+        plat_preset = get_platform_preset(platform_id)
+        style = _ai_news_tts_style(out)
+        # 固定预设语速/停顿，禁止 V 模板 wpm 把 rate 抬到 +14%～+18%
+        tts = {
+            "tts_voice": style["tts_voice"],
+            "tts_rate": str(style.get("edge_tts_rate") or "+0%"),
+            "tts_pitch": str(style.get("edge_tts_pitch") or "+0Hz"),
+            "sentence_pause_sec": float(style.get("sentence_pause_sec") or 0.38),
+        }
+        out["tts_voice"] = tts["tts_voice"]
+        out["tts_rate"] = tts["tts_rate"]
+        out["tts_pitch"] = tts["tts_pitch"]
+        out["sentence_pause_sec"] = tts["sentence_pause_sec"]
+        out["tts_voice_preset"] = style.get("id")
+        out["_news_anchor_pace"] = True
+        return out
     tts = resolve_tts_for_platform(out, platform_id, voice_style=voice_style)
     plat = PLATFORM_TTS_DEFAULTS.get(platform_id, PLATFORM_TTS_DEFAULTS["douyin"])
     # 平台音色优先：小红书必须女声，避免 V 模板里的男声覆盖
@@ -166,6 +197,19 @@ def resolve_tts_params(
     sub_ms = style.get("subtitle_switch_ms")
 
     voice = (style.get("tts_voice") or "").strip() or str(base["tts_voice"]) or platform_voice
+
+    if style.get("id", "").startswith("news_anchor_") or str(style.get("id") or "") == "V_ai_news_explainer":
+        rate = style.get("edge_tts_rate") or "+6%"
+        pitch = style.get("edge_tts_pitch") or "+2Hz"
+        pause = style.get("sentence_pause_sec")
+        if pause is None:
+            pause = 0.30
+        return {
+            "tts_voice": voice,
+            "tts_rate": str(rate),
+            "tts_pitch": str(pitch),
+            "sentence_pause_sec": float(pause),
+        }
 
     if wpm and not phash_only:
         rate = style.get("edge_tts_rate") or rate_from_measured_wpm(int(wpm))

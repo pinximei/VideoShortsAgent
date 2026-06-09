@@ -42,6 +42,7 @@ class PublishResult:
     script: str
     steps: list[dict]
     message: str = ""
+    evidence: dict | None = None
 
 
 def _resolve_account(cfg: PipelineConfig, req: PublishRequest) -> tuple[str, ChannelAccount]:
@@ -72,14 +73,44 @@ def _load_publish_pack(
 ) -> PublishPack:
     from pipeline.pipeline_gates import assert_channel_publishable
 
-    video_path = assert_channel_publishable(cfg, article_id, channel_id, job=job)
+    from pipeline.platform_presets import get_platform_preset, is_video_platform
+
+    asset_path = assert_channel_publishable(cfg, article_id, channel_id, job=job)
     out_dir = cfg.output_root / str(article_id)
-    title_path = out_dir / "publish" / f"{channel_id}_title.txt"
-    title = title_path.read_text(encoding="utf-8").strip() if title_path.is_file() else ""
+    publish_dir = out_dir / "publish"
+    preset = get_platform_preset(channel_id)
+    title = ""
+    body = ""
+    video_path = None
+
+    if is_video_platform(channel_id):
+        video_path = asset_path
+        title_path = publish_dir / f"{channel_id}_title.txt"
+        body_path = publish_dir / f"{channel_id}_body.txt"
+        title = title_path.read_text(encoding="utf-8").strip() if title_path.is_file() else ""
+        body = body_path.read_text(encoding="utf-8").strip() if body_path.is_file() else ""
+    else:
+        article_path = asset_path
+        if article_path.is_file():
+            raw = article_path.read_text(encoding="utf-8").strip()
+            lines = raw.splitlines()
+            if lines:
+                title = lines[0].strip()[:80]
+                body = "\n".join(lines[1:]).strip() or raw
+            else:
+                body = raw
+        title_path = publish_dir / f"{channel_id}_title.txt"
+        if title_path.is_file():
+            title = title_path.read_text(encoding="utf-8").strip() or title
+        body_path = publish_dir / f"{channel_id}_body.txt"
+        if body_path.is_file():
+            body = body_path.read_text(encoding="utf-8").strip() or body
+
     return PublishPack(
         article_id=article_id,
         channel_id=channel_id,
         title=title,
+        body=body,
         video_path=video_path,
         output_dir=out_dir,
     )
@@ -163,6 +194,7 @@ def publish_content(cfg: PipelineConfig, req: PublishRequest) -> PublishResult:
         script=str(raw.get("script") or ""),
         steps=list(raw.get("steps") or []),
         message="",
+        evidence=dict(raw.get("evidence") or {}),
     )
 
 

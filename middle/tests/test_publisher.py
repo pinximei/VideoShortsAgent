@@ -10,7 +10,8 @@ from pipeline.config import load_config
 from pipeline.db import JobStore
 from pipeline.models import content_key_for_article
 from publisher.batches import parse_publisher_config
-from publisher.profiles import account_profile_dir
+from pipeline.channel_registry import ChannelAccount
+from publisher.profiles import account_profile_dir, profile_storage_id, resolve_profile_dir
 from publisher.runner import PublishRequest, publisher_overview
 from publisher.scripts.registry import PUBLISH_SCRIPTS, get_publish_script
 
@@ -32,11 +33,39 @@ def test_profile_path_stable_per_account(tmp_path: Path) -> None:
     assert "batch_a" in str(p) and "acc_test" in str(p)
 
 
+def test_shared_profile_id_for_batch_b() -> None:
+    pub = parse_publisher_config(
+        {
+            "batches": [
+                {
+                    "batch_id": "batch_b",
+                    "site_code": "ai-trends-news",
+                    "theme_id": "ai_news",
+                    "shared_profile_id": "acc_ai_news_shared",
+                }
+            ],
+            "slots": [{"slot_id": 2, "batch_id": "batch_b"}],
+        }
+    )
+    acc = ChannelAccount(
+        id="acc_ai_news_xhs",
+        site_code="ai-trends-news",
+        channel_id="xhs",
+        batch_id="batch_b",
+    )
+    assert profile_storage_id("batch_b", acc, pub) == "acc_ai_news_shared"
+    p = resolve_profile_dir(Path("/tmp/x"), "batch_b", acc, pub)
+    assert "acc_ai_news_shared" in str(p)
+
+
 def test_publish_script_registry_no_llm() -> None:
     assert "douyin" in PUBLISH_SCRIPTS
     script = get_publish_script("douyin")
     assert script.fixed_steps
-    assert "open_creator_home" in script.fixed_steps
+    assert "open_creator_upload" in script.fixed_steps
+    assert "wait_publish_result" in script.fixed_steps
+    assert "toutiao" in PUBLISH_SCRIPTS
+    assert "douban" in PUBLISH_SCRIPTS
 
 
 def test_publisher_overview_structure(tmp_path: Path) -> None:

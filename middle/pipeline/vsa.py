@@ -145,12 +145,27 @@ def render_task_videos(
 
     task_dir = task_dir.resolve()
     brief = load_brief(task_dir)
-    presets = video_platforms(platforms or cfg.render_platforms)
+    from .video_mirror import apply_video_mirror, render_platform_ids
+
+    presets = video_platforms(render_platform_ids(cfg, platforms))
 
     from .render_lock import global_render_slot
 
     with global_render_slot(cfg.data_dir, max_slots=cfg.render_max_concurrent):
         videos = _render_platforms_inner(cfg, task_dir, presets)
+        mirrored = apply_video_mirror(cfg, task_dir)
+        if mirrored:
+            for tgt in mirrored:
+                p = task_dir / "videos" / f"{tgt}.mp4"
+                if p.is_file():
+                    videos.append(
+                        {
+                            "platform": tgt,
+                            "path": str(p),
+                            "content_kind": "video",
+                            "render_engine": "mirrored_from_douyin",
+                        }
+                    )
 
     articles = article_manifest_entries(task_dir)
     manifest = {

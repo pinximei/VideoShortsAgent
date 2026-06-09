@@ -42,7 +42,11 @@ def apply_registry_layout_tiers(
                 DOUYIN_OPENING_BURST_FRAMES,
             )
         elif st == "cta_card":
-            slide["css_decorations"] = list(CTA_LAYOUT["css"])
+            from python_agent.douyin_news_style import NEWS_CTA_CSS, is_news_brief
+
+            slide["css_decorations"] = (
+                list(NEWS_CTA_CSS) if is_news_brief(brief) else list(CTA_LAYOUT["css"])
+            )
             slide["motion_profile"] = CTA_LAYOUT["motion_profile"]
             slide["suppress_bottom_caption"] = True
         elif st == "content_card" or slide.get("scene_focus"):
@@ -80,7 +84,7 @@ def finalize_douyin_slides(
     if is_news_brief(brief):
         out = apply_douyin_news_style(out, brief)
     if layout_tiers:
-        out = apply_registry_layout_tiers(out)
+        out = apply_registry_layout_tiers(out, brief)
     if is_news_brief(brief):
         out = apply_douyin_news_style(out, brief)
 

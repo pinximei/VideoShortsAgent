@@ -1,5 +1,7 @@
 {
   "id": "douyin_github_daily_v1",
+  "family": "douyin_github_daily",
+  "variant_catalog": "templates/pinned_douyin_github_daily/catalog.json",
   "label": "抖音·每天一个GitHub项目（固定基线）",
   "pinned_at": "2026-05-24",
   "platform": "douyin",
@@ -9,7 +11,8 @@
     "voice_id": "V01_burst_hook_fast"
   },
   "brief_flags": {
-    "use_platform_gv_default": true
+    "use_platform_gv_default": false,
+    "use_pinned_github_variant_rotation": true
   },
   "caption": {
     "mode": "tiktok",

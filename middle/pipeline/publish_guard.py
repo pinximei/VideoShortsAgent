@@ -40,7 +40,7 @@ def assert_dry_run_before_publish(
     article_id: int,
     channel_id: str,
 ) -> None:
-    if channel_id not in ("douyin", "xhs"):
+    if channel_id not in ("douyin", "xhs", "toutiao", "douban"):
         return
     if not getattr(cfg, "publish_require_dry_run", True):
         return
